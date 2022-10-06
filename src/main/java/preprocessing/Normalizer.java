@@ -11,7 +11,7 @@ public class Normalizer {
         byte[] line = input[1].getBytes("UTF-8");
         String formattedLine = new String(line, "UTF-8");
         //remove all non-ASCII characters
-        formattedLine = formattedLine.replaceAll("[^\\x00-\\x7F]", "");
+        formattedLine = formattedLine.replaceAll("[^\\x00-\\x7F]", " ");
         // remove all the ASCII control
         //formattedLine = formattedLine.replaceAll("[^\\p{Cntrl}&&[^\r\n\t]]", "");
         // remove non-printable characters from Unicode
