@@ -3,6 +3,7 @@ package preprocessing;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.StringTokenizer;
 
 public class Normalizer {
@@ -18,6 +19,8 @@ public class Normalizer {
         formattedLine = formattedLine.replaceAll("\\p{C}", "");
         //remove punctuation
         formattedLine = formattedLine.replaceAll("\\p{Punct}", "");
+        //lower case
+        formattedLine = formattedLine.toLowerCase();
         return formattedLine;
 
     }
