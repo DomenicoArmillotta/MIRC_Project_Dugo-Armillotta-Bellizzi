@@ -12,7 +12,6 @@ public class Stemmer {
         PorterStemmer stemmer = new PorterStemmer();
         List<String> stemmed_words = new ArrayList<>();
         for(String word : list_word){
-            System.out.println(word);
             word = stemmer.stripPluralParticiple(word);
             word = stemmer.stem(word);
             stemmed_words.add(word);

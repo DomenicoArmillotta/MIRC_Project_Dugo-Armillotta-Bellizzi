@@ -16,12 +16,15 @@ public class Preprocess_doc {
         Normalizer normalizer = new Normalizer();
         Tokenizer tokenizer = new Tokenizer();
         Stopword_removal stopword_removal = new Stopword_removal();
+        Stemmer stemmer = new Stemmer();
         String output_normalizer = normalizer.normalize(s);
         List<String> output_tokenizer = new ArrayList<>();
         output_tokenizer = tokenizer.tokenize(output_normalizer);
         List<String> output_stopwords_removal = new ArrayList<>();
         output_stopwords_removal = stopword_removal.remove(output_tokenizer);
-        return output_stopwords_removal;
+        List<String> output_stemming = new ArrayList<>();
+        output_stemming = stemmer.stemming(output_stopwords_removal);
+        return output_stemming;
     }
 
 
