@@ -18,7 +18,7 @@ public class Stopword_removal {
         Path p = Paths.get(path);
         BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
         List<String> list_stopwords = Files.readAllLines(p, StandardCharsets.UTF_8);
-        for (int i = 0; i < list_word.size(); i++) {
+        for (int i = 0; i < (list_word.size()-1); i++) {
             for (int j = 0; j < list_stopwords.size(); j++) {
                 if(list_word.get(i).equals(list_stopwords.get(j))){
                     list_word.remove(i);
