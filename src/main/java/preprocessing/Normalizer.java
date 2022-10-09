@@ -16,6 +16,8 @@ public class Normalizer {
         //formattedLine = formattedLine.replaceAll("[^\\p{Cntrl}&&[^\r\n\t]]", "");
         // remove non-printable characters from Unicode
         formattedLine = formattedLine.replaceAll("\\p{C}", "");
+        //remove punctuation
+        formattedLine = formattedLine.replaceAll("\\p{Punct}", "");
         return formattedLine;
 
     }
