@@ -11,14 +11,14 @@ public class Tokenizer {
      * @param  s      the string that represent a document
      * @return        tokens of that document
      */
-    public void tokenize(String s){
+    public List<String> tokenize(String s){
         String[] input = s.split("\t");
-        StringTokenizer st = new StringTokenizer(input[1]);
+        StringTokenizer st = new StringTokenizer(input[0]);
         List<String> terms = new ArrayList<>();
         while (st.hasMoreTokens()) {
             terms.add(st.nextToken());
         }
-        System.out.println(terms);
+        return  terms;
     }
 
 }
