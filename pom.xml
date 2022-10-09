@@ -23,5 +23,17 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>nz.ac.waikato.cms.weka</groupId>
+      <artifactId>weka-stable</artifactId>
+      <version>3.8.0</version>
+    </dependency>
+    <!-- Thanks for using https://jar-download.com -->
+    <dependency>
+      <groupId> com.github.haifengl</groupId>
+      <artifactId>smile-nlp</artifactId>
+      <version>1.5.2</version>
+    </dependency>
+    <!-- Thanks for using https://jar-download.com -->
   </dependencies>
 </project>
