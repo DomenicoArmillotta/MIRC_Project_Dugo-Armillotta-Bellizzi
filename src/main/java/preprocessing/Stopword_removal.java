@@ -12,6 +12,13 @@ import java.io.File;
 
 public class Stopword_removal {
 
+    /**
+     * removes the English language stopwords from the token list and returns a new token list.
+     * The stopwords are taken from a file
+     * @param list_word list of word already tokenized
+     * @return list_word list of word without stopwords
+     * @throws IOException
+     */
     public List<String> remove (List<String> list_word) throws IOException {
         String path = "docs/stopwords_eng.txt";
         File file_stopwords = new File("docs/stopwords_eng.txt");
