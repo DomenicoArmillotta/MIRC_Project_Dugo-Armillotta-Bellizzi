@@ -1,5 +1,7 @@
 package document_index;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import preprocessing.Preprocess_doc;
 
 import java.io.BufferedReader;
@@ -20,9 +22,20 @@ public class Document_index {
         Preprocess_doc preprocess_doc = new Preprocess_doc();
         File file = new File(path);
         Path p = Paths.get(path);
-        BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
+        List<String> list_doc = new ArrayList<>();
+        // to not read all the documents in memory we use a LineIterator
+        LineIterator it = FileUtils.lineIterator(file, "UTF-8");
+        try {
+            while (it.hasNext()) {
+                String line = it.nextLine();
+                list_doc.add(line);
+            }
+        } finally {
+            LineIterator.closeQuietly(it);
+        }
+        //BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
         //PROBLEMA = voglio leggere 100 righe alla volta
-        List<String> list_doc = Files.readAllLines(p, StandardCharsets.UTF_8);
+        //List<String> list_doc = Files.readAllLines(p, StandardCharsets.UTF_8);
         int page_rank = 1;
         for (int i = 0; i < list_doc.size(); i++) {
             String current_doc = list_doc.get(i);

@@ -1,6 +1,8 @@
 package preprocessing;
 
 import junit.framework.TestCase;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.tartarus.snowball.SnowballProgram;
 import smile.nlp.stemmer.PorterStemmer;
@@ -32,9 +34,19 @@ public class StemmerTest extends TestCase {
         String path = "docs/collection_test.tsv";
         File file = new File("docs/collection_test.tsv");
         Path p = Paths.get(path);
-        BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
-
-        List<String> list = Files.readAllLines(p, StandardCharsets.UTF_8);
+        //BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
+        List<String> list = new ArrayList<>();
+        // to not read all the documents in memory we use a LineIterator
+        LineIterator it = FileUtils.lineIterator(file, "UTF-8");
+        try {
+            while (it.hasNext()) {
+                String line = it.nextLine();
+                list.add(line);
+            }
+        } finally {
+            LineIterator.closeQuietly(it);
+        }
+        //List<String> list = Files.readAllLines(p, StandardCharsets.UTF_8);
         Preprocess_doc preprocess_doc = new Preprocess_doc();
         String test = list.get(40);
         String[] parts = test.split("\t");
