@@ -79,8 +79,6 @@ public class Inverted_index{
         }
     }
 
-    //TODO: define the size of the blocks, depending on the #calls of SPIMI we want to do (SPIMI complexity is O(T)!!) We start with 10 blocks
-    
     public List<Posting> getPostings(String term){
         List<Posting> postingList= new LinkedList<>();
         postingList = index.get(term);
@@ -155,7 +153,10 @@ public class Inverted_index{
         this.outputFile = outputFile;
     }
 
-    //TODO: merge method, write to file method, dictionary for each block, get terms, sort posting lists by increasing docid
+    //TODO 10/10/2022: finish merge method
+    // write to file method (from scratch!)
+    // dictionary for each block (add to dict, read terms......)
+    // finish sort posting lists by increasing docid
 
 
 }

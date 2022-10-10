@@ -45,7 +45,7 @@ public class SPIMI_Invert {
         //merge results of each block into one file: for each chunk (0 to nChunk-1) with
     }
 
-    //TODO: complete the algorithm!
+    //TODO 10/10/2022: complete the algorithm!
     //we have for each call a block of the file; for each block we create a inverted index with his dictionary and apply the alghorithm;
     //at the end we use the inverted index method to write to the disk
     public void spimi_invert(List<String> fileBlock, int n) throws IOException {
@@ -59,10 +59,10 @@ public class SPIMI_Invert {
             pro_doc = preprocessing.preprocess_doc_optimized(doc_corpus);
             //read the terms and generate postings
             //write postings
-            //at the end of the block we have to sort the posting lists in lexicographic order
-            //then we merge the posting lists
-            //and write to the output file
         }
+        //at the end of the block we have to sort the posting lists in lexicographic order
+        //then we merge the posting lists
+        //and write to the output file
     }
 
     private static long getFileLines(String path){
