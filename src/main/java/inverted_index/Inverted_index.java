@@ -67,6 +67,9 @@ public class Inverted_index {
         System.out.println("Block created in " + ((System.currentTimeMillis() - curTime) / 1000) + " seconds.");*/
         }
     }
+
+    //TODO: define the size of the blocks, depending on the #calls of SPIMI we want to do (SPIMI complexity is O(T)!!) We start with 10 blocks
+    
     public List<Posting> getPostings(String term){
         List<Posting> postingList= new LinkedList<>();
         postingList = index.get(term);
@@ -82,6 +85,11 @@ public class Inverted_index {
         else{
             index.get(term).add(new Posting(docid,freq));
         }
+    }
+
+    public Set<String> getTerms(){
+        Set<String> terms = index.keySet();
+        return terms;
     }
 
 
@@ -112,6 +120,7 @@ public class Inverted_index {
 
 
     //TODO: merge method, write to file method, dictionary for each block, get terms, sort posting lists by increasing docid
+
 
 }
 
