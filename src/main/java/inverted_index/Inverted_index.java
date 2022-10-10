@@ -1,6 +1,5 @@
 package inverted_index;
 
-import lexicon.Lexicon;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import preprocessing.Preprocess_doc;
@@ -105,6 +104,12 @@ public class Inverted_index {
         }
         return countingNewEntries;
     }
+
+    public String getKey(String term) {
+        int hash = Math.abs(term.hashCode()); //prendo il valore assoluto
+        return Integer.toString(hash);
+    }
+
 
     //TODO: merge method, write to file method, dictionary for each block, get terms, sort posting lists by increasing docid
 
