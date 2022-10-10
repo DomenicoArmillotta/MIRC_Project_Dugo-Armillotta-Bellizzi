@@ -53,12 +53,12 @@ public class App
         */
         Lexicon lexicon = new Lexicon();
         Document_index document_index = new Document_index();
-        String path = "docs/collection_test.tsv";
-        //Hashtable<String ,Integer> ht = new Hashtable<>();
-        //ht = lexicon.create_lexicon(path);
+        String path = "docs/collection_test2.tsv";
+        Hashtable<String ,Integer> ht = new Hashtable<>();
+        ht = lexicon.create_lexicon(path);
         //System.out.println(ht);
-        Hashtable<Integer ,List<Integer>> ht = new Hashtable<>();
-        ht = document_index.create_document_index(path);
+        //Hashtable<Integer ,List<Integer>> ht = new Hashtable<>();
+        //ht = document_index.create_document_index(path);
         System.out.println(ht);
 
 

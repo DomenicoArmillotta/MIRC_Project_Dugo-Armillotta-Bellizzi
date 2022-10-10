@@ -1,5 +1,8 @@
 package preprocessing;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -23,15 +26,27 @@ public class Stopword_removal {
         String path = "docs/stopwords_eng.txt";
         File file_stopwords = new File("docs/stopwords_eng.txt");
         Path p = Paths.get(path);
-        BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
-        List<String> list_stopwords = Files.readAllLines(p, StandardCharsets.UTF_8);
-        for (int i = 0; i < (list_word.size()-1); i++) {
-            for (int j = 0; j < list_stopwords.size(); j++) {
-                if(list_word.get(i).equals(list_stopwords.get(j))){
-                    list_word.remove(i);
+        //BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
+        //List<String> list_stopwords = Files.readAllLines(p, StandardCharsets.UTF_8);
+        List<String> list_stopwords = new ArrayList<>();
+        // to not read all the documents in memory we use a LineIterator
+        LineIterator it = FileUtils.lineIterator(file_stopwords, "UTF-8");
+        try {
+            while (it.hasNext()) {
+                String line = it.nextLine();
+                list_stopwords.add(line);
+            }
+        } finally {
+            LineIterator.closeQuietly(it);
+        }
+        List<String> filtered_words = new ArrayList<>();
+        for (String word : list_word) {
+            for (String stopword: list_stopwords) {
+                if(!word.equals(stopword)){
+                    filtered_words.add(word);
                 }
             }
         }
-        return list_word;
+        return filtered_words;
     }
 }
