@@ -9,7 +9,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class Inverted_index {
+public class Inverted_index{
+
+    private Hashtable<String,Integer> dict;
+    private String outputFile;
+
+
+
+    public Inverted_index() {
+        dict = new Hashtable<>();
+    }
+
+
 
     HashMap<String, List<Posting>> index = new HashMap();
     public static void createInvertedIndex(String path) throws IOException {
@@ -92,6 +103,15 @@ public class Inverted_index {
         return terms;
     }
 
+    public Map<String, List<Posting>> sortPosting(HashMap<String, List<Posting>> index) {
+        Map<String, List<Posting>> sorted = new TreeMap;
+        sorted.putAll(index);
+        for (int i=0; i<sorted.size(); i++){
+            List<Posting> values = Collections.sort(sorted.get(i));
+        }
+
+        return sorted;
+    }
 
     public int mergePostings(int doc_id, Map<Integer, Integer> control) {
         int countingNewEntries = 0;
@@ -118,6 +138,22 @@ public class Inverted_index {
         return Integer.toString(hash);
     }
 
+
+    public Hashtable<String, Integer> getDict() {
+        return dict;
+    }
+
+    public void setDict(Hashtable<String, Integer> dict) {
+        this.dict = dict;
+    }
+
+    public String getOutputFile() {
+        return outputFile;
+    }
+
+    public void setOutputFile(String outputFile) {
+        this.outputFile = outputFile;
+    }
 
     //TODO: merge method, write to file method, dictionary for each block, get terms, sort posting lists by increasing docid
 
