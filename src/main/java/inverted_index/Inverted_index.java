@@ -85,6 +85,27 @@ public class Inverted_index {
         }
     }
 
+
+    public int mergePostings(int doc_id, Map<Integer, Integer> control) {
+        int countingNewEntries = 0;
+        for(Map.Entry entry : control.entrySet()) {
+            String term = (String)entry.getKey();
+            int tf = (Short)entry.getValue();
+            Posting posting = new Posting(doc_id, tf);
+
+            //controllo se ci sono posting lists per il termine
+            LinkedList<Posting> postingsList = (LinkedList<Posting>) index.get(term);
+            if (postingsList == null) {
+                //inserisci nuovo termine e incrementa contatore
+                postingsList = new LinkedList<>();
+                index.put(term, postingsList);
+                countingNewEntries++;
+            }
+            postingsList.add(posting);
+        }
+        return countingNewEntries;
+    }
+
     //TODO: merge method, write to file method, dictionary for each block, get terms, sort posting lists by increasing docid
 
 }
