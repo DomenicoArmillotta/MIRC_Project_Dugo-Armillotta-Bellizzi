@@ -18,4 +18,12 @@ public class Stemmer {
         }
         return stemmed_words;
     }
+
+    public String stemming_word (String word) throws IOException {
+        PorterStemmer stemmer = new PorterStemmer();
+        word = stemmer.stripPluralParticiple(word);
+        word = stemmer.stem(word);
+        return word;
+    }
+
 }
