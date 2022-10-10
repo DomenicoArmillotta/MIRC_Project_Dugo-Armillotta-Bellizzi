@@ -44,7 +44,7 @@ public class Document_index {
             String doc_corpus = parts[1];
             List<String> pro_doc = new ArrayList<>();
             //in output è la lista delle parole di un documento
-            pro_doc = preprocess_doc.preprocess_doc(doc_corpus);
+            pro_doc = preprocess_doc.preprocess_doc_optimized(doc_corpus);
             ht.put(doc_id, Arrays.asList(pro_doc.size(),page_rank));
         }
 

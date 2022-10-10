@@ -9,7 +9,7 @@ public class Tokenizer {
     /**
      * Function that takes in input a document and returns the tokens of the document
      * @param  s      the string that represent a document
-     * @return        tokens of that document
+     * @return  terms      tokens of that document
      */
     public List<String> tokenize(String s){
         String[] input = s.split("\t");

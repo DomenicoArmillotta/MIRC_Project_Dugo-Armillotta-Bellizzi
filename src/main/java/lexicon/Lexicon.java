@@ -44,7 +44,7 @@ public class Lexicon {
             String doc_corpus = parts[1];
             List<String> pro_doc = new ArrayList<>();
             //in output è la lista delle parole di un documento
-            pro_doc = preprocess_doc.preprocess_doc(doc_corpus);
+            pro_doc = preprocess_doc.preprocess_doc_optimized(doc_corpus);
             //scorro le parole del documento
             Set<String> mySet = new HashSet<String>();
             for (int j = 0; j < pro_doc.size(); j++) {
