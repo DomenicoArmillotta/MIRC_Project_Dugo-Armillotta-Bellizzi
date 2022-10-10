@@ -102,7 +102,7 @@ public class Preprocess_docTest extends TestCase {
             //in output è la lista delle parole di un documento
             pro_doc = preprocess_doc.preprocess_doc(doc_corpus);
             pro_doc_opt = preprocess_doc.preprocess_doc_optimized(doc_corpus);
-            //System.out.println(pro_doc);
+            System.out.println(pro_doc);
             //System.out.println(pro_doc_opt);
             assertTrue(pro_doc.equals(pro_doc_opt));
         }
