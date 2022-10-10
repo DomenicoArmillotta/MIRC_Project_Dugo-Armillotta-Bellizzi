@@ -105,7 +105,7 @@ public class Inverted_index{
         Map<String, List<Posting>> sorted = new TreeMap;
         sorted.putAll(index);
         for (int i=0; i<sorted.size(); i++){
-            List<Posting> values = Collections.sort(sorted.get(i));
+            //List<Posting> values = Collections.sort(sorted.get(i));
         }
 
         return sorted;
