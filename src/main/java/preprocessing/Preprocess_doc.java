@@ -1,5 +1,8 @@
 package preprocessing;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -43,8 +46,17 @@ public class Preprocess_doc {
         String path = "docs/stopwords_eng.txt";
         File file_stopwords = new File("docs/stopwords_eng.txt");
         Path p = Paths.get(path);
-        BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
-        List<String> list_stopwords = Files.readAllLines(p, StandardCharsets.UTF_8);
+        List<String> list_stopwords = new ArrayList<>();
+        // to not read all the documents in memory we use a LineIterator
+        LineIterator it = FileUtils.lineIterator(file_stopwords, "UTF-8");
+        try {
+            while (it.hasNext()) {
+                String line = it.nextLine();
+                list_stopwords.add(line);
+            }
+        } finally {
+            LineIterator.closeQuietly(it);
+        }
         //START
         String output_normalizer = normalizer.normalize(s);
         String[] input = output_normalizer.split("\t");
@@ -54,14 +66,7 @@ public class Preprocess_doc {
         boolean stop_finded = false;
         while (st.hasMoreTokens()) {
             String term = st.nextToken();
-            stop_finded = false;
-            for (int j = 0; j < list_stopwords.size(); j++) {
-                if(term.equals(list_stopwords.get(j))){
-                    stop_finded = true;
-
-                }
-            }
-            if(stop_finded == false){
+            if(!list_stopwords.contains(term)){
                 term = stemmer.stemming_word(term);
                 terms.add(term);
             }

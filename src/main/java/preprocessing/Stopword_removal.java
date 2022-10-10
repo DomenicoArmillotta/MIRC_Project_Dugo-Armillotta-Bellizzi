@@ -26,8 +26,6 @@ public class Stopword_removal {
         String path = "docs/stopwords_eng.txt";
         File file_stopwords = new File("docs/stopwords_eng.txt");
         Path p = Paths.get(path);
-        //BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
-        //List<String> list_stopwords = Files.readAllLines(p, StandardCharsets.UTF_8);
         List<String> list_stopwords = new ArrayList<>();
         // to not read all the documents in memory we use a LineIterator
         LineIterator it = FileUtils.lineIterator(file_stopwords, "UTF-8");
@@ -41,10 +39,8 @@ public class Stopword_removal {
         }
         List<String> filtered_words = new ArrayList<>();
         for (String word : list_word) {
-            for (String stopword: list_stopwords) {
-                if(!word.equals(stopword)){
-                    filtered_words.add(word);
-                }
+            if(!list_stopwords.contains(word)){
+                filtered_words.add(word);
             }
         }
         return filtered_words;
