@@ -23,11 +23,12 @@ public class Stopword_removal {
      * @throws IOException
      */
     public List<String> remove (List<String> list_word) throws IOException {
+        //path of file of stop words
         String path = "docs/stopwords_eng.txt";
         File file_stopwords = new File("docs/stopwords_eng.txt");
         Path p = Paths.get(path);
         List<String> list_stopwords = new ArrayList<>();
-        // to not read all the documents in memory we use a LineIterator
+        // to not read all the documents in memory we use a LineIterator to improve memory efficiency
         LineIterator it = FileUtils.lineIterator(file_stopwords, "UTF-8");
         try {
             while (it.hasNext()) {
