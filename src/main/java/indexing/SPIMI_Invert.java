@@ -48,11 +48,16 @@ public class SPIMI_Invert {
     //TODO: complete the algorithm!
     //we have for each call a block of the file; for each block we create a inverted index with his dictionary and apply the alghorithm;
     //at the end we use the inverted index method to write to the disk
-    public void spimi_invert(List<String> fileBlock, int n){
+    public void spimi_invert(List<String> fileBlock, int n) throws IOException {
         Inverted_index index = new Inverted_index();//constructor: initializes the dictionary and the output file
+        Preprocess_doc preprocessing = new Preprocess_doc();
         for(String doc : fileBlock){ //each row is a doc!
+            String[] parts = doc.split("\t");
+            int doc_id = Integer.parseInt(parts[0]);
+            String doc_corpus = parts[1];
+            List<String> pro_doc = new ArrayList<>();
+            pro_doc = preprocessing.preprocess_doc_optimized(doc_corpus);
             //read the terms and generate postings
-            
             //write postings
             //at the end of the block we have to sort the posting lists in lexicographic order
             //then we merge the posting lists
