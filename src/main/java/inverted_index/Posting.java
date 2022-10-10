@@ -1,16 +1,16 @@
 package inverted_index;
 
 public class Posting {
-    private int id;
+    private int docid;
     private int termfreq;
 
-    public Posting(int id, int termfreq) {
-        this.id = id;
+    public Posting(int docid, int termfreq) {
+        this.docid = docid;
         this.termfreq = termfreq;
     }
 
     public long getDocumentId() {
-        return id;
+        return docid;
     }
 
     public int getTermFrequency() {
@@ -22,6 +22,6 @@ public class Posting {
     }
 
     public String toString() {
-        return String.format("%d,%d", this.id, this.termfreq);
+        return String.format("%d,%d", this.docid, this.termfreq);
     }
 }

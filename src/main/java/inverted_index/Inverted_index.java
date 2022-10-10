@@ -11,9 +11,9 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public class Inverted_index {
-    Map<String, HashSet<Integer>> index;
 
-    public static void createInvertedIndex(String path, final List<String> tokenStream) throws IOException {
+    HashMap<String, List<Posting>> index = new HashMap();
+    public static void createInvertedIndex(String path) throws IOException {
         Preprocess_doc preprocessing = new Preprocess_doc();
         File file = new File(path);
         Path p = Paths.get(path);
@@ -39,13 +39,19 @@ public class Inverted_index {
             long curTime = System.currentTimeMillis();
             final TreeMap<String, ArrayList<String>> dictionary = new TreeMap<String, ArrayList<String>>();
             // Fill the dictionary.
-            for (final String tokens : pro_doc) {
+            /*for (final String tokens : pro_doc) {
                 if (dictionary.get(parts[0]) == null) {
                     dictionary.put(parts[0], new ArrayList<String>());
                 }
                 dictionary.get(parts[0]).add(parts[1]);
-            }
+            }*/
+
             System.out.println("Sorted in " + ((System.currentTimeMillis() - curTime) / 1000) + " seconds.");
+        /*
+
+        Parse the document and read the docs
+
+         */
 
        /* // Write the block to disk.
         curTime = System.currentTimeMillis();
@@ -62,5 +68,24 @@ public class Inverted_index {
         System.out.println("Block created in " + ((System.currentTimeMillis() - curTime) / 1000) + " seconds.");*/
         }
     }
+    public List<Posting> getPostings(String term){
+        List<Posting> postingList= new LinkedList<>();
+        postingList = index.get(term);
+        return postingList;
+    }
+
+    public void addPosting(String term, int docid, int freq){
+        if(index.get(term) == null){
+            List<Posting> l = new LinkedList<>();
+            l.add(new Posting(docid, freq));
+            index.put(term,l);
+        }
+        else{
+            index.get(term).add(new Posting(docid,freq));
+        }
+    }
+
+    //TODO: merge method, write to file method, dictionary for each block, get terms, sort posting lists by increasing docid
+
 }
 
