@@ -84,14 +84,14 @@ public class Inverted_index{
         return postingList;
     }
 
-    public void addPosting(String term, int docid, int freq){
+    public void addPosting(String term, int docid, int freq, int pos){
         if(index.get(term) == null){
             List<Posting> l = new LinkedList<>();
-            l.add(new Posting(docid, freq));
+            l.add(new Posting(docid, freq, pos));
             index.put(term,l);
         }
         else{
-            index.get(term).add(new Posting(docid,freq));
+            index.get(term).add(new Posting(docid,freq, pos));
         }
     }
 
@@ -121,8 +121,9 @@ public class Inverted_index{
 
     //TODO 11/10/2022: check and modify the algorithm
     public int mergePostings(int doc_id, Map<Integer, Integer> control) {
+        //for each term in the dictionary we retireve the posting lists and merge them together
         int countingNewEntries = 0;
-        for(Map.Entry entry : control.entrySet()) {
+        /*for(Map.Entry entry : control.entrySet()) {
             String term = (String)entry.getKey();
             int tf = (Short)entry.getValue();
             Posting posting = new Posting(doc_id, tf);
@@ -136,13 +137,21 @@ public class Inverted_index{
                 countingNewEntries++;
             }
             postingsList.add(posting);
-        }
+        }*/
         return countingNewEntries;
     }
 
+    //TODO 11/10/2022: metodo merge per singola posting list
+    // decidere se fare un'altra classe per i merged postings o se modificare quella attuale
+    // utilizzando array di interi
+    public void mergePostingList(String term){
+
+    }
+
+
     //TODO 11/10/2022: finish merge method
     // write to file method (from scratch!)
-    public void writeToFile(String nIndex){
+    public void writeToFile(int nIndex){
         BufferedWriter bf = null;
         String outputFilePath = "docs/inverted_index_test"+nIndex+".txt";
         File file = new File(outputFilePath);

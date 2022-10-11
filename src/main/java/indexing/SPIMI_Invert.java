@@ -42,6 +42,7 @@ public class SPIMI_Invert {
             lineIndex = chunkEnd;
         }
         //merge results of each block into one file: for each chunk (0 to nChunk-1) with
+        writeAllFiles(n);
     }
 
     //TODO 10/10/2022: complete the algorithm!
@@ -51,6 +52,7 @@ public class SPIMI_Invert {
         Inverted_index index = new Inverted_index();//constructor: initializes the dictionary and the output file
         Preprocess_doc preprocessing = new Preprocess_doc();
         for(String doc : fileBlock){ //each row is a doc!
+            int cont = 1;
             String[] parts = doc.split("\t");
             int doc_id = Integer.parseInt(parts[0]);
             String doc_corpus = parts[1];
@@ -59,14 +61,20 @@ public class SPIMI_Invert {
             //write postings
             for(String term : pro_doc){
                 index.addToDict(term);
-                index.addPosting(term, doc_id, index.getDict().get(term));
+                index.addPosting(term, doc_id, 1, cont);
             }
+            cont++;
         }
         //at the end of the block we have to sort the posting lists in lexicographic order
         index.sortPosting();
         //then we merge the posting lists
         //index.mergePostings();
         //and write to the output file
+        index.writeToFile(n);
+    }
+
+    private void writeAllFiles(int n){ //writes to the disk all the n block files generated during the algorirhm
+
     }
 
     private static long getFileLines(String path){
