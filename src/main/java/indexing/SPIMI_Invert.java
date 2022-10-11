@@ -20,11 +20,10 @@ public class SPIMI_Invert {
         Path p = Paths.get(path);
         List<String> list_doc = new ArrayList<>();
         long lines = getFileLines(path);
-        int size = (int) Math.ceil(lines/n); //size of each block of lines
+        int CHUNKSIZE = (int) Math.ceil(lines/n); //size of each block of lines
         BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
         String textfileRow = null;
         List<String> fileLines = new ArrayList<>();
-        int CHUNKSIZE = size; //the size of each chunk is the size of the blocks
         int lineIndex = 0;
         int nChunk = 0;
         while (lineIndex < lines) //for each chunk we read all the lines and apply SPIMI
@@ -59,8 +58,13 @@ public class SPIMI_Invert {
             pro_doc = preprocessing.preprocess_doc_optimized(doc_corpus);
             //read the terms and generate postings
             //write postings
+            for(String term : pro_doc){
+                index.addToDict(term);
+                index.addPosting(term, doc_id, index.getDict().get(term));
+            }
         }
         //at the end of the block we have to sort the posting lists in lexicographic order
+        index.sortPosting();
         //then we merge the posting lists
         //and write to the output file
     }

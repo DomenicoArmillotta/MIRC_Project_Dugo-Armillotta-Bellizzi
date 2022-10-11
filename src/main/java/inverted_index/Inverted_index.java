@@ -95,6 +95,14 @@ public class Inverted_index{
         }
     }
 
+    public void addToDict(String term){
+         if(dict.containsKey(term)){
+             dict.put(term, dict.get(term) + 1);
+         }else{
+             dict.put(term , 1);
+         }
+    }
+
     public Set<String> getTerms(){
         Set<String> terms = index.keySet();
         return terms;
@@ -152,6 +160,14 @@ public class Inverted_index{
 
     public void setOutputFile(String outputFile) {
         this.outputFile = outputFile;
+    }
+
+    public HashMap<String, List<Posting>> getIndex() {
+        return index;
+    }
+
+    public void setIndex(HashMap<String, List<Posting>> index) {
+        this.index = index;
     }
 
     //TODO 10/10/2022: finish merge method
