@@ -108,7 +108,7 @@ public class Inverted_index{
         return terms;
     }
 
-
+    //TODO 11/10/2022: check if it works
     public Map<String, List<Posting>> sortPosting() {
         Map<String, List<Posting>> sorted = new TreeMap();
         sorted.putAll(index);
@@ -119,6 +119,7 @@ public class Inverted_index{
         return sorted;
     }
 
+    //TODO 11/10/2022: check and modify the algorithm
     public int mergePostings(int doc_id, Map<Integer, Integer> control) {
         int countingNewEntries = 0;
         for(Map.Entry entry : control.entrySet()) {
@@ -138,6 +139,9 @@ public class Inverted_index{
         }
         return countingNewEntries;
     }
+
+    //TODO 11/10/2022: finish merge method
+    // write to file method (from scratch!)
 
     
     public String getKey(String term) {
@@ -169,10 +173,6 @@ public class Inverted_index{
     public void setIndex(HashMap<String, List<Posting>> index) {
         this.index = index;
     }
-
-    //TODO 10/10/2022: finish merge method
-    // write to file method (from scratch!)
-    // dictionary for each block (add to dict, read terms......)
 
 }
 
