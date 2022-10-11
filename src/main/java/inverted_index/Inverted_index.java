@@ -14,11 +14,12 @@ public class Inverted_index{
     private Hashtable<String,Integer> dict;
     private String outputFile;
 
-    private HashMap<String, List<Posting>> index = new HashMap();
+    private HashMap<String, List<Posting>> index;
 
 
     public Inverted_index() {
         dict = new Hashtable<>();
+        index = new HashMap();
     }
 
     public static void createInvertedIndex(String path) throws IOException {
