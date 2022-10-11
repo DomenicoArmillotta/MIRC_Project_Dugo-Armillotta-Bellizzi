@@ -14,15 +14,13 @@ public class Inverted_index{
     private Hashtable<String,Integer> dict;
     private String outputFile;
 
+    private HashMap<String, List<Posting>> index = new HashMap();
 
 
     public Inverted_index() {
         dict = new Hashtable<>();
     }
 
-
-
-    HashMap<String, List<Posting>> index = new HashMap();
     public static void createInvertedIndex(String path) throws IOException {
         Preprocess_doc preprocessing = new Preprocess_doc();
         File file = new File(path);
@@ -102,7 +100,7 @@ public class Inverted_index{
     }
 
 
-    public Map<String, List<Posting>> sortPosting(HashMap<String, List<Posting>> index) {
+    public Map<String, List<Posting>> sortPosting() {
         Map<String, List<Posting>> sorted = new TreeMap();
         sorted.putAll(index);
         for (int i=0; i<sorted.size(); i++){
