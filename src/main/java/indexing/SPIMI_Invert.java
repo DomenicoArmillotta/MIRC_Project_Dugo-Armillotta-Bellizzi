@@ -54,8 +54,7 @@ public class SPIMI_Invert {
             String[] parts = doc.split("\t");
             int doc_id = Integer.parseInt(parts[0]);
             String doc_corpus = parts[1];
-            List<String> pro_doc = new ArrayList<>();
-            pro_doc = preprocessing.preprocess_doc_optimized(doc_corpus);
+            List<String> pro_doc = preprocessing.preprocess_doc_optimized(doc_corpus);
             //read the terms and generate postings
             //write postings
             for(String term : pro_doc){
@@ -66,6 +65,7 @@ public class SPIMI_Invert {
         //at the end of the block we have to sort the posting lists in lexicographic order
         index.sortPosting();
         //then we merge the posting lists
+        //index.mergePostings();
         //and write to the output file
     }
 

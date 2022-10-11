@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 class NgramIterator {
+    //TODO 11/10/2022: finish and test!!!
     public static List<String> ngrams(int n, String str) {
         List<String> ngrams = new ArrayList<String>();
         String[] words = str.split(" ");

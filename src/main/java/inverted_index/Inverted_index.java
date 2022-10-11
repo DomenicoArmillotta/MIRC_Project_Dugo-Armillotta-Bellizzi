@@ -142,6 +142,44 @@ public class Inverted_index{
 
     //TODO 11/10/2022: finish merge method
     // write to file method (from scratch!)
+    public void writeToFile(String nIndex){
+        BufferedWriter bf = null;
+        String outputFilePath = "docs/inverted_index_test"+nIndex+".txt";
+        File file = new File(outputFilePath);
+
+        try {
+
+            // create new BufferedWriter for the output file
+            bf = new BufferedWriter(new FileWriter(file));
+
+            // iterate map entries
+            for (Map.Entry<String, List<Posting>> entry :
+                    index.entrySet()) {
+
+                // put key and value separated by a colon
+                //bf.write(entry.getKey() + ":" + entry.getValue());
+                //TODO: check if it works and separate for docids and termfreqs!
+                bf.write(entry.getValue().toString()); //write the posting lists
+                // new line
+                bf.newLine();
+            }
+
+            bf.flush();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            try {
+
+                // always close the writer
+                bf.close();
+            }
+            catch (Exception e) {
+            }
+        }
+    }
 
     
     public String getKey(String term) {
