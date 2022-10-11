@@ -4,10 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import preprocessing.Preprocess_doc;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,5 +65,99 @@ public class Lexicon {
     }
 
 
+    public void text_from_lexicon (Hashtable<String ,Integer> map){
+        BufferedWriter bf = null;
+        String outputFilePath = "docs/lexicon_test.tsv";
+        File file = new File(outputFilePath);
+
+        try {
+
+            // create new BufferedWriter for the output file
+            bf = new BufferedWriter(new FileWriter(file));
+
+            // iterate map entries
+            for (Map.Entry<String, Integer> entry :
+                    map.entrySet()) {
+
+                // put key and value separated by a colon
+                bf.write(entry.getKey() + ":"
+                        + entry.getValue());
+
+                // new line
+                bf.newLine();
+            }
+
+            bf.flush();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            try {
+
+                // always close the writer
+                bf.close();
+            }
+            catch (Exception e) {
+            }
+        }
+
+    }
+
+    public Hashtable<String ,Integer> lexicon_from_text (String path){
+        Hashtable<String ,Integer> map = new Hashtable<>();
+        //Map<String, Integer> map = new HashMap<String, Integer>();
+        BufferedReader br = null;
+
+        try {
+
+            // create file object
+            File file = new File(path);
+
+            // create BufferedReader object from the File
+            br = new BufferedReader(new FileReader(file));
+
+            String line = null;
+
+            // read file line by line
+            while ((line = br.readLine()) != null) {
+
+                // split the line by :
+                String[] parts = line.split(":");
+
+                // first part is name, second is number
+                String name = parts[0].trim();
+                String number = parts[1].trim();
+                //String number = parts[1];
+
+
+                // put name, number in HashMap if they are
+                // not empty
+                if (!name.equals("") && !number.equals(""))
+                    map.put(name, Integer.valueOf(number));
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            // Always close the BufferedReader
+            if (br != null) {
+                try {
+                    br.close();
+                }
+                catch (Exception e) {
+                };
+            }
+        }
+
+        return map;
+    }
 }
+
+
+
+
 
