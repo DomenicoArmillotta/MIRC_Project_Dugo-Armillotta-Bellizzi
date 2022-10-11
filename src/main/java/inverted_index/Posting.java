@@ -1,6 +1,6 @@
 package inverted_index;
 
-public class Posting {
+public class Posting implements Comparable<Posting>{
     private int docid;
     private int termfreq;
 
@@ -9,7 +9,7 @@ public class Posting {
         this.termfreq = termfreq;
     }
 
-    public long getDocumentId() {
+    public int getDocumentId() {
         return docid;
     }
 
@@ -23,5 +23,10 @@ public class Posting {
 
     public String toString() {
         return String.format("%d,%d", this.docid, this.termfreq);
+    }
+
+    @Override
+    public int compareTo(Posting o) {
+        return this.docid - o.getDocumentId();
     }
 }

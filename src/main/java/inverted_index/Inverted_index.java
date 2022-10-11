@@ -101,13 +101,14 @@ public class Inverted_index{
         return terms;
     }
 
+
     public Map<String, List<Posting>> sortPosting(HashMap<String, List<Posting>> index) {
-        Map<String, List<Posting>> sorted = new TreeMap;
+        Map<String, List<Posting>> sorted = new TreeMap();
         sorted.putAll(index);
         for (int i=0; i<sorted.size(); i++){
-            //List<Posting> values = Collections.sort(sorted.get(i));
+            List<Posting> l = sorted.get(i);
+            Collections.sort(l);
         }
-
         return sorted;
     }
 
@@ -131,6 +132,7 @@ public class Inverted_index{
         return countingNewEntries;
     }
 
+    
     public String getKey(String term) {
         int hash = Math.abs(term.hashCode()); //prendo il valore assoluto
         return Integer.toString(hash);
@@ -156,8 +158,6 @@ public class Inverted_index{
     //TODO 10/10/2022: finish merge method
     // write to file method (from scratch!)
     // dictionary for each block (add to dict, read terms......)
-    // finish sort posting lists by increasing docid
-
 
 }
 
