@@ -125,25 +125,11 @@ public class Inverted_index{
 
     //TODO 11/10/2022: check and modify the algorithm
     // il merge dovrebbe semplicemente scorrere il dizionario e chiamare mergePostingList per ogni termine
-    public int mergePostings(int doc_id, Map<Integer, Integer> control, int nIndex) {
-        //for each term in the dictionary we retireve the posting lists and merge them together
-        int countingNewEntries = 0;
-        /*for(Map.Entry entry : control.entrySet()) {
-            String term = (String)entry.getKey();
-            int tf = (Short)entry.getValue();
-            Posting posting = new Posting(doc_id, tf);
-
-            //controllo se ci sono posting lists per il termine
-            LinkedList<Posting> postingsList = (LinkedList<Posting>) index.get(term);
-            if (postingsList == null) {
-                //inserisci nuovo termine e incrementa contatore
-                postingsList = new LinkedList<>();
-                index.put(term, postingsList);
-                countingNewEntries++;
-            }
-            postingsList.add(posting);
-        }*/
-        return countingNewEntries;
+    public void mergePostings(int n) {
+        for (Map.Entry d: dict.entrySet()){
+            String term = (String) d.getKey();
+            mergePostingList(term,n);
+        }
     }
 
     //TODO 11/10/2022: metodo merge per singola posting list
