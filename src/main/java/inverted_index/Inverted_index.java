@@ -8,12 +8,15 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.IntStream;
 
 public class Inverted_index{
 
     private Hashtable<String,Integer> dict;
     private String outputFile;
 
+    //TODO 12/10/2022: cambiare List<Posting> in un array di Posting di dimensione prefissata;
+    //  quando esauriamo lo spazio assegniamo ad un array grande il doppio
     private HashMap<String, List<Posting>> index;
 
 
@@ -22,6 +25,7 @@ public class Inverted_index{
         index = new HashMap();
     }
 
+    //TODO 12/10/2022: questo metodo è inutile, appena confermato che non serve cancellare il metodo!
     public static void createInvertedIndex(String path) throws IOException {
         Preprocess_doc preprocessing = new Preprocess_doc();
         File file = new File(path);
@@ -120,7 +124,8 @@ public class Inverted_index{
     }
 
     //TODO 11/10/2022: check and modify the algorithm
-    public int mergePostings(int doc_id, Map<Integer, Integer> control) {
+    // il merge dovrebbe semplicemente scorrere il dizionario e chiamare mergePostingList per ogni termine
+    public int mergePostings(int doc_id, Map<Integer, Integer> control, int nIndex) {
         //for each term in the dictionary we retireve the posting lists and merge them together
         int countingNewEntries = 0;
         /*for(Map.Entry entry : control.entrySet()) {
@@ -142,16 +147,34 @@ public class Inverted_index{
     }
 
     //TODO 11/10/2022: metodo merge per singola posting list
-    // decidere se fare un'altra classe per i merged postings o se modificare quella attuale
-    // utilizzando array di interi
-    public void mergePostingList(String term){
-
+    // prendiamo per ogni termine le posting list (ordinate) e chiamiamo la scrittura per ognuna
+    public void mergePostingList(String term, int n){
+        List<Posting> l = index.get(term);
+        //devo scrivere ogni elemento della posting list in un file separato a seconda dell'elemento
+        int size = l.size();
+        int[] docids = new int[size];
+        int[] positions = new int[size];
+        int freqsum = 0;
+        int i = 0;
+        for(Posting p:  l){
+            if(IntStream.of(docids).anyMatch(x -> x == p.getDocumentId())){
+                docids[i] = p.getDocumentId();
+            }
+            positions[i] = p.getPos();
+            freqsum += p.getTermFrequency();
+            i++;
+        }
+        //TODO: testare se conviene scrivere per un termine alla volta (aprendo tante volte il file) oppure
+        // se conviene tenersi i merged posting in una struttura dati e poi scrivere quella su file
+        writeDocids(docids,n);
+        writePositions(positions,n);
+        writeFrequency(freqsum,n);
     }
 
 
     //TODO 11/10/2022: finish merge method
-    // write to file method (from scratch!)
-    public void writeToFile(int nIndex){
+    // complete the write method for each single file--> divide in three functions
+   /* public void writeToFile(int nIndex){
         BufferedWriter bf = null;
         String outputFilePath = "docs/inverted_index_test"+nIndex+".txt";
         File file = new File(outputFilePath);
@@ -182,6 +205,89 @@ public class Inverted_index{
 
             try {
 
+                // always close the writer
+                bf.close();
+            }
+            catch (Exception e) {
+            }
+        }
+    }*/
+
+    public void writeDocids(int[] docids, int n){
+        BufferedWriter bf = null;
+        String outputFilePath = "docs/inverted_index_test"+n+".txt";
+        File file = new File(outputFilePath);
+
+        try {
+            // create new BufferedWriter for the output file
+            bf = new BufferedWriter(new FileWriter(file));
+            bf.write(docids.toString()); //write the docids for a term
+            // new line
+            bf.newLine();
+            bf.flush();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            try {
+                // always close the writer
+                bf.close();
+            }
+            catch (Exception e) {
+            }
+        }
+    }
+
+    public void writePositions(int[] pos, int n){
+        BufferedWriter bf = null;
+        String outputFilePath = "docs/inverted_index_test"+n+".txt";
+        File file = new File(outputFilePath);
+
+        try {
+
+            // create new BufferedWriter for the output file
+            bf = new BufferedWriter(new FileWriter(file));
+            bf.write(pos.toString()); //write the posting lists
+            // new line
+            bf.newLine();
+            bf.flush();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            try {
+                // always close the writer
+                bf.close();
+            }
+            catch (Exception e) {
+            }
+        }
+    }
+
+    public void writeFrequency(int freq, int n){
+        BufferedWriter bf = null;
+        String outputFilePath = "docs/inverted_index_test"+n+".txt";
+        File file = new File(outputFilePath);
+
+        try {
+
+            // create new BufferedWriter for the output file
+            bf = new BufferedWriter(new FileWriter(file));
+            bf.write(freq); //write the posting lists
+            // new line
+            bf.newLine();
+            bf.flush();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            try {
                 // always close the writer
                 bf.close();
             }

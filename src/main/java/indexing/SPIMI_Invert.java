@@ -68,9 +68,7 @@ public class SPIMI_Invert {
         //at the end of the block we have to sort the posting lists in lexicographic order
         index.sortPosting();
         //then we merge the posting lists
-        //index.mergePostings();
-        //and write to the output file
-        index.writeToFile(n);
+        //index.mergePostings(n);
     }
 
     private void writeAllFiles(int n){ //writes to the disk all the n block files generated during the algorirhm
