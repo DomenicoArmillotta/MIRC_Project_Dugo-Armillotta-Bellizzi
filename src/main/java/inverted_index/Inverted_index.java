@@ -113,14 +113,10 @@ public class Inverted_index{
     }
 
     //TODO 11/10/2022: check if it works
-    public Map<String, List<Posting>> sortPosting() {
-        Map<String, List<Posting>> sorted = new TreeMap();
-        sorted.putAll(index);
-        for (int i=0; i<sorted.size(); i++){
-            List<Posting> l = sorted.get(i);
-            Collections.sort(l);
+    public void sortPosting() {
+        for(List<Posting> postingList : index.values()){
+            Collections.sort(postingList);
         }
-        return sorted;
     }
 
     //TODO 11/10/2022: check and modify the algorithm
