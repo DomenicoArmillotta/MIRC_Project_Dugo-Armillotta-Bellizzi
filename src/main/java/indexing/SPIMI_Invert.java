@@ -55,18 +55,18 @@ public class SPIMI_Invert {
         int index_block = 0;
         try {
             while (it.hasNext() && index_block<=n_block) {
+                List<String> listDoc = new ArrayList<>();
                 int i =0;
                 while(it.hasNext() && i<lines_for_block){
                     String line = it.nextLine();
                     System.out.println(line);
+                    listDoc.add(line);
                     i++;
                 }
                 System.out.println("________Chunk # ------->" + index_block);
+                spimi_invert(listDoc, index_block);
                 index_block++;
-
             }
-
-
 
         } finally {
             LineIterator.closeQuietly(it);

@@ -128,25 +128,25 @@ public class Inverted_index{
     public void mergePostings(int n) {
         for (Map.Entry d: dict.entrySet()){
             String term = (String) d.getKey();
-            mergePostingList(term,n);
+            writeToDisk(term,n);
         }
     }
 
     //TODO 11/10/2022: metodo merge per singola posting list
     // prendiamo per ogni termine le posting list (ordinate) e chiamiamo la scrittura per ognuna
-    public void mergePostingList(String term, int n){
+    public void writeToDisk(String term, int n){
         List<Posting> l = index.get(term);
         //devo scrivere ogni elemento della posting list in un file separato a seconda dell'elemento
         int size = l.size();
         int[] docids = new int[size];
-        int[] positions = new int[size];
+        String[] positions = new String[size];
         int freqsum = 0;
         int i = 0;
         for(Posting p:  l){
             if(IntStream.of(docids).anyMatch(x -> x == p.getDocumentId())){
                 docids[i] = p.getDocumentId();
             }
-            positions[i] = p.getPos();
+            positions[i] += p.getPos() + ", ";
             freqsum += p.getTermFrequency();
             i++;
         }
@@ -226,7 +226,7 @@ public class Inverted_index{
         }
     }
 
-    public void writePositions(int[] pos, int n){
+    public void writePositions(String[] pos, int n){
         BufferedWriter bf = null;
         String outputFilePath = "docs/inverted_index_test"+n+".txt";
         File file = new File(outputFilePath);
