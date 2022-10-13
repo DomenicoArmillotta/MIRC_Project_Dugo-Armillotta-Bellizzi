@@ -15,8 +15,6 @@ public class Inverted_index{
     private Hashtable<String,Integer> dict;
     private String outputFile;
 
-    //TODO 12/10/2022: cambiare List<Posting> in un array di Posting di dimensione prefissata;
-    //  quando esauriamo lo spazio assegniamo ad un array grande il doppio
     private HashMap<String, List<Posting>> index;
 
 
@@ -95,6 +93,14 @@ public class Inverted_index{
             index.put(term,l);
         }
         else{
+            List<Posting> l = index.get(term);
+            for(Posting posting: l){
+                if(posting.getDocumentId() == docid){
+                    posting.addOccurrence();
+                    posting.addPos(pos);
+                    return;
+                }
+            }
             index.get(term).add(new Posting(docid,freq, pos));
         }
     }
@@ -112,26 +118,23 @@ public class Inverted_index{
         return terms;
     }
 
-    //TODO 11/10/2022: check if it works
+    //TODO 13/10/2022: add the sorting of the dictionary
     public void sortPosting() {
         for(List<Posting> postingList : index.values()){
             Collections.sort(postingList);
         }
     }
 
-    //TODO 11/10/2022: check and modify the algorithm
-    // il merge dovrebbe semplicemente scorrere il dizionario e chiamare mergePostingList per ogni termine
+    //TODO 11/10/2022: il metodo non serve
     public void mergePostings(int n) {
         for (Map.Entry d: dict.entrySet()){
             String term = (String) d.getKey();
-            writeToDisk(term,n);
+            //writeToDisk(term,n);
         }
     }
 
-    //TODO 11/10/2022: metodo merge per singola posting list
-    // prendiamo per ogni termine le posting list (ordinate) e chiamiamo la scrittura per ognuna
-    public void writeToDisk(String term, int n){
-        //TODO: add a method to write the dictionary into the disk!
+    public void writeToDisk(int n){
+        writeDict(n);
         writeDocids(n);
         writePositions(n);
         writeFrequency(n);
@@ -149,17 +152,12 @@ public class Inverted_index{
             freqsum += p.getTermFrequency();
             i++;
         }
-        //TODO: testare se conviene scrivere per un termine alla volta (aprendo tante volte il file) oppure
-        // se conviene tenersi i merged posting in una struttura dati e poi scrivere quella su file
         writeDocids(docids,n);
         writePositions(positions,n);
         writeFrequency(freqsum,n);*/
 
     }
 
-
-    //TODO 11/10/2022: finish merge method
-    // complete the write method for each single file--> divide in three functions
    /* public void writeToFile(int nIndex){
         BufferedWriter bf = null;
         String outputFilePath = "docs/inverted_index_test"+nIndex+".txt";
@@ -176,7 +174,6 @@ public class Inverted_index{
 
                 // put key and value separated by a colon
                 //bf.write(entry.getKey() + ":" + entry.getValue());
-                //TODO: check if it works and separate for docids and termfreqs!
                 bf.write(entry.getValue().toString()); //write the posting lists
                 // new line
                 bf.newLine();
@@ -199,9 +196,39 @@ public class Inverted_index{
         }
     }*/
 
+    //TODO 13/10/2022: controllare se va bene fare le scritture così e testarle!
+
+    public void writeDict(int n){
+        BufferedWriter bf = null;
+        String outputFilePath = "docs/lexicon_"+n+".txt";
+        File file = new File(outputFilePath);
+        try {
+            // create new BufferedWriter for the output file
+            bf = new BufferedWriter(new FileWriter(file));
+            for(String term : dict.keySet()) {
+                bf.write(term); //write the docids for a term
+                // new line
+                bf.newLine();
+            }
+            bf.flush();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            try {
+                // always close the writer
+                bf.close();
+            }
+            catch (Exception e) {
+            }
+        }
+    }
+
     public void writeDocids(int n){
         BufferedWriter bf = null;
-        String outputFilePath = "docs/inverted_index_test"+n+".txt";
+        String outputFilePath = "docs/inverted_index_docids_"+n+".txt";
         File file = new File(outputFilePath);
         try {
             // create new BufferedWriter for the output file
@@ -212,9 +239,9 @@ public class Inverted_index{
                     docIds += p.getDocumentId() + " ";
                 }
                 bf.write(docIds); //write the docids for a term
+                // new line
+                bf.newLine();
             }
-            // new line
-            bf.newLine();
             bf.flush();
         }
         catch (IOException e) {
@@ -233,7 +260,7 @@ public class Inverted_index{
 
     public void writePositions(int n){
         BufferedWriter bf = null;
-        String outputFilePath = "docs/inverted_index_test"+n+".txt";
+        String outputFilePath = "docs/inverted_index_positions_"+n+".txt";
         File file = new File(outputFilePath);
 
         try {
@@ -243,12 +270,12 @@ public class Inverted_index{
             for(List<Posting> postingList : index.values()){
                 String positions = "";
                 for(Posting p : postingList){
-                    positions += p.getPos() + " ";
+                    positions += p.getPos().toString();
                 }
-                bf.write(positions); //write the docids for a term
+                bf.write(positions); //write the positions for each term
+                // new line
+                bf.newLine();
             }
-            // new line
-            bf.newLine();
             bf.flush();
         }
         catch (IOException e) {
@@ -267,7 +294,7 @@ public class Inverted_index{
 
     public void writeFrequency(int n){
         BufferedWriter bf = null;
-        String outputFilePath = "docs/inverted_index_test"+n+".txt";
+        String outputFilePath = "docs/inverted_index_term_freq_"+n+".txt";
         File file = new File(outputFilePath);
 
         try {
@@ -275,14 +302,14 @@ public class Inverted_index{
             // create new BufferedWriter for the output file
             bf = new BufferedWriter(new FileWriter(file));
             for(List<Posting> postingList : index.values()){
-                int freq = 0;
+                String freq = "";
                 for(Posting p : postingList){
                     freq += p.getTermFrequency();
                 }
                 bf.write(freq); //write the frequency for a term
+                // new line
+                bf.newLine();
             }
-            // new line
-            bf.newLine();
             bf.flush();
         }
         catch (IOException e) {

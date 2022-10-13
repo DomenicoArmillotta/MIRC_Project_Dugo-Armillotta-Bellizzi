@@ -1,14 +1,17 @@
 package inverted_index;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Posting implements Comparable<Posting>{
     private int docid;
     private int termfreq;
-    private int pos;
+    private List<Integer> pos = new ArrayList<>();
 
     public Posting(int docid, int termfreq, int pos) {
         this.docid = docid;
         this.termfreq = termfreq;
-        this.pos = pos;
+        this.pos.add(pos);
     }
 
     public int getDocumentId() {
@@ -23,11 +26,15 @@ public class Posting implements Comparable<Posting>{
         this.termfreq++;
     }
 
-    public int getPos() {
+    public List getPos() {
         return pos;
     }
 
-    public void setPos(int pos) {
+    public void addPos(int pos) {
+        this.pos.add(pos);
+    }
+
+    public void setPos(List pos) {
         this.pos = pos;
     }
 

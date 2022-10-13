@@ -71,10 +71,8 @@ public class SPIMI_Invert {
         } finally {
             LineIterator.closeQuietly(it);
         }
+        writeAllFiles(n_block); //at the end of the parsing of all the file, merge all the files in the disk
     }
-
-
-
 
 
     //TODO 10/10/2022: complete the algorithm!
@@ -99,12 +97,12 @@ public class SPIMI_Invert {
         }
         //at the end of the block we have to sort the posting lists in lexicographic order
         index.sortPosting();
-        //then we merge the posting lists
-        //index.mergePostings(n);
+        //then we write the block to the disk
+        index.writeToDisk(n);
     }
 
     private void writeAllFiles(int n){ //writes to the disk all the n block files generated during the algorirhm
-
+        //TODO 13/10/2022: implement the index merging to merge dictionary files and inverted index files in the disk
     }
 
     private static long getFileLines(String path){
