@@ -1,5 +1,6 @@
 package lexicon;
 
+import inverted_index.Posting;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import preprocessing.Preprocess_doc;
@@ -66,6 +67,9 @@ public class Lexicon {
 
 
     public void text_from_lexicon (Hashtable<String ,Integer> map){
+        TreeMap<String ,Integer> sortedMap;
+        TreeMap<String ,Integer> tmi = new TreeMap<>(map);
+        sortedMap = tmi;
         BufferedWriter bf = null;
         String outputFilePath = "docs/lexicon_test.tsv";
         File file = new File(outputFilePath);
@@ -77,7 +81,7 @@ public class Lexicon {
 
             // iterate map entries
             for (Map.Entry<String, Integer> entry :
-                    map.entrySet()) {
+                    sortedMap.entrySet()) {
 
                 // put key and value separated by a colon
                 bf.write(entry.getKey() + ":"
