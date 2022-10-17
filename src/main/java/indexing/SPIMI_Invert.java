@@ -1,6 +1,7 @@
 package indexing;
 
 import inverted_index.Inverted_index;
+import lexicon.Lexicon;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import preprocessing.Preprocess_doc;
@@ -11,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 
 public class SPIMI_Invert {
@@ -110,6 +112,10 @@ public class SPIMI_Invert {
         String ouptutDocids = "docs/inverted_index_docids.txt";
         String outputFreqs = "docs/inverted_index_freq.txt";
         String outputPos = "docs/inverted_index_pos.txt";
+        String input_docs = "docs/collection_test.tsv";
+        Lexicon lexicon = new Lexicon();
+        Hashtable<String ,Integer> ht_lexicon = new Hashtable<>();
+        ht_lexicon = lexicon.create_lexicon(input_docs);
         for(String path : inputs){
             File file = new File(path);
             LineIterator it = FileUtils.lineIterator(file, "UTF-8");
