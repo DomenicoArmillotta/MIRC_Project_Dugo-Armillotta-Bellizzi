@@ -17,6 +17,9 @@ public class Inverted_index{
 
     private HashMap<String, List<Posting>> index;
 
+    private TreeMap<String, Integer> sortedDict;
+    private TreeMap<String, List<Posting>> sortedIndex;
+
 
     public Inverted_index() {
         dict = new Hashtable<>();
@@ -120,9 +123,14 @@ public class Inverted_index{
 
     //TODO 13/10/2022: add the sorting of the dictionary
     public void sortPosting() {
+        TreeMap<String, Integer> tmd = new TreeMap<>(dict);
+        sortedDict = tmd;
+        System.out.println(sortedDict);
         for(List<Posting> postingList : index.values()){
             Collections.sort(postingList);
         }
+        TreeMap<String, List<Posting>> tmi = new TreeMap<>(index);
+        sortedIndex = tmi;
     }
 
     //TODO 11/10/2022: il metodo non serve
@@ -205,7 +213,7 @@ public class Inverted_index{
         try {
             // create new BufferedWriter for the output file
             bf = new BufferedWriter(new FileWriter(file));
-            for(String term : dict.keySet()) {
+            for(String term : sortedDict.keySet()) {
                 bf.write(term); //write the docids for a term
                 // new line
                 bf.newLine();
@@ -233,7 +241,7 @@ public class Inverted_index{
         try {
             // create new BufferedWriter for the output file
             bf = new BufferedWriter(new FileWriter(file));
-            for(List<Posting> postingList : index.values()){
+            for(List<Posting> postingList : sortedIndex.values()){
                 String docIds = "";
                 for(Posting p : postingList){
                     docIds += p.getDocumentId() + " ";
@@ -267,7 +275,7 @@ public class Inverted_index{
 
             // create new BufferedWriter for the output file
             bf = new BufferedWriter(new FileWriter(file));
-            for(List<Posting> postingList : index.values()){
+            for(List<Posting> postingList : sortedIndex.values()){
                 String positions = "";
                 for(Posting p : postingList){
                     positions += p.getPos().toString();
@@ -301,7 +309,7 @@ public class Inverted_index{
 
             // create new BufferedWriter for the output file
             bf = new BufferedWriter(new FileWriter(file));
-            for(List<Posting> postingList : index.values()){
+            for(List<Posting> postingList : sortedIndex.values()){
                 String freq = "";
                 for(Posting p : postingList){
                     freq += p.getTermFrequency();

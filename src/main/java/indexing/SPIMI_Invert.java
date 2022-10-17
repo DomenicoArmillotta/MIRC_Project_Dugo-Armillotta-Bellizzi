@@ -63,7 +63,7 @@ public class SPIMI_Invert {
                     listDoc.add(line);
                     i++;
                 }
-                System.out.println("________Chunk # ------->" + index_block);
+                //System.out.println("________Chunk # ------->" + index_block);
                 spimi_invert(listDoc, index_block);
                 index_block++;
             }
@@ -92,8 +92,9 @@ public class SPIMI_Invert {
             for(String term : pro_doc){
                 index.addToDict(term);
                 index.addPosting(term, doc_id, 1, cont);
+                cont++;
             }
-            cont++;
+
         }
         //at the end of the block we have to sort the posting lists in lexicographic order
         index.sortPosting();
