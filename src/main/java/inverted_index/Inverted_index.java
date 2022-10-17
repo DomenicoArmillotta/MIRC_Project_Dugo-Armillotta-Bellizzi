@@ -312,7 +312,7 @@ public class Inverted_index{
             for(List<Posting> postingList : sortedIndex.values()){
                 String freq = "";
                 for(Posting p : postingList){
-                    freq += p.getTermFrequency();
+                    freq += p.getTermFrequency() + " ";
                 }
                 bf.write(freq); //write the frequency for a term
                 // new line
