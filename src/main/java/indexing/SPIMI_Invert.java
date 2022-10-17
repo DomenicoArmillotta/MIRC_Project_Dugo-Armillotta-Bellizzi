@@ -74,8 +74,6 @@ public class SPIMI_Invert {
         writeAllFiles(n_block); //at the end of the parsing of all the file, merge all the files in the disk
     }
 
-
-    //TODO 10/10/2022: complete the algorithm!
     //we have for each call a block of the file; for each block we create a inverted index with his dictionary and apply the alghorithm;
     //at the end we use the inverted index method to write to the disk
     public void spimi_invert(List<String> fileBlock, int n) throws IOException {
@@ -102,8 +100,25 @@ public class SPIMI_Invert {
         index.writeToDisk(n);
     }
 
-    private void writeAllFiles(int n){ //writes to the disk all the n block files generated during the algorirhm
+    private void writeAllFiles(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
         //TODO 13/10/2022: implement the index merging to merge dictionary files and inverted index files in the disk
+        String[] inputs = new String[n];
+        for(int i = 0; i < n; i++){
+            inputs[i] = "docs/lexicon_"+i+".txt";
+        }
+        String outputLex = "docs/lexicon_tot.txt";
+        String ouptutDocids = "docs/inverted_index_docids.txt";
+        String outputFreqs = "docs/inverted_index_freq.txt";
+        String outputPos = "docs/inverted_index_pos.txt";
+        for(String path : inputs){
+            File file = new File(path);
+            LineIterator it = FileUtils.lineIterator(file, "UTF-8");
+            while (it.hasNext()) {
+                String term = it.nextLine(); //term of the dictionary
+                //here the other lexicons are all open
+
+            }
+        }
     }
 
     private static long getFileLines(String path){
