@@ -11,9 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.List;
+import java.util.*;
 
 public class SPIMI_Invert {
     public void spimi_invert_block(String path, int n) throws IOException {
@@ -24,7 +22,7 @@ public class SPIMI_Invert {
         List<String> list_doc = new ArrayList<>();
         long lines = getFileLines(path);
         //load chunk of file of fixed size --> to follow the algorithm
-        int CHUNKSIZE = (int) Math.ceil(lines/n); //size of each block of lines
+        int CHUNKSIZE = (int) Math.ceil(lines / n); //size of each block of lines
         BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
         String textfileRow = null;
         List<String> fileLines = new ArrayList<>();
@@ -35,8 +33,7 @@ public class SPIMI_Invert {
             fileLines.add(textfileRow);
             int chunkEnd = lineIndex + CHUNKSIZE;
 
-            if (chunkEnd >= fileLines.size())
-            {
+            if (chunkEnd >= fileLines.size()) {
                 chunkEnd = fileLines.size();
             }
             //for each block of files, I call SPIMI
@@ -53,13 +50,13 @@ public class SPIMI_Invert {
         File file = new File(read_path);
         LineIterator it = FileUtils.lineIterator(file, "UTF-8");
         long lines = countLineFast(read_path);
-        int lines_for_block = (int) Math.ceil(lines/n_block);
+        int lines_for_block = (int) Math.ceil(lines / n_block);
         int index_block = 0;
         try {
-            while (it.hasNext() && index_block<=n_block) {
+            while (it.hasNext() && index_block <= n_block) {
                 List<String> listDoc = new ArrayList<>();
-                int i =0;
-                while(it.hasNext() && i<lines_for_block){
+                int i = 0;
+                while (it.hasNext() && i < lines_for_block) {
                     String line = it.nextLine();
                     System.out.println(line);
                     listDoc.add(line);
@@ -81,7 +78,7 @@ public class SPIMI_Invert {
     public void spimi_invert(List<String> fileBlock, int n) throws IOException {
         Inverted_index index = new Inverted_index();//constructor: initializes the dictionary and the output file
         Preprocess_doc preprocessing = new Preprocess_doc();
-        for(String doc : fileBlock){ //each row is a doc!
+        for (String doc : fileBlock) { //each row is a doc!
             int cont = 1;
             String[] parts = doc.split("\t");
             int doc_id = Integer.parseInt(parts[0]);
@@ -89,7 +86,7 @@ public class SPIMI_Invert {
             List<String> pro_doc = preprocessing.preprocess_doc_optimized(doc_corpus);
             //read the terms and generate postings
             //write postings
-            for(String term : pro_doc){
+            for (String term : pro_doc) {
                 index.addToDict(term);
                 index.addPosting(term, doc_id, 1, cont);
                 cont++;
@@ -104,36 +101,108 @@ public class SPIMI_Invert {
 
     private void writeAllFiles(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
         //TODO 13/10/2022: implement the index merging to merge dictionary files and inverted index files in the disk
-        String[] inputs = new String[n];
-        for(int i = 0; i < n; i++){
-            inputs[i] = "docs/lexicon_"+i+".txt";
+        String[] lex = new String[n];
+        String[] tf = new String[n];
+        String[] pos = new String[n];
+        String[] id = new String[n];
+
+        for (int i = 0; i < n; i++) {
+            lex[i] = "docs/lexicon_" + i + ".txt";
+            tf[i] = "docs/inverted_index_term_freq_" + i + ".txt";
+            pos[i] = "docs/inverted_index_position_" + i + ".txt";
+            id[i] = "docs/inverted_index_docids_" + i + ".txt";
         }
         String outputLex = "docs/lexicon_tot.txt";
         String ouptutDocids = "docs/inverted_index_docids.txt";
         String outputFreqs = "docs/inverted_index_freq.txt";
         String outputPos = "docs/inverted_index_pos.txt";
         String input_docs = "docs/collection_test.tsv";
+
         Lexicon lexicon = new Lexicon();
-        Hashtable<String ,Integer> ht_lexicon = new Hashtable<>();
+        Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
         ht_lexicon = lexicon.create_lexicon(input_docs);
-        for(String path : inputs){
-            File file = new File(path);
+        //implemento Set --> Lookup su Set o(1);
+        Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
+        Iterator<String> itTerms = globalTerms.iterator();
+        
+        int match = 0;
+        int counterForID = 0;
+        int counterForTf = 0;
+        int counterforPs = 0;
+
+        for (String pathLexicon : lex) {
+            File file = new File(pathLexicon);
             LineIterator it = FileUtils.lineIterator(file, "UTF-8");
-            while (it.hasNext()) {
-                String term = it.nextLine(); //term of the dictionary
+            while (itTerms.hasNext()) {
+                while (it.hasNext()) {
+                    String term = it.nextLine(); //term of the dictionary
+                    List<String> terms = new LinkedList<String>();
+                    terms.add(term);
+                    while (terms.iterator().hasNext()) {
+                        if (Objects.equals(itTerms.next(), terms.iterator().next())) {
+                            // mi segno il la "riga" del match per poi andarla a trovare negli altri file
+                            match++;
+                            for (String pathDocIDs : id) {
+                                File fileId = new File(pathDocIDs);
+                                LineIterator lineIteratorID = FileUtils.lineIterator(fileId, "UTF-8");
+                                while (lineIteratorID.hasNext()) {
+                                    counterForID++;
+                                    Integer docID = (Integer) lineIteratorID.next(); //docid of docids file
+                                    if (counterForID == match) {
+                                        terms.add(String.valueOf(docID));
+                                    } else {
+                                        continue;
+                                    }
+                                }
+                            }
+
+                            for (String pathForTermFrequency : tf) {
+                                File fileTf = new File(pathForTermFrequency);
+                                LineIterator lineIteratorTf = FileUtils.lineIterator(fileTf, "UTF-8");
+                                while (lineIteratorTf.hasNext()) {
+                                    counterForTf++;
+                                    Integer termFreq = (Integer) lineIteratorTf.next(); //termFrequency form frequencies file
+                                    if (counterForTf == match) {
+                                        terms.add(String.valueOf(termFreq));
+                                    } else {
+                                        continue;
+                                    }
+                                }
+                            }
+
+                            for (String pathForPositions : pos) {
+                                File filePos = new File(pathForPositions);
+                                LineIterator lineIteratorPos = FileUtils.lineIterator(filePos, "UTF-8");
+                                while (lineIteratorPos.hasNext()) {
+                                    counterforPs++;
+                                    Integer position = (Integer) lineIteratorPos.next(); //position form positions
+                                    if (counterforPs == match) {
+                                        terms.add(String.valueOf(position));
+                                    } else {
+                                        continue;
+                                    }
+                                }
+                            }
+                        } else {
+                            continue;
+
+                        }
+                    }
+                }
+
+
                 //here the other lexicons are all open
 
             }
         }
     }
 
-    private static long getFileLines(String path){
+    private static long getFileLines(String path) {
         long result = 0;
-        try{
+        try {
             result = Files.lines(Paths.get(path)).count();
 
-        }
-        catch(IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return result;
@@ -167,7 +236,6 @@ public class SPIMI_Invert {
 
         return lines;
     }
-
 
 
 }
