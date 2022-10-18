@@ -59,7 +59,7 @@ public class Compressor {
         while(end<=l) {
             String temp = "";
             temp = bin.substring(start, end);
-            if (end != mod) {
+            if (end != mod) { //if it's not the first block, we put the leading 1 to the string
                 bitString += "1";
                 start += 7;
             } else {

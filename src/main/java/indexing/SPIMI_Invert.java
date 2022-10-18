@@ -6,6 +6,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import preprocessing.Preprocess_doc;
 
+import javax.sound.sampled.Line;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -58,7 +59,7 @@ public class SPIMI_Invert {
                 int i = 0;
                 while (it.hasNext() && i < lines_for_block) {
                     String line = it.nextLine();
-                    System.out.println(line);
+                    //System.out.println(line);
                     listDoc.add(line);
                     i++;
                 }
@@ -106,11 +107,21 @@ public class SPIMI_Invert {
         String[] pos = new String[n];
         String[] id = new String[n];
 
+        BufferedReader[] itLex = new BufferedReader[n];
+        BufferedReader[] itId = new BufferedReader[n];
+        BufferedReader[] itTf = new BufferedReader[n];
+        BufferedReader[] itPos = new BufferedReader[n];
+
+        //open all files
         for (int i = 0; i < n; i++) {
             lex[i] = "docs/lexicon_" + i + ".txt";
             tf[i] = "docs/inverted_index_term_freq_" + i + ".txt";
             pos[i] = "docs/inverted_index_position_" + i + ".txt";
             id[i] = "docs/inverted_index_docids_" + i + ".txt";
+            itLex[i] = Files.newBufferedReader(Paths.get(lex[i]), StandardCharsets.UTF_8);
+            itId[i] = Files.newBufferedReader(Paths.get(id[i]), StandardCharsets.UTF_8);
+            itTf[i] = Files.newBufferedReader(Paths.get(tf[i]), StandardCharsets.UTF_8);
+            itPos[i] = Files.newBufferedReader(Paths.get(pos[i]), StandardCharsets.UTF_8);
         }
         String outputLex = "docs/lexicon_tot.txt";
         String ouptutDocids = "docs/inverted_index_docids.txt";
@@ -124,11 +135,41 @@ public class SPIMI_Invert {
         //implemento Set --> Lookup su Set o(1);
         Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
         Iterator<String> itTerms = globalTerms.iterator();
+
         
         int match = 0;
         int counterForID = 0;
         int counterForTf = 0;
         int counterforPs = 0;
+
+        while (itTerms.hasNext()) {
+            for(BufferedReader br: itLex){
+                String term = br.readLine();
+                while (term != null) {
+                    List<String> terms = new LinkedList<String>();
+                    String lexTerm = itTerms.next(); //it gets the key (?)
+                    //terms.add(term);
+                    if(lexTerm.equals(term)){
+                        //open the posting list
+                        term = br.readLine();
+                    }
+                    for (String pathDocIDs : lex) {
+                        File fileId = new File(pathDocIDs);
+                        LineIterator lineIteratorID = FileUtils.lineIterator(fileId, "UTF-8");
+                        while (lineIteratorID.hasNext()) {
+                            counterForID++;
+                            String w = String.valueOf(lineIteratorID.next());
+                            //Integer docID = (Integer) lineIteratorID.next(); //docid of docids file
+                            if (w.equals(term)) {
+                                //terms.add(String.valueOf(w));
+                            } else {
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         for (String pathLexicon : lex) {
             File file = new File(pathLexicon);
@@ -138,7 +179,21 @@ public class SPIMI_Invert {
                     String term = it.nextLine(); //term of the dictionary
                     List<String> terms = new LinkedList<String>();
                     terms.add(term);
-                    while (terms.iterator().hasNext()) {
+                    for (String pathDocIDs : lex) {
+                        File fileId = new File(pathDocIDs);
+                        LineIterator lineIteratorID = FileUtils.lineIterator(fileId, "UTF-8");
+                        while (lineIteratorID.hasNext()) {
+                            counterForID++;
+                            String w = String.valueOf(lineIteratorID.next());
+                            //Integer docID = (Integer) lineIteratorID.next(); //docid of docids file
+                            if (w.equals(term)) {
+                                //terms.add(String.valueOf(w));
+                            } else {
+                                continue;
+                            }
+                        }
+                    }
+                    /*while (terms.iterator().hasNext()) {
                         if (Objects.equals(itTerms.next(), terms.iterator().next())) {
                             // mi segno il la "riga" del match per poi andarla a trovare negli altri file
                             match++;
@@ -188,7 +243,7 @@ public class SPIMI_Invert {
 
                         }
                     }
-                }
+               */ }
 
 
                 //here the other lexicons are all open
