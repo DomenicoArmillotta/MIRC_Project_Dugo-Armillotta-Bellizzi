@@ -116,7 +116,7 @@ public class SPIMI_Invert {
         for (int i = 0; i < n; i++) {
             lex[i] = "docs/lexicon_" + i + ".txt";
             tf[i] = "docs/inverted_index_term_freq_" + i + ".txt";
-            pos[i] = "docs/inverted_index_position_" + i + ".txt";
+            pos[i] = "docs/inverted_index_positions_" + i + ".txt";
             id[i] = "docs/inverted_index_docids_" + i + ".txt";
             itLex[i] = Files.newBufferedReader(Paths.get(lex[i]), StandardCharsets.UTF_8);
             itId[i] = Files.newBufferedReader(Paths.get(id[i]), StandardCharsets.UTF_8);
@@ -136,24 +136,83 @@ public class SPIMI_Invert {
         Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
         Iterator<String> itTerms = globalTerms.iterator();
 
-        
         int match = 0;
-        int counterForID = 0;
-        int counterForTf = 0;
-        int counterforPs = 0;
-
-        while (itTerms.hasNext()) {
-            for(BufferedReader br: itLex){
-                String term = br.readLine();
-                while (term != null) {
-                    List<String> terms = new LinkedList<String>();
+        int[] cont= new int[n];
+        int currDoc = 0;
+        BufferedWriter outLex = null;
+        BufferedWriter outDocs = null;
+        BufferedWriter outFreqs = null;
+        BufferedWriter outPos = null;
+        try {
+            outLex = new BufferedWriter(new FileWriter(new File(outputLex)));
+            outDocs = new BufferedWriter(new FileWriter(new File(ouptutDocids)));
+            outFreqs = new BufferedWriter(new FileWriter(new File(outputFreqs)));
+            outPos = new BufferedWriter(new FileWriter(new File(outputPos)));
+            while (itTerms.hasNext()) {
+                for (BufferedReader br : itLex) {
                     String lexTerm = itTerms.next(); //it gets the key (?)
-                    //terms.add(term);
-                    if(lexTerm.equals(term)){
-                        //open the posting list
-                        term = br.readLine();
+                    String term = br.readLine(); //term of the vocabulary
+                    HashSet<Integer> docHt = new HashSet<>();
+                    HashSet<Integer> tfHt = new HashSet<>();
+                    HashSet<Integer> posHt = new HashSet<>();
+                    /*List<String> docIdTot = new LinkedList<String>();
+                    List<String> tfTot = new LinkedList<String>();
+                    List<String> posTot = new LinkedList<String>();*/
+                    while (term != null) {
+                        List<String> terms = new LinkedList<String>();
+                        //terms.add(term);
+                        if (lexTerm.equals(term)) {
+                            //open the posting list
+                            String[] docs = itId[currDoc].readLine().split(" ");
+                            for (String doc : docs) {
+                                int docid = Integer.parseInt(doc);
+                                docHt.add(docid); //va ordinata!!!!!!
+                            }
+                            String[] freqs = itId[currDoc].readLine().split(" ");
+                            for (String f : freqs) {
+                                int freq = Integer.parseInt(f);
+                                docHt.add(freq); //va ordinata!!!!!!
+                            }
+                            String[] positions = itId[currDoc].readLine().split(" ");
+                            for (String p : positions) {
+                                int position = Integer.parseInt(p);
+                                docHt.add(position); //va ordinata!!!!!!
+                            }
+                            term = br.readLine(); //read next term only if it matched the current term
+                        }
+                        currDoc = currDoc >= n ? 0 : currDoc++;
+                        TreeSet<Integer> tsdocs = new TreeSet<>(docHt);
+                        TreeSet<Integer> tsfreqs = new TreeSet<>(tfHt);
+                        TreeSet<Integer> tspos = new TreeSet<>(posHt);
+                        outDocs.write(String.valueOf(tsdocs));
+                        //outDocs.write(String.valueOf(currDoc));
+                        outDocs.newLine(); // new line
+                        outFreqs.write(String.valueOf(tsfreqs));
+                        outFreqs.newLine(); // new line
+                        outPos.write(String.valueOf(tspos));
+                        outPos.newLine(); // new line
+                        outDocs.flush();
+                        outFreqs.flush();
+                        outPos.flush();
                     }
-                    for (String pathDocIDs : lex) {
+                }
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            try {
+                // always close the writer
+                outDocs.close();
+                outFreqs.close();
+                outPos.close();
+            }
+            catch (Exception e) {
+            }
+        }
+                    /*for (String pathDocIDs : lex) {
                         File fileId = new File(pathDocIDs);
                         LineIterator lineIteratorID = FileUtils.lineIterator(fileId, "UTF-8");
                         while (lineIteratorID.hasNext()) {
@@ -166,11 +225,8 @@ public class SPIMI_Invert {
                                 continue;
                             }
                         }
-                    }
-                }
-            }
-        }
-
+                    }*/
+        /*
         for (String pathLexicon : lex) {
             File file = new File(pathLexicon);
             LineIterator it = FileUtils.lineIterator(file, "UTF-8");
@@ -243,13 +299,13 @@ public class SPIMI_Invert {
 
                         }
                     }
-               */ }
+               }
 
 
                 //here the other lexicons are all open
 
             }
-        }
+        }*/
     }
 
     private static long getFileLines(String path) {

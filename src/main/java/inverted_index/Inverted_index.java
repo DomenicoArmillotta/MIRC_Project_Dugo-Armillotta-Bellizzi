@@ -155,7 +155,7 @@ public class Inverted_index{
             for(List<Posting> postingList : sortedIndex.values()){
                 String positions = "";
                 for(Posting p : postingList){
-                    positions += p.getPos().toString();
+                    positions += p.getPos().toString() + " ";
                 }
                 bf.write(positions); //write the positions for each term
                 // new line
