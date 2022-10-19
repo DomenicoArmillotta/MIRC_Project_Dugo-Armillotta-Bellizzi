@@ -30,6 +30,14 @@ public class Posting implements Comparable<Posting>{
         return pos;
     }
 
+    public String getPositionString(){
+        String position = "";
+        for(int i = 0; i < pos.size(); i++){
+            position += i == pos.size()-1 ? pos.get(i) : pos.get(i) + "-"; //to avoid conflicting with toString()
+        }
+        return position;
+    }
+
     public void addPos(int pos) {
         this.pos.add(pos);
     }

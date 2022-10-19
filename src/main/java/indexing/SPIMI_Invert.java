@@ -147,7 +147,7 @@ public class SPIMI_Invert {
             while (itTerms.hasNext()) {
                 String lexTerm = itTerms.next();
                 HashMap<Integer, Integer>docHt = new HashMap<>();
-                HashMap<Integer, String> posHt = new HashMap<>();
+                //HashMap<Integer, String> posHt = new HashMap<>();
                 Map<Integer,String> posMap = new HashMap<>();
                 Map<Integer,Integer> freqMap = new HashMap<>();
                 int termf = 0;
