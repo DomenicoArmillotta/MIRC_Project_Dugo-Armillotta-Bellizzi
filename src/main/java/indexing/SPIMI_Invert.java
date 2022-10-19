@@ -53,7 +53,7 @@ public class SPIMI_Invert {
         int lines_for_block = (int) Math.ceil(lines / n_block);
         int index_block = 0;
         try {
-            while (it.hasNext() && index_block < n_block) {
+            while (it.hasNext() && index_block <= n_block) {
                 List<String> listDoc = new ArrayList<>();
                 int i = 0;
                 while (it.hasNext() && i < lines_for_block) {
@@ -101,18 +101,18 @@ public class SPIMI_Invert {
 
     private void writeAllFiles(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
         //TODO 13/10/2022: implement the index merging to merge dictionary files and inverted index files in the disk
-        String[] lex = new String[n];
-        String[] tf = new String[n];
-        String[] pos = new String[n];
-        String[] id = new String[n];
+        String[] lex = new String[n+1];
+        String[] tf = new String[n+1];
+        String[] pos = new String[n+1];
+        String[] id = new String[n+1];
 
-        BufferedReader[] itLex = new BufferedReader[n];
-        BufferedReader[] itId = new BufferedReader[n];
-        BufferedReader[] itTf = new BufferedReader[n];
-        BufferedReader[] itPos = new BufferedReader[n];
+        BufferedReader[] itLex = new BufferedReader[n+1];
+        BufferedReader[] itId = new BufferedReader[n+1];
+        BufferedReader[] itTf = new BufferedReader[n+1];
+        BufferedReader[] itPos = new BufferedReader[n+1];
 
         //open all files
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i <= n; i++) {
             lex[i] = "docs/lexicon_" + i + ".txt";
             tf[i] = "docs/inverted_index_term_freq_" + i + ".txt";
             pos[i] = "docs/inverted_index_positions_" + i + ".txt";
@@ -133,7 +133,7 @@ public class SPIMI_Invert {
         Iterator<String> itTerms = sortedTerms.iterator();
 
         int match = 0;
-        int[] cont= new int[n];
+        int[] cont= new int[n+1];
         BufferedWriter outLex = null;
         BufferedWriter outDocs = null;
         BufferedWriter outFreqs = null;
@@ -153,7 +153,7 @@ public class SPIMI_Invert {
                 int termf = 0;
                 String term = "";
                 //HashSet<String> posHt = new HashSet<>();
-                for(int i = 0; i < n; i++){
+                for(int i = 0; i <= n; i++){
                     String line; //term of the vocabulary
                     /*List<String> docIdTot = new LinkedList<String>();
                     List<String> tfTot = new LinkedList<String>();
