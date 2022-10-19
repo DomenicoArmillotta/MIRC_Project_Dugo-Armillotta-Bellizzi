@@ -67,7 +67,7 @@ public class Inverted_index{
     public void sortPosting() {
         TreeMap<String, Integer> tmd = new TreeMap<>(dict);
         sortedDict = tmd;
-        System.out.println(sortedDict);
+        //System.out.println(sortedDict);
         for(List<Posting> postingList : index.values()){
             Collections.sort(postingList);
         }
@@ -90,10 +90,13 @@ public class Inverted_index{
         try {
             // create new BufferedWriter for the output file
             bf = new BufferedWriter(new FileWriter(file));
+            int cont = 0;
             for(String term : sortedDict.keySet()) {
+                term += " " + cont;
                 bf.write(term); //write the docids for a term
                 // new line
                 bf.newLine();
+                cont++;
             }
             bf.flush();
         }

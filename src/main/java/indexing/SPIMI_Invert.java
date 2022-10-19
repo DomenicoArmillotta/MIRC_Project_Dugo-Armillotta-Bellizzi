@@ -54,7 +54,7 @@ public class SPIMI_Invert {
         int lines_for_block = (int) Math.ceil(lines / n_block);
         int index_block = 0;
         try {
-            while (it.hasNext() && index_block <= n_block) {
+            while (it.hasNext() && index_block < n_block) {
                 List<String> listDoc = new ArrayList<>();
                 int i = 0;
                 while (it.hasNext() && i < lines_for_block) {
@@ -144,15 +144,16 @@ public class SPIMI_Invert {
             outDocs = new BufferedWriter(new FileWriter(new File(ouptutDocids)));
             outFreqs = new BufferedWriter(new FileWriter(new File(outputFreqs)));
             outPos = new BufferedWriter(new FileWriter(new File(outputPos)));
+            int countTerm = 0;
             while (itTerms.hasNext()) {
                 String lexTerm = itTerms.next();
-                HashSet<Integer> docHt = new HashSet<>();
-                HashSet<Integer> tfHt = new HashSet<>();
+                HashMap<Integer, Integer> docHt = new HashMap<>();
+                HashMap<Integer, String> posHt = new HashMap<>();
                 int termf = 0;
-                HashSet<String> posHt = new HashSet<>();
+                String term = "";
+                //HashSet<String> posHt = new HashSet<>();
                 for(int i = 0; i < n; i++){
-                    //String lexTerm = itTerms.next(); //it gets the key (?)
-                    String term;// = itLex[i].readLine(); //term of the vocabulary
+                    String line;// = itLex[i].readLine(); //term of the vocabulary
                     /*List<String> docIdTot = new LinkedList<String>();
                     List<String> tfTot = new LinkedList<String>();
                     List<String> posTot = new LinkedList<String>();*/
@@ -160,36 +161,79 @@ public class SPIMI_Invert {
                     itId[i] = Files.newBufferedReader(Paths.get(id[i]), StandardCharsets.UTF_8);
                     itTf[i] = Files.newBufferedReader(Paths.get(tf[i]), StandardCharsets.UTF_8);
                     itPos[i] = Files.newBufferedReader(Paths.get(pos[i]), StandardCharsets.UTF_8);
-                    while ((term = itLex[i].readLine()) != null) {
+                    while ((line = itLex[i].readLine()) != null) {
                         //System.out.println(i + " " + term + " " + lexTerm);
                         List<String> terms = new LinkedList<String>();
                         //terms.add(term);
+                        String[] inputs = line.split(" ");
+                        term = inputs[0];
+                        int offset = Integer.parseInt(inputs[1]);
                         if (lexTerm.equals(term)) {
+                            int countLine = 0;
+                            String docLine = itId[i].readLine();
+                            String freqLine = itTf[i].readLine();
+                            String posLine = itPos[i].readLine();
+                            while(countLine != offset){
+                                docLine = itId[i].readLine();
+                                freqLine = itTf[i].readLine();
+                                posLine = itPos[i].readLine();
+                                countLine++;
+                            }
+                            String[] docs = docLine.split(" ");
+                            int j = 0;
+                            for (String doc : docs) {
+                                if(doc != " " && doc!= "" && doc!= null) {
+                                    //System.out.println(doc);
+                                    int docid = Integer.parseInt(doc);
+                                    docHt.put(j, docid);
+                                    j++;
+                                }
+                                //System.out.println(docid);
+                            }
+                            String[] freqs = freqLine.split(" ");
+                            for (String f : freqs) {
+                                int freq = Integer.parseInt(f);
+                                //System.out.println(freq);
+                                termf+= freq;
+                            }
+                            j = 0;
+                            String[] positions = posLine.split(" ");
+                            for (String p : positions) {
+                                if(p != null) {
+                                    posHt.put(j, p);
+                                    j++;
+                                }
+                            }
+                            /*
                             //open the posting list
                             //System.out.println(term + " = " + lexTerm);
                             String docLine = itId[i].readLine();
-                            System.out.println(docLine);
+                            //System.out.println(docLine);
                             String[] docs = docLine.split(" ");
+                            int j = 0;
                             for (String doc : docs) {
-                                System.out.println(doc);
-                                int docid = Integer.parseInt(doc);
-                                docHt.add(docid);
-                                System.out.println(docHt);
+                                if(doc != " ") {
+                                    //System.out.println(doc);
+                                    int docid = Integer.parseInt(doc);
+                                    docHt.put(j, docid);
+                                    j++;
+                                }
                                 //System.out.println(docid);
                             }
                             String freqLine = itTf[i].readLine();
                             String[] freqs = freqLine.split(" ");
                             for (String f : freqs) {
                                 int freq = Integer.parseInt(f);
-                                docHt.add(freq);
                                 //System.out.println(freq);
                                 termf+= freq;
                             }
+                            j = 0;
                             String posLine = itPos[i].readLine();
                             String[] positions = posLine.split(" ");
                             for (String p : positions) {
-                                posHt.add(p);
-                            }
+                                posHt.put(j,p);
+                                j++;
+                            }*/
                             break;
                             //term = itLex[i].readLine(); //read next term only if it matched the current term
                         }
@@ -207,19 +251,27 @@ public class SPIMI_Invert {
                         }*/
                     }
                 }
-                TreeSet<Integer> tsdocs = new TreeSet<>(docHt);
-                TreeSet<Integer> tsfreqs = new TreeSet<>(tfHt);
-                TreeSet<String> tspos = new TreeSet<>(posHt);
-                outDocs.write(String.valueOf(tsdocs));
-                outDocs.newLine(); // new line
-                outFreqs.write(String.valueOf(termf));
-                outFreqs.newLine(); // new line
-                outPos.write(String.valueOf(tspos));
-                outPos.newLine(); // new line
-                outDocs.flush();
-                outFreqs.flush();
-                outPos.flush();
-
+                //TODO 19/10/2022: the sorting doesn't always work!
+                TreeMap<Integer, Integer> tsdocs = new TreeMap<>(docHt);
+                TreeMap<Integer, String> tspos = new TreeMap<>(posHt);
+                //TreeSet<String> tspos = new TreeSet<>(posHt);
+                if((termf != 0) && (tsdocs != null) && (tspos != null) && (lexTerm!="")) {
+                    countTerm++;
+                    outDocs.write(String.valueOf(tsdocs.values()));
+                    outDocs.newLine(); // new line
+                    outFreqs.write(String.valueOf(termf));
+                    outFreqs.newLine(); // new line
+                    outPos.write(String.valueOf(tspos.values()));
+                    outPos.newLine(); // new line
+                    //TODO 19/10/2022: add also the other parameters to the lexicon! (e.g. posting list length...)
+                    lexTerm += " " + countTerm;
+                    outLex.write(lexTerm);
+                    outLex.newLine();
+                    outLex.flush();
+                    outDocs.flush();
+                    outFreqs.flush();
+                    outPos.flush();
+                }
             }
 
         }
@@ -233,6 +285,7 @@ public class SPIMI_Invert {
                 outDocs.close();
                 outFreqs.close();
                 outPos.close();
+                outLex.close();
             }
             catch (Exception e) {
             }
