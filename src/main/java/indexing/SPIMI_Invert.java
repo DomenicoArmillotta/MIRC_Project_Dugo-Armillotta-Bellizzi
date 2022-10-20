@@ -14,38 +14,13 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public class SPIMI_Invert {
-    public void spimi_invert_block_pre(String path, int n) throws IOException {
-        //make pre processing of text
-        Preprocess_doc preprocessing = new Preprocess_doc();
-        File file = new File(path);
-        Path p = Paths.get(path);
-        List<String> list_doc = new ArrayList<>();
-        long lines = getFileLines(path);
-        //load chunk of file of fixed size --> to follow the algorithm
-        int CHUNKSIZE = (int) Math.ceil(lines / n); //size of each block of lines
-        BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
-        String textfileRow = null;
-        List<String> fileLines = new ArrayList<>();
-        int lineIndex = 0;
-        int nChunk = 0;
-        while (lineIndex < lines) //for each chunk we read all the lines and apply SPIMI
-        {
-            fileLines.add(textfileRow);
-            int chunkEnd = lineIndex + CHUNKSIZE;
-
-            if (chunkEnd >= fileLines.size()) {
-                chunkEnd = fileLines.size();
-            }
-            //for each block of files, I call SPIMI
-            List<String> mySubList = fileLines.subList(lineIndex, chunkEnd);
-            spimi_invert(mySubList, nChunk);
-            nChunk++;
-            lineIndex = chunkEnd;
-        }
-        //merge results of each block into one file: for each chunk (0 to nChunk-1) with
-        writeAllFiles(n);
-    }
-
+    /**
+     * the collection is divided in n block
+     * then we call the function to apply the algorithm to create the inverted index
+     * @param read_path input file of entire collection
+     * @param n_block number of block that we want
+     * @throws IOException
+     */
     public void spimi_invert_block(String read_path, int n_block) throws IOException {
         File file = new File(read_path);
         LineIterator it = FileUtils.lineIterator(file, "UTF-8");
@@ -53,6 +28,7 @@ public class SPIMI_Invert {
         int lines_for_block = (int) Math.ceil(lines / n_block);
         int index_block = 0;
         try {
+            //create chunk of data , splitting in n different block
             while (it.hasNext() && index_block <= n_block) {
                 List<String> listDoc = new ArrayList<>();
                 int i = 0;
@@ -63,6 +39,7 @@ public class SPIMI_Invert {
                     i++;
                 }
                 //System.out.println("________Chunk # ------->" + index_block);
+                //we elaborate one block at time , so we call the function to create inverted index for the block
                 spimi_invert(listDoc, index_block);
                 index_block++;
             }
@@ -75,6 +52,15 @@ public class SPIMI_Invert {
 
     //we have for each call a block of the file; for each block we create a inverted index with his dictionary and apply the alghorithm;
     //at the end we use the inverted index method to write to the disk
+
+    /**
+     * we elaborate one block at time
+     * for each block an inverted index is created
+     * with the function "writeToDisk" , we wrote on file with the right formatting
+     * @param fileBlock
+     * @param n
+     * @throws IOException
+     */
     public void spimi_invert(List<String> fileBlock, int n) throws IOException {
         Inverted_index index = new Inverted_index();//constructor: initializes the dictionary and the output file
         Preprocess_doc preprocessing = new Preprocess_doc();
@@ -96,9 +82,16 @@ public class SPIMI_Invert {
         //at the end of the block we have to sort the posting lists in lexicographic order
         index.sortPosting();
         //then we write the block to the disk
-        index.writeToDisk(n);
+        index.writeToDisk(n); //-> created a file for each type of info : doc_id,position,tf,term
     }
 
+    /**
+     * this is the merging function of n block created by SPIMI, open all file of the "n" block
+     * make a scanner of global lexicon , and check the nextline of each lexicon of n block (lexicon are ordered) ,
+     * when a match is found it will merge in the finals file according to the info type (tf,doc_id,position)
+     * @param n
+     * @throws IOException
+     */
     private void writeAllFiles(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
         //TODO 13/10/2022: implement the index merging to merge dictionary files and inverted index files in the disk
         String[] lex = new String[n+1];
@@ -127,10 +120,10 @@ public class SPIMI_Invert {
         Lexicon lexicon = new Lexicon();
         Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
         ht_lexicon = lexicon.create_lexicon(input_docs);
-        //implemento Set --> Lookup su Set o(1);
+        //implemento Set --> used for Lookup su Set o(1);
         Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
         TreeSet<String> sortedTerms = new TreeSet<>(globalTerms);
-        Iterator<String> itTerms = sortedTerms.iterator();
+        Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
 
         int match = 0;
         int[] cont= new int[n+1];
@@ -144,36 +137,36 @@ public class SPIMI_Invert {
             outFreqs = new BufferedWriter(new FileWriter(new File(outputFreqs)));
             outPos = new BufferedWriter(new FileWriter(new File(outputPos)));
             int countTerm = 0;
+            //iterate through all term of collections
             while (itTerms.hasNext()) {
                 String lexTerm = itTerms.next();
-                HashMap<Integer, Integer>docHt = new HashMap<>();
-                //HashMap<Integer, String> posHt = new HashMap<>();
-                Map<Integer,String> posMap = new HashMap<>();
-                Map<Integer,Integer> freqMap = new HashMap<>();
+                HashMap<Integer, Integer>docHt = new HashMap<>(); //--> contains doc_id
+                Map<Integer,String> posMap = new HashMap<>(); //--> contains position for each doc_id
+                Map<Integer,Integer> freqMap = new HashMap<>(); //--> contains term freq for each doc_id
                 int termf = 0;
                 String term = "";
-                //HashSet<String> posHt = new HashSet<>();
+                //iterate through all block
                 for(int i = 0; i <= n; i++){
                     String line; //term of the vocabulary
-                    /*List<String> docIdTot = new LinkedList<String>();
-                    List<String> tfTot = new LinkedList<String>();
-                    List<String> posTot = new LinkedList<String>();*/
                     itLex[i] = Files.newBufferedReader(Paths.get(lex[i]), StandardCharsets.UTF_8);
                     itId[i] = Files.newBufferedReader(Paths.get(id[i]), StandardCharsets.UTF_8);
                     itTf[i] = Files.newBufferedReader(Paths.get(tf[i]), StandardCharsets.UTF_8);
                     itPos[i] = Files.newBufferedReader(Paths.get(pos[i]), StandardCharsets.UTF_8);
+                    //iterate through all lexicon of all block
                     while ((line = itLex[i].readLine()) != null) {
                         //System.out.println(i + " " + term + " " + lexTerm);
                         List<String> terms = new LinkedList<String>();
-                        //terms.add(term);
+                        //splitted for the offset
                         String[] inputs = line.split(" ");
                         term = inputs[0];
                         int offset = Integer.parseInt(inputs[1]);
+                        //if a match is founded  , a merge is made
+                        //to reach the right line on files , an offset is used
                         if (lexTerm.equals(term)) {
                             int countLine = 0;
-                            String docLine = itId[i].readLine();
-                            String freqLine = itTf[i].readLine();
-                            String posLine = itPos[i].readLine();
+                            String docLine = itId[i].readLine(); //--> doc_id
+                            String freqLine = itTf[i].readLine(); //--> term freq.
+                            String posLine = itPos[i].readLine(); //--> String of positions
                             while(countLine != offset){
                                 docLine = itId[i].readLine();
                                 freqLine = itTf[i].readLine();
@@ -187,6 +180,8 @@ public class SPIMI_Invert {
                             String[] positions = posLine.split(" ");
                             String[] freqs = freqLine.split(" ");
                             int j = 0;
+                            //iteration of all doc_id for the term
+                            //save on data structure doc_id , term freq. , position to merge with all doc and then write
                             for (String doc : docs) {
                                 if(doc != " " && doc!= "" && doc!= null) {
                                     //System.out.println(doc);
@@ -209,32 +204,21 @@ public class SPIMI_Invert {
                             }
                             break;
                         }
-                        /*for(BufferedReader br: itLex){
-                            br.close();
-                        }
-                        for(BufferedReader br: itId){
-                            br.close();
-                        }
-                        for(BufferedReader br: itPos){
-                            br.close();
-                        }
-                        for(BufferedReader br: itTf){
-                            br.close();
-                        }*/
+
                     }
                 }
                 TreeSet<Integer> tsdocs = new TreeSet<>(docHt.values());
                 TreeMap<Integer, String> tspos = new TreeMap<>(posMap);
                 TreeMap<Integer, Integer> tsfreq = new TreeMap<>(freqMap);
-                //TreeSet<String> tspos = new TreeSet<>(posHt);
-                //if((tsfreq != null) && (tsdocs != null) && (tspos != null) && (lexTerm!="")) {
                 countTerm++;
+                //write on different doc different type of value
+                // new line for each doc for : doc_id , tfreq. , pos
                 outDocs.write(String.valueOf(tsdocs));
-                outDocs.newLine(); // new line
+                outDocs.newLine(); // new line on doc file
                 outFreqs.write(String.valueOf(tsfreq.values()));
-                outFreqs.newLine(); // new line
+                outFreqs.newLine(); // new line on freq file
                 outPos.write(String.valueOf(tspos.values()));
-                outPos.newLine(); // new line
+                outPos.newLine(); // new line on pos file
                 //TODO 19/10/2022: add also the other parameters to the lexicon! (e.g. posting list length...)
                 lexTerm += " " + countTerm;
                 outLex.write(lexTerm);
@@ -243,7 +227,6 @@ public class SPIMI_Invert {
                 outDocs.flush();
                 outFreqs.flush();
                 outPos.flush();
-                //}
             }
 
         }
@@ -253,7 +236,7 @@ public class SPIMI_Invert {
         finally {
 
             try {
-                // always close the writer
+                // always close the writer at the end of merging phase
                 outDocs.close();
                 outFreqs.close();
                 outPos.close();
@@ -264,19 +247,14 @@ public class SPIMI_Invert {
         }
     }
 
-    private static long getFileLines(String path) {
-        long result = 0;
-        try {
-            result = Files.lines(Paths.get(path)).count();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return result;
-    }
-
-
     //fast to count file line --> 5milion in 4/5 s
+
+    /**
+     * count the number of lines in the file
+     * it should be the fastest way possible according to online benchmark
+     * @param fileName_path
+     * @return
+     */
     public static long countLineFast(String fileName_path) {
 
         long lines = 0;
