@@ -145,13 +145,14 @@ public class SPIMI_Invert {
             //iterate through all term of collections
             while (itTerms.hasNext()) {
                 String lexTerm = itTerms.next();
-                HashMap<Integer, Integer>docHt = new HashMap<>(); //--> contains doc_id
                 Map<Integer,String> posMap = new HashMap<>(); //--> contains position for each doc_id
                 Map<Integer,Integer> freqMap = new HashMap<>(); //--> contains term freq for each doc_id
+                HashSet<Integer> docHs = new HashSet<>(); //--> contains doc_id
                 int termf = 0;
                 String term = "";
                 //iterate through all block
                 for(int i = 0; i <= n; i++){
+                    int j = 0;
                     String line; //term of the vocabulary
                     itLex[i] = Files.newBufferedReader(Paths.get(lex[i]), StandardCharsets.UTF_8);
                     itId[i] = Files.newBufferedReader(Paths.get(id[i]), StandardCharsets.UTF_8);
@@ -184,27 +185,27 @@ public class SPIMI_Invert {
                             String[] docs = docLine.split(" ");
                             String[] positions = posLine.split(" ");
                             String[] freqs = freqLine.split(" ");
-                            int j = 0;
                             //iteration of all doc_id for the term
                             //save on data structure doc_id , term freq. , position to merge with all doc and then write
                             for (String doc : docs) {
-                                if(doc != " " && doc!= "" && doc!= null) {
                                     //System.out.println(doc);
                                     int docid = Integer.parseInt(doc);
-                                    docHt.put(j, docid);
+                                    //docHt.put(j, docid);
+                                    docHs.add(docid);
                                     posMap.put(docid, positions[j]);
                                     int freq = Integer.parseInt(freqs[j]);
+                                    freqMap.put(docid, freq);
+                                    j++;
                                     //System.out.println(freq);
-                                    if(freqMap.get(docid) == null){
-                                        freqMap.put(docid, freq);
+                                    /*if(freqMap.get(j) == null){
+                                        freqMap.put(j, freq);
                                     }
                                     else {
-                                        termf = freqMap.get(docid);
+                                        termf = freqMap.get(j);
                                         termf += freq;
-                                        freqMap.put(docid, termf);
-                                    }
-                                    j++;
-                                }
+                                        freqMap.put(j, termf);
+                                    }*/
+
                                 //System.out.println(docid);
                             }
                             break;
@@ -213,9 +214,8 @@ public class SPIMI_Invert {
                     }
                 }
 
-
-
-                TreeSet<Integer> tsdocs = new TreeSet<>(docHt.values());
+                //TreeSet<Integer> tsdocs = new TreeSet<>(docHt.values());
+                TreeSet<Integer> tsdocs = new TreeSet<>(docHs);
                 TreeMap<Integer, String> tspos = new TreeMap<>(posMap);
                 TreeMap<Integer, Integer> tsfreq = new TreeMap<>(freqMap);
                 countTerm++;

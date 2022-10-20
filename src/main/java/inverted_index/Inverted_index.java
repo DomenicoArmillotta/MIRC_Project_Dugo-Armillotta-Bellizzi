@@ -123,9 +123,15 @@ public class Inverted_index{
             bf = new BufferedWriter(new FileWriter(file));
             for(List<Posting> postingList : sortedIndex.values()){
                 String docIds = "";
-                for(Posting p : postingList){
-                    docIds += p.getDocumentId() + " ";
+                if(postingList.size() == 1){
+                    docIds += postingList.get(0).getDocumentId();
                 }
+                else{
+                    for(Posting p : postingList){
+                        docIds += p.getDocumentId() + " ";
+                    }
+                }
+
                 bf.write(docIds); //write the docids for a term
                 // new line
                 bf.newLine();
@@ -157,9 +163,14 @@ public class Inverted_index{
             bf = new BufferedWriter(new FileWriter(file));
             for(List<Posting> postingList : sortedIndex.values()){
                 String positions = "";
-                for(Posting p : postingList){
-                    positions += p.getPositionString() + " ";
-                    //positions += p.getPos().toString() + " ";
+                if(postingList.size() == 1){
+                    positions = postingList.get(0).getPositionString();
+                }
+                else{
+                    for(Posting p : postingList){
+                        positions += p.getPositionString() + " ";
+                        //positions += p.getPos().toString() + " ";
+                    }
                 }
                 bf.write(positions); //write the positions for each term
                 // new line
@@ -192,8 +203,13 @@ public class Inverted_index{
             bf = new BufferedWriter(new FileWriter(file));
             for(List<Posting> postingList : sortedIndex.values()){
                 String freq = "";
-                for(Posting p : postingList){
-                    freq += p.getTermFrequency() + " ";
+                if(postingList.size() == 1){
+                    freq += postingList.get(0).getTermFrequency();
+                }
+                else{
+                    for(Posting p : postingList){
+                        freq += p.getTermFrequency() + " ";
+                    }
                 }
                 bf.write(freq); //write the frequency for a term
                 // new line
