@@ -13,10 +13,25 @@ public class Posting implements Comparable<Posting>{
         this.termfreq = termfreq;
         this.pos.add(pos);
     }
+    public Posting(int docid, int termfreq, List<Integer> pos) {
+        this.docid = docid;
+        this.termfreq = termfreq;
+        this.pos = pos;
+    }
 
     public int getDocumentId() {
         return docid;
     }
+
+    public void setDocid(int docid) {
+        this.docid = docid;
+    }
+
+    public void setTermfreq(int termfreq) {
+        this.termfreq = termfreq;
+    }
+
+
 
     public int getTermFrequency() {
         return termfreq;
