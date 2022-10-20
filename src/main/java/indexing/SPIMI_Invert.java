@@ -111,6 +111,7 @@ public class SPIMI_Invert {
             pos[i] = "docs/inverted_index_positions_" + i + ".txt";
             id[i] = "docs/inverted_index_docids_" + i + ".txt";
         }
+
         String outputLex = "docs/lexicon_tot.txt";
         String ouptutDocids = "docs/inverted_index_docids.txt";
         String outputFreqs = "docs/inverted_index_freq.txt";
@@ -124,19 +125,23 @@ public class SPIMI_Invert {
         Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
         TreeSet<String> sortedTerms = new TreeSet<>(globalTerms);
         Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
+        LinkedList<String> lengthPosting = new LinkedList<String>(globalTerms);
+        Iterator<String> itPostings = lengthPosting.iterator();
 
-        int match = 0;
-        int[] cont= new int[n+1];
         BufferedWriter outLex = null;
         BufferedWriter outDocs = null;
         BufferedWriter outFreqs = null;
         BufferedWriter outPos = null;
+
         try {
             outLex = new BufferedWriter(new FileWriter(new File(outputLex)));
             outDocs = new BufferedWriter(new FileWriter(new File(ouptutDocids)));
             outFreqs = new BufferedWriter(new FileWriter(new File(outputFreqs)));
             outPos = new BufferedWriter(new FileWriter(new File(outputPos)));
+            String contentLexicon = "------------------------------LEXICON--------------------------\n"+"Term"+"--"+"Occurences"+"--"+"Posting List size\n";
+            outLex.write(contentLexicon);
             int countTerm = 0;
+
             //iterate through all term of collections
             while (itTerms.hasNext()) {
                 String lexTerm = itTerms.next();
@@ -207,10 +212,14 @@ public class SPIMI_Invert {
 
                     }
                 }
+
+
+
                 TreeSet<Integer> tsdocs = new TreeSet<>(docHt.values());
                 TreeMap<Integer, String> tspos = new TreeMap<>(posMap);
                 TreeMap<Integer, Integer> tsfreq = new TreeMap<>(freqMap);
                 countTerm++;
+                int lengthPostingList = tsdocs.size();
                 //write on different doc different type of value
                 // new line for each doc for : doc_id , tfreq. , pos
                 outDocs.write(String.valueOf(tsdocs));
@@ -219,8 +228,7 @@ public class SPIMI_Invert {
                 outFreqs.newLine(); // new line on freq file
                 outPos.write(String.valueOf(tspos.values()));
                 outPos.newLine(); // new line on pos file
-                //TODO 19/10/2022: add also the other parameters to the lexicon! (e.g. posting list length...)
-                lexTerm += " " + countTerm;
+                lexTerm += " " + countTerm + " " + lengthPostingList;
                 outLex.write(lexTerm);
                 outLex.newLine();
                 outLex.flush();
