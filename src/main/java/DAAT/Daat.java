@@ -1,9 +1,12 @@
 package DAAT;
 
 import inverted_index.Posting;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import preprocessing.Preprocess_doc;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -41,10 +44,14 @@ public class Daat {
         String inputFreqs = "docs/inverted_index_freq.txt";
         String inputPos = "docs/inverted_index_pos.txt";
         //created buffer to read file
-        BufferedReader itLex  = Files.newBufferedReader(Paths.get(inputLex), StandardCharsets.UTF_8);
+        /*BufferedReader itLex  = Files.newBufferedReader(Paths.get(inputLex), StandardCharsets.UTF_8);
         BufferedReader itId  = Files.newBufferedReader(Paths.get(inputDocids), StandardCharsets.UTF_8);
         BufferedReader itTf  = Files.newBufferedReader(Paths.get(inputFreqs), StandardCharsets.UTF_8);
-        BufferedReader itPos  = Files.newBufferedReader(Paths.get(inputPos), StandardCharsets.UTF_8);
+        BufferedReader itPos  = Files.newBufferedReader(Paths.get(inputPos), StandardCharsets.UTF_8);*/
+        LineIterator itLex = FileUtils.lineIterator(new File(inputLex), "UTF-8");
+        LineIterator itId = FileUtils.lineIterator(new File(inputDocids), "UTF-8");
+        LineIterator itTf = FileUtils.lineIterator(new File(inputFreqs), "UTF-8");
+        LineIterator itPos = FileUtils.lineIterator(new File(inputPos), "UTF-8");
         String lexLine = null;
         //in this structure we have all posting of term of query
         HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
@@ -54,7 +61,22 @@ public class Daat {
             List<Posting> postings_for_term = new ArrayList<>();
             int offset = 0;
             //when is founded the term , a copy in data structure of inverted index is made
-            while((lexLine = itLex.readLine()) != null){
+            while(itLex.hasNext()){
+                lexLine = itLex.nextLine();
+                String[] inputs = lexLine.split(" ");
+                if(inputs[0].equals(term)){
+                    offset = Integer.parseInt(inputs[1]); //--> this is the offset of term , we can use to retrive other info
+                    System.out.println(offset);
+                }
+            }
+            int i = 0;
+            while(i<(offset-1)) {
+                itId.nextLine();
+                itTf.nextLine();
+                itPos.nextLine();
+                i++;
+            }
+            /*while((lexLine = itLex.readLine()) != null){
                 String[] inputs = lexLine.split(" ");
                 if(inputs[0].equals(term)){
                     offset = Integer.parseInt(inputs[1]); //--> this is the offset of term , we can use to retrive other info
@@ -68,15 +90,18 @@ public class Daat {
                 itTf.readLine();
                 itPos.readLine();
                 i++;
-            }
+            }*/
             String docLine = null;
             String posLine = null;
             String tfLine = null;
-            docLine = itId.readLine();
+            //docLine = itId.readLine();
+            docLine = itId.nextLine();
             docLine = docLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
-            posLine = itPos.readLine();
+            //posLine = itPos.readLine();
+            posLine = itPos.nextLine();
             posLine = posLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
-            tfLine = itTf.readLine();
+            //tfLine = itTf.readLine();
+            tfLine = itTf.nextLine();
             tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
             postings_for_term = createPosting(docLine,tfLine,posLine);
             inverted_index_query.put(term,postings_for_term);
@@ -112,7 +137,7 @@ public class Daat {
             }else{
                 posList.add(Integer.parseInt(posDoc[i]));
                 Posting posting = new Posting(Integer.parseInt(docs_id[i]),Integer.parseInt(tfs[i]),posList);
-                System.out.println("doc id  : "+docs_id[i]+" pos : "+ posList + " tfs : " + tfs[i]);
+                System.out.println("doc id : "+docs_id[i]+" pos : "+ posList + " tfs : " + tfs[i]);
                 postings.add(posting);
             }
         }

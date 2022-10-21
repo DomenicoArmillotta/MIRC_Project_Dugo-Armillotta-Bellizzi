@@ -138,8 +138,8 @@ public class SPIMI_Invert {
             outDocs = new BufferedWriter(new FileWriter(new File(ouptutDocids)));
             outFreqs = new BufferedWriter(new FileWriter(new File(outputFreqs)));
             outPos = new BufferedWriter(new FileWriter(new File(outputPos)));
-            String contentLexicon = "------------------------------LEXICON--------------------------\n"+"Term"+"--"+"Occurences"+"--"+"Posting List size\n";
-            outLex.write(contentLexicon);
+            //String contentLexicon = "------------------------------LEXICON--------------------------\n"+"Term"+"--"+"Occurences"+"--"+"Posting List size\n";
+            //outLex.write(contentLexicon);
             int countTerm = 0;
 
             //iterate through all term of collections
