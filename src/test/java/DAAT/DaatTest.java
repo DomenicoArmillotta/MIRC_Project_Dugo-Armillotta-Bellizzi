@@ -8,6 +8,7 @@ import java.io.IOException;
 public class DaatTest extends TestCase {
     public void testDaat() throws IOException {
         Daat daat = new Daat();
-        daat.daat("1841");
+        String query = "1841";
+
     }
 }

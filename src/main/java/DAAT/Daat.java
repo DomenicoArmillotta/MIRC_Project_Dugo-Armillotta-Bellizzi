@@ -16,7 +16,22 @@ import java.util.List;
 
 //non ci sono metodi per saltare la lettura dell n righe in un file
 public class Daat {
-    public void daat (String query_string) throws IOException {
+    public void daat(String query_string) throws IOException {
+        HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
+        inverted_index_query = create_inverted_query(query_string);
+        int[][] rank = new int[10][2];
+
+
+
+    }
+
+
+
+
+
+
+
+    public HashMap<String, List<Posting>> create_inverted_query (String query_string) throws IOException {
         Preprocess_doc preprocessing = new Preprocess_doc();
         //preprocessing of query
         List<String> pro_query = new ArrayList<>();
@@ -69,13 +84,7 @@ public class Daat {
         }
 
         //System.out.println(inverted_index_query.get("1850").get(0).getPositionString());
-
-
-
-
-
-
-
+        return inverted_index_query;
     }
 
     //a posting list for each term
@@ -106,12 +115,7 @@ public class Daat {
                 System.out.println("doc id  : "+docs_id[i]+" pos : "+ posList + " tfs : " + tfs[i]);
                 postings.add(posting);
             }
-
-
-
         }
-
-
         return postings;
     }
 }
