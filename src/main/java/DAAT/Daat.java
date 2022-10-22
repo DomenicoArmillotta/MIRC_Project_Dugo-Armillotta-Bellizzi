@@ -45,10 +45,6 @@ public class Daat {
         String inputFreqs = "docs/inverted_index_freq.txt";
         String inputPos = "docs/inverted_index_pos.txt";
         //created buffer to read file
-        /*BufferedReader itLex  = Files.newBufferedReader(Paths.get(inputLex), StandardCharsets.UTF_8);
-        BufferedReader itId  = Files.newBufferedReader(Paths.get(inputDocids), StandardCharsets.UTF_8);
-        BufferedReader itTf  = Files.newBufferedReader(Paths.get(inputFreqs), StandardCharsets.UTF_8);
-        BufferedReader itPos  = Files.newBufferedReader(Paths.get(inputPos), StandardCharsets.UTF_8);*/
         String lexLine = null;
         //in this structure we have all posting of term of query
         HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
@@ -78,31 +74,14 @@ public class Daat {
                 itPos.nextLine();
                 i++;
             }
-            /*while((lexLine = itLex.readLine()) != null){
-                String[] inputs = lexLine.split(" ");
-                if(inputs[0].equals(term)){
-                    offset = Integer.parseInt(inputs[1]); //--> this is the offset of term , we can use to retrive other info
-                    System.out.println(offset);
-                }
-            }
-            //go to the offset to retrieve all info : doc_id , tf , pos
-            int i=0;
-            while(i<(offset-1)){
-                itId.readLine();
-                itTf.readLine();
-                itPos.readLine();
-                i++;
-            }*/
+
             String docLine = null;
             String posLine = null;
             String tfLine = null;
-            //docLine = itId.readLine();
             docLine = itId.nextLine();
             docLine = docLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
-            //posLine = itPos.readLine();
             posLine = itPos.nextLine();
             posLine = posLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
-            //tfLine = itTf.readLine();
             tfLine = itTf.nextLine();
             tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
             postings_for_term = createPosting(docLine,tfLine,posLine);
