@@ -23,17 +23,14 @@ public class Daat {
         HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
         inverted_index_query = create_inverted_query(query_string);
         int[][] rank = new int[10][2];
-
+        //TODO 22/10/2022: initialize the data structures and implement the scoring function
+        // remember that documents have to be processed in parallel in increasing order of docid
+        // also we need to implement the iterators to go through all the posting lists we need
 
 
     }
 
-
-
-
-
-
-
+    //TODO 22/10/2022: aggiungere la decompressione!!!!
     public HashMap<String, List<Posting>> create_inverted_query (String query_string) throws IOException {
         Preprocess_doc preprocessing = new Preprocess_doc();
         //preprocessing of query
@@ -82,6 +79,87 @@ public class Daat {
             docLine = docLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
             posLine = itPos.nextLine();
             posLine = posLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+            tfLine = itTf.nextLine();
+            tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+            postings_for_term = createPosting(docLine,tfLine,posLine);
+            inverted_index_query.put(term,postings_for_term);
+
+        }
+
+        //System.out.println(inverted_index_query.get("1850").get(0).getPositionString());
+        return inverted_index_query;
+    }
+
+
+    public HashMap<String, List<Posting>> create_inverted_query_bin (String query_string) throws IOException {
+        Preprocess_doc preprocessing = new Preprocess_doc();
+        //preprocessing of query
+        List<String> pro_query = new ArrayList<>();
+        pro_query = preprocessing.preprocess_doc_optimized(query_string);
+        System.out.println(pro_query);
+        String inputLex = "docs/lexicon_tot.bin";
+        String inputDocids = "docs/inverted_index_docids.bin";
+        String inputFreqs = "docs/inverted_index_freq.bin";
+        String inputPos = "docs/inverted_index_pos.bin";
+        //created buffer to read file
+        /*BufferedReader itLex  = Files.newBufferedReader(Paths.get(inputLex), StandardCharsets.UTF_8);
+        BufferedReader itId  = Files.newBufferedReader(Paths.get(inputDocids), StandardCharsets.UTF_8);
+        BufferedReader itTf  = Files.newBufferedReader(Paths.get(inputFreqs), StandardCharsets.UTF_8);
+        BufferedReader itPos  = Files.newBufferedReader(Paths.get(inputPos), StandardCharsets.UTF_8);*/
+        String lexLine = null;
+        //in this structure we have all posting of term of query
+        HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
+        ArrayList<Posting> postings = new ArrayList<>();
+        //iterate through all term of query
+        for(String term : pro_query ){
+            LineIterator itLex = FileUtils.lineIterator(new File(inputLex), "UTF-8");
+            LineIterator itId = FileUtils.lineIterator(new File(inputDocids), "UTF-8");
+            LineIterator itTf = FileUtils.lineIterator(new File(inputFreqs), "UTF-8");
+            LineIterator itPos = FileUtils.lineIterator(new File(inputPos), "UTF-8");
+            System.out.println(term);
+            List<Posting> postings_for_term = new ArrayList<>();
+            int offset = 0;
+            //when is founded the term , a copy in data structure of inverted index is made
+            while(itLex.hasNext()){
+                lexLine = itLex.nextLine();
+                String[] inputs = lexLine.split(" ");
+                if(inputs[0].equals(term)){
+                    offset = Integer.parseInt(inputs[1]); //--> this is the offset of term , we can use to retrive other info
+                    //System.out.println(offset);
+                }
+            }
+            int i = 0;
+            while(i<(offset-1)) {
+                itId.nextLine();
+                itTf.nextLine();
+                itPos.nextLine();
+                i++;
+            }
+            /*while((lexLine = itLex.readLine()) != null){
+                String[] inputs = lexLine.split(" ");
+                if(inputs[0].equals(term)){
+                    offset = Integer.parseInt(inputs[1]); //--> this is the offset of term , we can use to retrive other info
+                    System.out.println(offset);
+                }
+            }
+            //go to the offset to retrieve all info : doc_id , tf , pos
+            int i=0;
+            while(i<(offset-1)){
+                itId.readLine();
+                itTf.readLine();
+                itPos.readLine();
+                i++;
+            }*/
+            String docLine = null;
+            String posLine = null;
+            String tfLine = null;
+            //docLine = itId.readLine();
+            docLine = itId.nextLine();
+            docLine = docLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+            //posLine = itPos.readLine();
+            posLine = itPos.nextLine();
+            posLine = posLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+            //tfLine = itTf.readLine();
             tfLine = itTf.nextLine();
             tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
             postings_for_term = createPosting(docLine,tfLine,posLine);

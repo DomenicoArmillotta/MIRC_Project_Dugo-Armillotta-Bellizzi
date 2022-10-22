@@ -9,7 +9,6 @@ import preprocessing.Preprocess_doc;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -47,7 +46,7 @@ public class SPIMI_Invert {
         } finally {
             LineIterator.closeQuietly(it);
         }
-        writeAllFiles(n_block); //at the end of the parsing of all the file, merge all the files in the disk
+        writeAllFilesASCII(n_block); //at the end of the parsing of all the file, merge all the files in the disk
     }
 
     //we have for each call a block of the file; for each block we create a inverted index with his dictionary and apply the alghorithm;
@@ -92,8 +91,10 @@ public class SPIMI_Invert {
      * @param n
      * @throws IOException
      */
-    private void writeAllFiles(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
-        //TODO 13/10/2022: implement the index merging to merge dictionary files and inverted index files in the disk
+
+
+    //TODO 22/10/2022: aggiungere la compresssione (da qui o da dentro la creazione dei blocchi?)
+    private void writeAllFilesASCII(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
         String[] lex = new String[n+1];
         String[] tf = new String[n+1];
         String[] pos = new String[n+1];
@@ -126,7 +127,6 @@ public class SPIMI_Invert {
         TreeSet<String> sortedTerms = new TreeSet<>(globalTerms);
         Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
         LinkedList<String> lengthPosting = new LinkedList<String>(globalTerms);
-        Iterator<String> itPostings = lengthPosting.iterator();
 
         BufferedWriter outLex = null;
         BufferedWriter outDocs = null;
@@ -138,6 +138,153 @@ public class SPIMI_Invert {
             outDocs = new BufferedWriter(new FileWriter(new File(ouptutDocids)));
             outFreqs = new BufferedWriter(new FileWriter(new File(outputFreqs)));
             outPos = new BufferedWriter(new FileWriter(new File(outputPos)));
+            int countTerm = 0;
+
+            //iterate through all term of collections
+            while (itTerms.hasNext()) {
+                String lexTerm = itTerms.next();
+                Map<Integer,String> posMap = new HashMap<>(); //--> contains position for each doc_id
+                Map<Integer,Integer> freqMap = new HashMap<>(); //--> contains term freq for each doc_id
+                HashSet<Integer> docHs = new HashSet<>(); //--> contains doc_id
+                String term = "";
+                //iterate through all block
+                for(int i = 0; i <= n; i++){
+                    int j = 0;
+                    String line; //term of the vocabulary
+                    itLex[i] = Files.newBufferedReader(Paths.get(lex[i]), StandardCharsets.UTF_8);
+                    itId[i] = Files.newBufferedReader(Paths.get(id[i]), StandardCharsets.UTF_8);
+                    itTf[i] = Files.newBufferedReader(Paths.get(tf[i]), StandardCharsets.UTF_8);
+                    itPos[i] = Files.newBufferedReader(Paths.get(pos[i]), StandardCharsets.UTF_8);
+                    //iterate through all lexicon of all block
+                    while ((line = itLex[i].readLine()) != null) {
+                        List<String> terms = new LinkedList<String>();
+                        //splitted for the offset
+                        String[] inputs = line.split(" ");
+                        term = inputs[0];
+                        int offset = Integer.parseInt(inputs[1]);
+                        //if a match is founded  , a merge is made
+                        //to reach the right line on files , an offset is used
+                        if (lexTerm.equals(term)) {
+                            int countLine = 0;
+                            String docLine = itId[i].readLine(); //--> doc_id
+                            String freqLine = itTf[i].readLine(); //--> term freq.
+                            String posLine = itPos[i].readLine(); //--> String of positions
+                            while(countLine != offset){
+                                docLine = itId[i].readLine();
+                                freqLine = itTf[i].readLine();
+                                posLine = itPos[i].readLine();
+                                countLine++;
+                            }
+                            //now we take the docids and positions of the term
+                            //we take the docids and then map the positions to them, so they are ordered in the same way
+                            //we do the same for term frequencies: we map to docs and sum for the same docs
+                            String[] docs = docLine.split(" ");
+                            String[] positions = posLine.split(" ");
+                            String[] freqs = freqLine.split(" ");
+                            //iteration of all doc_id for the term
+                            //save on data structure doc_id , term freq. , position to merge with all doc and then write
+                            for (String doc : docs) {
+                                    //System.out.println(doc);
+                                    int docid = Integer.parseInt(doc);
+                                    //docHt.put(j, docid);
+                                    docHs.add(docid);
+                                    posMap.put(docid, positions[j]);
+                                    int freq = Integer.parseInt(freqs[j]);
+                                    freqMap.put(docid, freq);
+                                    j++;
+                            }
+                            break;
+                        }
+
+                    }
+                }
+                TreeSet<Integer> tsdocs = new TreeSet<>(docHs);
+                TreeMap<Integer, String> tspos = new TreeMap<>(posMap);
+                TreeMap<Integer, Integer> tsfreq = new TreeMap<>(freqMap);
+                countTerm++;
+                int lengthPostingList = tsdocs.size();
+                //write on different doc different type of value
+                // new line for each doc for : doc_id , tfreq. , pos
+                outDocs.write(String.valueOf(tsdocs));
+                outDocs.newLine(); // new line on doc file
+                outFreqs.write(String.valueOf(tsfreq.values()));
+                outFreqs.newLine(); // new line on freq file
+                outPos.write(String.valueOf(tspos.values()));
+                outPos.newLine(); // new line on pos file
+                lexTerm += " " + countTerm + " " + lengthPostingList;
+                outLex.write(lexTerm);
+                outLex.newLine();
+                outLex.flush();
+                outDocs.flush();
+                outFreqs.flush();
+                outPos.flush();
+            }
+
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            try {
+                // always close the writer at the end of merging phase
+                outDocs.close();
+                outFreqs.close();
+                outPos.close();
+                outLex.close();
+            }
+            catch (Exception e) {
+            }
+        }
+    }
+
+
+    private void writeAllFilesBin(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
+        //TODO 22/10/2022: implement the binary version of the index merging
+        String[] lex = new String[n+1];
+        String[] tf = new String[n+1];
+        String[] pos = new String[n+1];
+        String[] id = new String[n+1];
+
+        BufferedReader[] itLex = new BufferedReader[n+1];
+        BufferedReader[] itId = new BufferedReader[n+1];
+        BufferedReader[] itTf = new BufferedReader[n+1];
+        BufferedReader[] itPos = new BufferedReader[n+1];
+
+        //open all files
+        for (int i = 0; i <= n; i++) {
+            lex[i] = "docs/lexicon_" + i + ".txt";
+            tf[i] = "docs/inverted_index_term_freq_" + i + ".txt";
+            pos[i] = "docs/inverted_index_positions_" + i + ".txt";
+            id[i] = "docs/inverted_index_docids_" + i + ".txt";
+        }
+
+        String outputLex = "docs/lexicon_tot.bin";
+        String ouptutDocids = "docs/inverted_index_docids.bin";
+        String outputFreqs = "docs/inverted_index_freq.bin";
+        String outputPos = "docs/inverted_index_pos.bin";
+        String input_docs = "docs/collection_test.tsv";
+
+        Lexicon lexicon = new Lexicon();
+        Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
+        ht_lexicon = lexicon.create_lexicon(input_docs);
+        //implemento Set --> used for Lookup su Set o(1);
+        Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
+        TreeSet<String> sortedTerms = new TreeSet<>(globalTerms);
+        Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
+        LinkedList<String> lengthPosting = new LinkedList<String>(globalTerms);
+        Iterator<String> itPostings = lengthPosting.iterator();
+
+        BufferedOutputStream outLex = null;
+        BufferedOutputStream outDocs = null;
+        BufferedOutputStream outFreqs = null;
+        BufferedOutputStream outPos = null;
+
+        try {
+            outLex = new BufferedOutputStream(new FileOutputStream(new File(outputLex)));
+            outDocs = new BufferedOutputStream(new FileOutputStream(new File(ouptutDocids)));
+            outFreqs = new BufferedOutputStream(new FileOutputStream(new File(outputFreqs)));
+            outPos = new BufferedOutputStream(new FileOutputStream(new File(outputPos)));
             //String contentLexicon = "------------------------------LEXICON--------------------------\n"+"Term"+"--"+"Occurences"+"--"+"Posting List size\n";
             //outLex.write(contentLexicon);
             int countTerm = 0;
@@ -188,15 +335,15 @@ public class SPIMI_Invert {
                             //iteration of all doc_id for the term
                             //save on data structure doc_id , term freq. , position to merge with all doc and then write
                             for (String doc : docs) {
-                                    //System.out.println(doc);
-                                    int docid = Integer.parseInt(doc);
-                                    //docHt.put(j, docid);
-                                    docHs.add(docid);
-                                    posMap.put(docid, positions[j]);
-                                    int freq = Integer.parseInt(freqs[j]);
-                                    freqMap.put(docid, freq);
-                                    j++;
-                                    //System.out.println(freq);
+                                //System.out.println(doc);
+                                int docid = Integer.parseInt(doc);
+                                //docHt.put(j, docid);
+                                docHs.add(docid);
+                                posMap.put(docid, positions[j]);
+                                int freq = Integer.parseInt(freqs[j]);
+                                freqMap.put(docid, freq);
+                                j++;
+                                //System.out.println(freq);
                                     /*if(freqMap.get(j) == null){
                                         freqMap.put(j, freq);
                                     }
@@ -222,15 +369,16 @@ public class SPIMI_Invert {
                 int lengthPostingList = tsdocs.size();
                 //write on different doc different type of value
                 // new line for each doc for : doc_id , tfreq. , pos
-                outDocs.write(String.valueOf(tsdocs));
-                outDocs.newLine(); // new line on doc file
-                outFreqs.write(String.valueOf(tsfreq.values()));
-                outFreqs.newLine(); // new line on freq file
-                outPos.write(String.valueOf(tspos.values()));
-                outPos.newLine(); // new line on pos file
+                //TODO 22/10/2022: convertire i dati in binario (compressi!!!) e poi scriverli su file
+                //outDocs.write(String.valueOf(tsdocs));
+                outDocs.write('\n'); // new line on doc file
+                //outFreqs.write(String.valueOf(tsfreq.values()));
+                outDocs.write('\n'); // new line on freq file
+                //outPos.write(String.valueOf(tspos.values()));
+                outDocs.write('\n'); // new line on pos file
                 lexTerm += " " + countTerm + " " + lengthPostingList;
-                outLex.write(lexTerm);
-                outLex.newLine();
+                //outLex.write(lexTerm);
+                outDocs.write('\n');
                 outLex.flush();
                 outDocs.flush();
                 outFreqs.flush();
