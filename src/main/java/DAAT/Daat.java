@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 //voglio copiare le posting list dei termini della query all'interno di una struttura dati
 //quindi avro solo un inverted index dei termini della quey
@@ -20,13 +21,73 @@ import java.util.List;
 //non ci sono metodi per saltare la lettura dell n righe in un file
 public class Daat {
     public void daat(String query_string) throws IOException {
-        HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
-        inverted_index_query = create_inverted_query(query_string);
+        //HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
+        Preprocess_doc preprocessing = new Preprocess_doc();
+        List<String> pro_query = new ArrayList<>();
+        pro_query = preprocessing.preprocess_doc_optimized(query_string);
+        //inverted_index_query = create_inverted_query(query_string);
+        HashMap<String, List<Posting>> inverted_lists = new HashMap<>();
+        for(String term: pro_query){
+            List<Posting> postingList = new LinkedList<>();
+            postingList = openList(term);
+            inverted_lists.put(term, postingList);
+        }
         int[][] rank = new int[10][2];
         //TODO 22/10/2022: initialize the data structures and implement the scoring function
         // remember that documents have to be processed in parallel in increasing order of docid
         // also we need to implement the iterators to go through all the posting lists we need
+        // so we should call the method for each term and not on the whole query!!! That's why
+        // we need openList and closeList and also other iterators!
 
+
+    }
+
+    public List<Posting> openList(String query_string) throws IOException {
+        String inputLex = "docs/lexicon_tot.txt";
+        String inputDocids = "docs/inverted_index_docids.txt";
+        String inputFreqs = "docs/inverted_index_freq.txt";
+        String inputPos = "docs/inverted_index_pos.txt";
+        //created buffer to read file
+        String lexLine = null;
+        //in this structure we have all posting of term of query
+        HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
+        ArrayList<Posting> postings = new ArrayList<>();
+        //iterate through all term of query
+        LineIterator itLex = FileUtils.lineIterator(new File(inputLex), "UTF-8");
+        LineIterator itId = FileUtils.lineIterator(new File(inputDocids), "UTF-8");
+        LineIterator itTf = FileUtils.lineIterator(new File(inputFreqs), "UTF-8");
+        LineIterator itPos = FileUtils.lineIterator(new File(inputPos), "UTF-8");
+        System.out.println(query_string);
+        List<Posting> postings_for_term = new ArrayList<>();
+        int offset = 0;
+        //when is founded the term , a copy in data structure of inverted index is made
+        while(itLex.hasNext()){
+            lexLine = itLex.nextLine();
+            String[] inputs = lexLine.split(" ");
+            if(inputs[0].equals(query_string)){
+                offset = Integer.parseInt(inputs[1]); //--> this is the offset of term , we can use to retrive other info
+                //System.out.println(offset);
+            }
+        }
+        int i = 0;
+        while(i<(offset-1)) {
+            itId.nextLine();
+            itTf.nextLine();
+            itPos.nextLine();
+            i++;
+        }
+
+        String docLine = null;
+        String posLine = null;
+        String tfLine = null;
+        docLine = itId.nextLine();
+        docLine = docLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+        posLine = itPos.nextLine();
+        posLine = posLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+        tfLine = itTf.nextLine();
+        tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+        postings_for_term = createPosting(docLine,tfLine,posLine);
+        return postings_for_term;
 
     }
 
@@ -201,5 +262,9 @@ public class Daat {
             }
         }
         return postings;
+    }
+
+    private int tfidf(int tf_q, int tf_d, int d_len, int q_len){
+        return 0;
     }
 }
