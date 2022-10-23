@@ -128,7 +128,7 @@ public class Lexicon {
             while ((line = br.readLine()) != null) {
 
                 // split the line by :
-                String[] parts = line.split(":");
+                String[] parts = line.split(" ");
 
                 // first part is name, second is number
                 String name = parts[0].trim();

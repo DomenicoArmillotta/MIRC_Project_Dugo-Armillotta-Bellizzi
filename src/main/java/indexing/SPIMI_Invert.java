@@ -1,5 +1,6 @@
 package indexing;
 
+import document_index.Document_index;
 import inverted_index.Inverted_index;
 import lexicon.Lexicon;
 import org.apache.commons.io.FileUtils;
@@ -120,10 +121,16 @@ public class SPIMI_Invert {
         String input_docs = "docs/collection_test.tsv";
 
         Lexicon lexicon = new Lexicon();
+        Document_index docindex = new Document_index();
         Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
         ht_lexicon = lexicon.create_lexicon(input_docs);
+        Hashtable<Integer, Integer> ht_docindex = new Hashtable<>();
+        ht_docindex = docindex.create_document_index(input_docs);
+        docindex.text_from_document_index(ht_docindex);
         //implemento Set --> used for Lookup su Set o(1);
         Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
+        //Map<String, Integer> globalLexicon = new HashMap<>(ht_lexicon);
+        //TreeMap<String, Integer> sortedLex = new TreeMap<>(globalLexicon);
         TreeSet<String> sortedTerms = new TreeSet<>(globalTerms);
         Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
         LinkedList<String> lengthPosting = new LinkedList<String>(globalTerms);
@@ -211,7 +218,8 @@ public class SPIMI_Invert {
                 outFreqs.newLine(); // new line on freq file
                 outPos.write(String.valueOf(tspos.values()));
                 outPos.newLine(); // new line on pos file
-                lexTerm += " " + countTerm + " " + lengthPostingList;
+                //int docfreq = sortedLex.get(lexTerm);
+                lexTerm += " " + countTerm + " " + lengthPostingList;// + " " + docfreq;
                 outLex.write(lexTerm);
                 outLex.newLine();
                 outLex.flush();

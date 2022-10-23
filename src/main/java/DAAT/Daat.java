@@ -1,6 +1,8 @@
 package DAAT;
 
+import document_index.Document_index;
 import inverted_index.Posting;
+import lexicon.Lexicon;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import preprocessing.Preprocess_doc;
@@ -11,21 +13,32 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 //voglio copiare le posting list dei termini della query all'interno di una struttura dati
 //quindi avro solo un inverted index dei termini della quey
 
 //non ci sono metodi per saltare la lettura dell n righe in un file
 public class Daat {
+
+    public HashMap<Integer, Integer> docLens = new HashMap<>(); //lengths of the documents containing
+    // at least once the terms of the query
+    public Hashtable<Integer,Integer> ht_docindex = new Hashtable<>(); //for keeeping in memory the document index
+    public Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
+
+
     public void daat(String query_string) throws IOException {
         //HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
+        Document_index document_index = new Document_index();
+        ht_docindex = document_index.document_index_from_text("docs/document_index.txt");
+        Lexicon lexicon = new Lexicon();
+        ht_lexicon = lexicon.lexicon_from_text("docs/lexicon_tot.txt");
         Preprocess_doc preprocessing = new Preprocess_doc();
         List<String> pro_query = new ArrayList<>();
         pro_query = preprocessing.preprocess_doc_optimized(query_string);
         //inverted_index_query = create_inverted_query(query_string);
+        System.out.println(pro_query);
+        int query_len = pro_query.size();
+        System.out.println(query_len);
         HashMap<String, List<Posting>> inverted_lists = new HashMap<>();
         for(String term: pro_query){
             List<Posting> postingList = new LinkedList<>();
@@ -43,7 +56,7 @@ public class Daat {
     }
 
     public List<Posting> openList(String query_string) throws IOException {
-        String inputLex = "docs/lexicon_tot.txt";
+        //String inputLex = "docs/lexicon_tot.txt";
         String inputDocids = "docs/inverted_index_docids.txt";
         String inputFreqs = "docs/inverted_index_freq.txt";
         String inputPos = "docs/inverted_index_pos.txt";
@@ -53,21 +66,31 @@ public class Daat {
         HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
         ArrayList<Posting> postings = new ArrayList<>();
         //iterate through all term of query
-        LineIterator itLex = FileUtils.lineIterator(new File(inputLex), "UTF-8");
+        //LineIterator itLex = FileUtils.lineIterator(new File(inputLex), "UTF-8");
         LineIterator itId = FileUtils.lineIterator(new File(inputDocids), "UTF-8");
         LineIterator itTf = FileUtils.lineIterator(new File(inputFreqs), "UTF-8");
         LineIterator itPos = FileUtils.lineIterator(new File(inputPos), "UTF-8");
+        Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
+        TreeSet<String> sortedTerms = new TreeSet<>(globalTerms);
+        Iterator<String> itTerms = sortedTerms.iterator();
         System.out.println(query_string);
         List<Posting> postings_for_term = new ArrayList<>();
         int offset = 0;
         //when is founded the term , a copy in data structure of inverted index is made
-        while(itLex.hasNext()){
-            lexLine = itLex.nextLine();
+        while(itTerms.hasNext()){
+            String term = itTerms.next();
+            if(term.equals(query_string)) {
+                offset = ht_lexicon.get(term);
+                break;
+            }
+            /*lexLine = itLex.nextLine();
             String[] inputs = lexLine.split(" ");
             if(inputs[0].equals(query_string)){
                 offset = Integer.parseInt(inputs[1]); //--> this is the offset of term , we can use to retrive other info
                 //System.out.println(offset);
-            }
+                break;
+            }*/
+
         }
         int i = 0;
         while(i<(offset-1)) {
@@ -258,10 +281,19 @@ public class Daat {
                 posList.add(Integer.parseInt(posDoc[i]));
                 Posting posting = new Posting(Integer.parseInt(docs_id[i]),Integer.parseInt(tfs[i]),posList);
                 System.out.println("doc id : "+docs_id[i]+" pos : "+ posList + " tfs : " + tfs[i]);
+                docLens.put(Integer.parseInt(docs_id[i]), ht_docindex.get(Integer.parseInt(docs_id[i])));
                 postings.add(posting);
             }
         }
         return postings;
+    }
+
+    private Posting next(List<Posting> p, int i){
+        return p.get(i);
+    }
+
+    private int getScore(Posting p){
+        return p.getTermFrequency();
     }
 
     private int tfidf(int tf_q, int tf_d, int d_len, int q_len){

@@ -13,8 +13,9 @@ import java.util.*;
 
 // contain doc_id : doc.size : pagerank
 public class Document_index {
-    public Hashtable<Integer ,List<Integer>> create_document_index (String path) throws IOException {
-        Hashtable<Integer ,List<Integer>> ht = new Hashtable<>();
+    public Hashtable<Integer ,/*List<*/Integer/*>*/> create_document_index (String path) throws IOException {
+        //Hashtable<Integer ,List<Integer>> ht = new Hashtable<>();
+        Hashtable<Integer ,Integer> ht = new Hashtable<>();
         Preprocess_doc preprocess_doc = new Preprocess_doc();
         File file = new File(path);
         Path p = Paths.get(path);
@@ -41,16 +42,17 @@ public class Document_index {
             List<String> pro_doc = new ArrayList<>();
             //in output è la lista delle parole di un documento
             pro_doc = preprocess_doc.preprocess_doc_optimized(doc_corpus);
-            ht.put(doc_id, Arrays.asList(pro_doc.size(),page_rank));
+            //ht.put(doc_id, Arrays.asList(pro_doc.size(),page_rank));
+            ht.put(doc_id, pro_doc.size());
         }
 
         return ht;
     }
 
 
-    public void text_from_document_index (Hashtable<Integer ,List<Integer>> map){
+    public void text_from_document_index (Hashtable<Integer ,/*List<*/Integer/*>*/> map){
         BufferedWriter bf = null;
-        String outputFilePath = "docs/document_index_test.tsv";
+        String outputFilePath = "docs/document_index.txt";
         File file = new File(outputFilePath);
 
         try {
@@ -59,12 +61,22 @@ public class Document_index {
             bf = new BufferedWriter(new FileWriter(file));
 
             // iterate map entries
-            for (Map.Entry<Integer ,List<Integer>> entry :
+            /*for (Map.Entry<Integer ,List<Integer>> entry :
                     map.entrySet()) {
 
                 // put key and value separated by a colon
                 bf.write(entry.getKey() + ":"
                         + entry.getValue().get(0) + ":" + entry.getValue().get(1) );
+
+                // new line
+                bf.newLine();
+            }*/
+            for (Map.Entry<Integer, Integer> entry :
+                    map.entrySet()) {
+
+                // put key and value separated by a colon
+                bf.write(entry.getKey() + ":"
+                        + entry.getValue());
 
                 // new line
                 bf.newLine();
@@ -88,8 +100,59 @@ public class Document_index {
 
     }
 
+    public Hashtable<Integer ,Integer> document_index_from_text (String path){
+        Hashtable<Integer , Integer> map = new Hashtable<>();
+        //Map<String, Integer> map = new HashMap<String, Integer>();
+        BufferedReader br = null;
 
-    public Hashtable<Integer ,List<Integer>> document_index_from_text (String path){
+        try {
+
+            // create file object
+            File file = new File(path);
+
+            // create BufferedReader object from the File
+            br = new BufferedReader(new FileReader(file));
+
+            String line = null;
+
+            // read file line by line
+            while ((line = br.readLine()) != null) {
+
+                // split the line by :
+                String[] parts = line.split(":");
+
+                // first part is name, second is number
+                String name = parts[0].trim();
+                String value1 = parts[1].trim();
+
+
+
+                // put name, number in HashMap if they are
+                // not empty
+                if (!name.equals("") && !value1.equals(""))
+                    map.put(Integer.valueOf(name), Integer.valueOf(value1));
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            // Always close the BufferedReader
+            if (br != null) {
+                try {
+                    br.close();
+                }
+                catch (Exception e) {
+                };
+            }
+        }
+
+        return map;
+    }
+
+
+    /*public Hashtable<Integer ,List<Integer>> document_index_from_text (String path){
         Hashtable<Integer ,List<Integer>> map = new Hashtable<>();
         //Map<String, Integer> map = new HashMap<String, Integer>();
         BufferedReader br = null;
@@ -139,7 +202,7 @@ public class Document_index {
         }
 
         return map;
-    }
+    }*/
 
 
 
