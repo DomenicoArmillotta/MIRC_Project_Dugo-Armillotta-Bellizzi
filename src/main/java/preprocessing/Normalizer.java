@@ -41,7 +41,12 @@ public class Normalizer {
     }
 
     private String replaceCountryCodes(String doc) throws IOException {
-        File file_nations = new File("docs/nations.txt");
+        if(doc.contains(" US ") ||
+                (doc.contains(" US") && doc.indexOf("US")==doc.length()-2) ||
+                (doc.contains("US ") && doc.indexOf("US")==0)){
+            doc = doc.replaceAll("US", "United States");
+        }
+        /*File file_nations = new File("docs/nations.txt");
         List<String> list_codes = new ArrayList<>();
         // to not read all the documents in memory we use a LineIterator to improve memory efficency
         LineIterator it = FileUtils.lineIterator(file_nations, "UTF-8");
@@ -57,10 +62,16 @@ public class Normalizer {
             String[] inputs = nation.split(","); //the line is in the format Country_name, Country_code
             String code = inputs[1]; //country code
             String name = inputs[0]; //country name
-            if(doc.contains(" " +code + " ") || doc.contains(code + " ") || doc.contains(" " + code)){
+            String subDoc1 = "";
+            String subDoc2 = "";
+            if(doc.contains(" " +code + " ")){
+                subDoc1 = doc.substring(doc.indexOf(code)-2, doc.indexOf(code)+4);
+                subDoc2 = subDoc1.toUpperCase();
+            }
+            if(!subDoc2.equals(subDoc1)) {
                 doc = doc.replaceAll(code, name);
             }
-        }
+        }*/
         return doc;
     }
 }
