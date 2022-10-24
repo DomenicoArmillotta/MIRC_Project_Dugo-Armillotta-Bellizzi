@@ -355,7 +355,7 @@ public class Daat {
     private double tfidf(int tf_q, int tf_d, int d_len, int q_len, int doc_freq){
         System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
         double factor1 = ((double)tf_q/q_len);
-        double factor2 = (double)(tf_d*ht_docindex.keySet().size()/doc_freq)/(double)d_len;
+        double factor2 = ((double)tf_d*Math.log(ht_docindex.keySet().size()/doc_freq))/(double)d_len;
         return factor1*factor2;
     }
 }
