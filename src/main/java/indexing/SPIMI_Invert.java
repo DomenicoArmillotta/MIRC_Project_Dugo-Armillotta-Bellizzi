@@ -14,6 +14,9 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public class SPIMI_Invert {
+
+    private Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
+    private Hashtable<Integer, Integer> ht_docindex = new Hashtable<>();
     /**
      * the collection is divided in n block
      * then we call the function to apply the algorithm to create the inverted index
@@ -22,6 +25,11 @@ public class SPIMI_Invert {
      * @throws IOException
      */
     public void spimi_invert_block(String read_path, int n_block) throws IOException {
+        Lexicon lexicon = new Lexicon();
+        ht_lexicon = lexicon.create_lexicon(read_path);
+        Document_index docindex = new Document_index();
+        ht_docindex = docindex.create_document_index(read_path);
+        docindex.text_from_document_index(ht_docindex);
         File file = new File(read_path);
         LineIterator it = FileUtils.lineIterator(file, "UTF-8");
         long lines = countLineFast(read_path);
@@ -118,22 +126,17 @@ public class SPIMI_Invert {
         String ouptutDocids = "docs/inverted_index_docids.txt";
         String outputFreqs = "docs/inverted_index_freq.txt";
         String outputPos = "docs/inverted_index_pos.txt";
-        String input_docs = "docs/collection_test.tsv";
 
-        Lexicon lexicon = new Lexicon();
-        Document_index docindex = new Document_index();
-        Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
-        ht_lexicon = lexicon.create_lexicon(input_docs);
-        Hashtable<Integer, Integer> ht_docindex = new Hashtable<>();
-        ht_docindex = docindex.create_document_index(input_docs);
-        docindex.text_from_document_index(ht_docindex);
         //implemento Set --> used for Lookup su Set o(1);
         Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
         //Map<String, Integer> globalLexicon = new HashMap<>(ht_lexicon);
         //TreeMap<String, Integer> sortedLex = new TreeMap<>(globalLexicon);
         TreeSet<String> sortedTerms = new TreeSet<>(globalTerms);
-        Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
-        LinkedList<String> lengthPosting = new LinkedList<String>(globalTerms);
+        LinkedHashSet<String> termSet = new LinkedHashSet<>(sortedTerms);
+        //Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
+        Iterator<String> itTerms = termSet.iterator(); //--> iterator for all term in collection
+        //LinkedList<String> lengthPosting = new LinkedList<String>(sortedTerms);
+        //Iterator<String> itTerms = lengthPosting.iterator();
 
         BufferedWriter outLex = null;
         BufferedWriter outDocs = null;
@@ -149,6 +152,7 @@ public class SPIMI_Invert {
 
             //iterate through all term of collections
             while (itTerms.hasNext()) {
+            //for(String lexTerm: termSet){
                 String lexTerm = itTerms.next();
                 Map<Integer,String> posMap = new HashMap<>(); //--> contains position for each doc_id
                 Map<Integer,Integer> freqMap = new HashMap<>(); //--> contains term freq for each doc_id
@@ -164,7 +168,7 @@ public class SPIMI_Invert {
                     itPos[i] = Files.newBufferedReader(Paths.get(pos[i]), StandardCharsets.UTF_8);
                     //iterate through all lexicon of all block
                     while ((line = itLex[i].readLine()) != null) {
-                        List<String> terms = new LinkedList<String>();
+                        //List<String> terms = new LinkedList<String>();
                         //splitted for the offset
                         String[] inputs = line.split(" ");
                         term = inputs[0];
