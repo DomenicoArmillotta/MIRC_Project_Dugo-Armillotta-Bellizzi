@@ -159,6 +159,57 @@ public class Lexicon {
 
         return map;
     }
+
+    public Hashtable<String ,Integer> lexicon_from_text_with_freqs (String path){
+        Hashtable<String ,Integer> map = new Hashtable<>();
+        //Map<String, Integer> map = new HashMap<String, Integer>();
+        BufferedReader br = null;
+
+        try {
+
+            // create file object
+            File file = new File(path);
+
+            // create BufferedReader object from the File
+            br = new BufferedReader(new FileReader(file));
+
+            String line = null;
+
+            // read file line by line
+            while ((line = br.readLine()) != null) {
+
+                // split the line by :
+                String[] parts = line.split(" ");
+
+                // first part is name, second is number
+                String name = parts[0].trim();
+                String number = parts[2].trim();
+                //String number = parts[1];
+
+
+                // put name, number in HashMap if they are
+                // not empty
+                if (!name.equals("") && !number.equals(""))
+                    map.put(name, Integer.valueOf(number));
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            // Always close the BufferedReader
+            if (br != null) {
+                try {
+                    br.close();
+                }
+                catch (Exception e) {
+                };
+            }
+        }
+
+        return map;
+    }
 }
 
 
