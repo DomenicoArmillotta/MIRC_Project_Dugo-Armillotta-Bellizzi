@@ -31,9 +31,9 @@ public class Normalizer {
         // remove non-printable characters from Unicode
         formattedLine = formattedLine.replaceAll("\\p{C}", "");
         //remove punctuation
-        formattedLine = formattedLine.replaceAll("\\p{Punct}", "");
+        formattedLine = formattedLine.replaceAll("\\p{Punct}", " ");
         //replace the country codes with the country name
-        formattedLine = replaceCountryCodes(formattedLine);
+        //formattedLine = replaceCountryCodes(formattedLine);
         //lower case
         formattedLine = formattedLine.toLowerCase();
         return formattedLine;

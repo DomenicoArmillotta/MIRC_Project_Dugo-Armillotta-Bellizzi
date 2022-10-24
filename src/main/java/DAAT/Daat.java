@@ -39,9 +39,9 @@ public class Daat {
         List<String> pro_query = new ArrayList<>();
         pro_query = preprocessing.preprocess_doc_optimized(query_string);
         //inverted_index_query = create_inverted_query(query_string);
-        System.out.println(pro_query);
+        //System.out.println(pro_query);
         int query_len = pro_query.size();
-        System.out.println(query_len);
+        //System.out.println(query_len);
         HashMap<String, List<Posting>> inverted_lists = new HashMap<>();
         HashMap<String, Integer> query_freqs = new HashMap<>();
         for(String term: pro_query){
@@ -60,14 +60,14 @@ public class Daat {
         }
         //System.out.println(query_freqs);
         //System.out.println(inverted_lists);
-        System.out.println(docLens);
+        //System.out.println(docLens);
         int[][] rank = new int[10][2];
         HashMap<Integer, Double> scores = new HashMap<>();
         int docid = 0;
         int lastDoc = Collections.max(docLens.keySet());
         //do this until you processed every doc!!!
         while(docid<= lastDoc) {
-            System.out.println("HERE: " + docid);
+            //System.out.println("HERE: " + docid);
             double score = 0.0;
             for (Map.Entry<String, List<Posting>> entry : inverted_lists.entrySet()) {
                 String curTerm = entry.getKey();
@@ -78,7 +78,7 @@ public class Daat {
                     }
                 }
             }
-            System.out.println(score);
+            //System.out.println(score);
             if(score!= 0.0) scores.put(docid, score);
             docid++;
             //docid = nextGEQ();
@@ -130,7 +130,7 @@ public class Daat {
         Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
         TreeSet<String> sortedTerms = new TreeSet<>(globalTerms);
         Iterator<String> itTerms = sortedTerms.iterator();
-        System.out.println(query_string);
+        //System.out.println(query_string);
         List<Posting> postings_for_term = new ArrayList<>();
         int offset = 0;
         //when is founded the term , a copy in data structure of inverted index is made
@@ -237,7 +237,7 @@ public class Daat {
         //preprocessing of query
         List<String> pro_query = new ArrayList<>();
         pro_query = preprocessing.preprocess_doc_optimized(query_string);
-        System.out.println(pro_query);
+        //System.out.println(pro_query);
         String inputLex = "docs/lexicon_tot.bin";
         String inputDocids = "docs/inverted_index_docids.bin";
         String inputFreqs = "docs/inverted_index_freq.bin";
@@ -257,7 +257,7 @@ public class Daat {
             LineIterator itId = FileUtils.lineIterator(new File(inputDocids), "UTF-8");
             LineIterator itTf = FileUtils.lineIterator(new File(inputFreqs), "UTF-8");
             LineIterator itPos = FileUtils.lineIterator(new File(inputPos), "UTF-8");
-            System.out.println(term);
+            //System.out.println(term);
             List<Posting> postings_for_term = new ArrayList<>();
             int offset = 0;
             //when is founded the term , a copy in data structure of inverted index is made
@@ -332,12 +332,12 @@ public class Daat {
                     //System.out.println("aggiunto pos = " + Integer.parseInt(pos));
                 }
                 Posting posting = new Posting(Integer.parseInt(docs_id[i]),Integer.parseInt(tfs[i]),posList);
-                System.out.println("doc id : "+docs_id[i]+" pos : "+ posList + " tfs : " + tfs[i]);
+                //System.out.println("doc id : "+docs_id[i]+" pos : "+ posList + " tfs : " + tfs[i]);
                 postings.add(posting);
             }else{
                 posList.add(Integer.parseInt(posDoc[i]));
                 Posting posting = new Posting(Integer.parseInt(docs_id[i]),Integer.parseInt(tfs[i]),posList);
-                System.out.println("doc id : "+docs_id[i]+" pos : "+ posList + " tfs : " + tfs[i]);
+                //System.out.println("doc id : "+docs_id[i]+" pos : "+ posList + " tfs : " + tfs[i]);
                 docLens.put(Integer.parseInt(docs_id[i]), ht_docindex.get(Integer.parseInt(docs_id[i])));
                 postings.add(posting);
             }
@@ -354,7 +354,7 @@ public class Daat {
     }
 
     private double tfidf(int tf_q, int tf_d, int d_len, int q_len, int doc_freq){
-        System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
+        //System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
         double factor1 = ((double)tf_q/q_len);
         double factor2 = (1.0 + Math.log(tf_d)*Math.log(ht_docindex.keySet().size()/doc_freq))/(double)d_len;
         return factor1*factor2;
