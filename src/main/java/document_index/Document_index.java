@@ -13,12 +13,19 @@ import java.util.*;
 
 // contain doc_id : doc.size : pagerank
 public class Document_index {
+    /**
+     * is created the document index with each row :
+     * doc_id:document_length
+     * @param path
+     * @return
+     * @throws IOException
+     */
+    //list is commented becouse in the original slide there is another parameters called PageRank
     public Hashtable<Integer ,/*List<*/Integer/*>*/> create_document_index (String path) throws IOException {
         //Hashtable<Integer ,List<Integer>> ht = new Hashtable<>();
         Hashtable<Integer ,Integer> ht = new Hashtable<>();
         Preprocess_doc preprocess_doc = new Preprocess_doc();
         File file = new File(path);
-        Path p = Paths.get(path);
         List<String> list_doc = new ArrayList<>();
         // to not read all the documents in memory we use a LineIterator
         LineIterator it = FileUtils.lineIterator(file, "UTF-8");
@@ -31,7 +38,6 @@ public class Document_index {
             LineIterator.closeQuietly(it);
         }
         //BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
-        //PROBLEMA = voglio leggere 100 righe alla volta
         //List<String> list_doc = Files.readAllLines(p, StandardCharsets.UTF_8);
         int page_rank = 1;
         for (int i = 0; i < list_doc.size(); i++) {
@@ -50,6 +56,11 @@ public class Document_index {
     }
 
 
+    /**
+     * method to save on a file the  document index structure
+     * row : doc_id:doc_length
+     * @param map structure to write
+     */
     public void text_from_document_index (Hashtable<Integer ,/*List<*/Integer/*>*/> map){
         BufferedWriter bf = null;
         String outputFilePath = "docs/document_index.txt";
@@ -100,6 +111,11 @@ public class Document_index {
 
     }
 
+    /**
+     * reconstruction of document index structure from text
+     * @param path
+     * @return
+     */
     public Hashtable<Integer ,Integer> document_index_from_text (String path){
         Hashtable<Integer , Integer> map = new Hashtable<>();
         //Map<String, Integer> map = new HashMap<String, Integer>();
@@ -150,61 +166,5 @@ public class Document_index {
 
         return map;
     }
-
-
-    /*public Hashtable<Integer ,List<Integer>> document_index_from_text (String path){
-        Hashtable<Integer ,List<Integer>> map = new Hashtable<>();
-        //Map<String, Integer> map = new HashMap<String, Integer>();
-        BufferedReader br = null;
-
-        try {
-
-            // create file object
-            File file = new File(path);
-
-            // create BufferedReader object from the File
-            br = new BufferedReader(new FileReader(file));
-
-            String line = null;
-
-            // read file line by line
-            while ((line = br.readLine()) != null) {
-
-                // split the line by :
-                String[] parts = line.split(":");
-
-                // first part is name, second is number
-                String name = parts[0].trim();
-                String value1 = parts[1].trim();
-                String value2 = parts[2].trim();
-
-
-
-                // put name, number in HashMap if they are
-                // not empty
-                if (!name.equals("") && !value1.equals("") && !value2.equals(""))
-                    map.put(Integer.valueOf(name), Arrays.asList(Integer.valueOf(value1),Integer.valueOf(value2)));
-            }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-        finally {
-
-            // Always close the BufferedReader
-            if (br != null) {
-                try {
-                    br.close();
-                }
-                catch (Exception e) {
-                };
-            }
-        }
-
-        return map;
-    }*/
-
-
-
 
 }
