@@ -15,57 +15,58 @@ import java.util.*;
 // the key is the pointer to the inverted index
 // contain term_id : df
 public class Lexicon {
+
+    /**
+     * create lexicon from the collection , reading each document
+     * term : df (document frequency)
+     * @param path of the input file
+     * @return
+     * @throws IOException
+     */
     public Hashtable<String ,Integer> create_lexicon (String path) throws IOException {
         Hashtable<String ,Integer> ht = new Hashtable<>();
         Preprocess_doc preprocess_doc = new Preprocess_doc();
         File file = new File(path);
-        Path p = Paths.get(path);
         List<String> list_doc = new ArrayList<>();
         // to not read all the documents in memory we use a LineIterator
         LineIterator it = FileUtils.lineIterator(file, "UTF-8");
         try {
             while (it.hasNext()) {
                 String line = it.nextLine();
-                list_doc.add(line);
+                String[] parts = line.split("\t");
+                int doc_id = Integer.parseInt(parts[0]);
+                String doc_corpus = parts[1];
+                List<String> pro_doc = new ArrayList<>();
+                //in output è la lista delle parole di un documento
+                pro_doc = preprocess_doc.preprocess_doc_optimized(doc_corpus);
+                //scorro le parole del documento
+                Set<String> mySet = new HashSet<String>();
+                for (int j = 0; j < pro_doc.size(); j++) {
+                    //per evitare i duplicati
+                    mySet.add(pro_doc.get(j));
+                }
+                //agiorno hashmap
+                for (String key : mySet){
+                    if(ht.containsKey(key)){
+                        ht.put(key, ht.get(key) + 1);
+                    }else{
+                        ht.put(key , 1);
+                    }
+                }
+
             }
         } finally {
             LineIterator.closeQuietly(it);
         }
-        //BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
-        //PROBLEMA = voglio leggere 100 righe alla volta
-        //List<String> list_doc = Files.readAllLines(p, StandardCharsets.UTF_8);
-
-        for (int i = 0; i < list_doc.size(); i++) {
-            String current_doc = list_doc.get(i);
-            String[] parts = current_doc.split("\t");
-            int doc_id = Integer.parseInt(parts[0]);
-            String doc_corpus = parts[1];
-            List<String> pro_doc = new ArrayList<>();
-            //in output è la lista delle parole di un documento
-            pro_doc = preprocess_doc.preprocess_doc_optimized(doc_corpus);
-            //scorro le parole del documento
-            Set<String> mySet = new HashSet<String>();
-            for (int j = 0; j < pro_doc.size(); j++) {
-                //per evitare i duplicati
-                mySet.add(pro_doc.get(j));
-            }
-            //agiorno hashmap
-            for (String key : mySet){
-                if(ht.containsKey(key)){
-                    ht.put(key, ht.get(key) + 1);
-                }else{
-                    ht.put(key , 1);
-                }
-            }
-
-
-        }
-
-
         return ht;
     }
 
 
+    /**
+     * method to save on file the lexicon
+     * is written term:df
+     * @param map
+     */
     public void text_from_lexicon (Hashtable<String ,Integer> map){
         TreeMap<String ,Integer> sortedMap;
         TreeMap<String ,Integer> tmi = new TreeMap<>(map);
@@ -109,6 +110,12 @@ public class Lexicon {
 
     }
 
+    /**
+     * method to create structure of lexicon in memory from a file
+     * we read term::df and is taken term:df
+     * @param path file of input
+     * @return
+     */
     public Hashtable<String ,Integer> lexicon_from_text (String path){
         Hashtable<String ,Integer> map = new Hashtable<>();
         //Map<String, Integer> map = new HashMap<String, Integer>();
@@ -160,6 +167,12 @@ public class Lexicon {
         return map;
     }
 
+    /**
+     * method to create structure of lexicon in memory from a file
+     * we read term:row_id:df and is taken term:df
+     * @param path file of input
+     * @return
+     */
     public Hashtable<String ,Integer> lexicon_from_text_with_freqs (String path){
         Hashtable<String ,Integer> map = new Hashtable<>();
         //Map<String, Integer> map = new HashMap<String, Integer>();
