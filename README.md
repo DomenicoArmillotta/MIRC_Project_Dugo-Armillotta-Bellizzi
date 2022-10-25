@@ -20,7 +20,7 @@
 - [ ] spimi invert
 
 ## Document index :
-- [ ] document index
+- [x] document index
 
 ## Daat :
 - [ ] daat
