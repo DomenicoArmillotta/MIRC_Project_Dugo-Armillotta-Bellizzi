@@ -170,9 +170,14 @@ public class SPIMI_Invert {
                     while ((line = itLex[i].readLine()) != null) {
                         //List<String> terms = new LinkedList<String>();
                         //splitted for the offset
-                        String[] inputs = line.split(" ");
+                        /*String[] inputs = line.split(" ");
                         term = inputs[0];
-                        int offset = Integer.parseInt(inputs[1]);
+                        int offset = Integer.parseInt(inputs[1]);*/
+                        //1,000,000 iterations of split take 3.36s,
+                        //while 1,000,000 iterations of substring take only 0.05s.
+                        term = line.substring(0, line.indexOf(" "));
+                        String input = line.substring(line.indexOf(" ")+1, line.length());
+                        int offset = Integer.parseInt(input);
                         //if a match is founded  , a merge is made
                         //to reach the right line on files , an offset is used
                         if (lexTerm.equals(term)) {
@@ -189,12 +194,41 @@ public class SPIMI_Invert {
                             //now we take the docids and positions of the term
                             //we take the docids and then map the positions to them, so they are ordered in the same way
                             //we do the same for term frequencies: we map to docs and sum for the same docs
-                            String[] docs = docLine.split(" ");
+                            /*String[] docs = docLine.split(" ");
                             String[] positions = posLine.split(" ");
-                            String[] freqs = freqLine.split(" ");
+                            String[] freqs = freqLine.split(" ");*/
+                            int countDoc = docLine.indexOf(" ");
+                            int countFreq = freqLine.indexOf(" ");
+                            int countPos = posLine.indexOf(" ");
+                            if(countDoc == -1){
+                                int docid = Integer.parseInt(docLine);
+                                //docHt.put(j, docid);
+                                docHs.add(docid);
+                                posMap.put(docid, posLine);
+                                int freq = Integer.parseInt(freqLine);
+                                freqMap.put(docid, freq);
+                                break;
+                            }
+                            while(docLine!= ""){
+                                int docid = Integer.parseInt(docLine.substring(0, countDoc));
+                                docHs.add(docid);
+                                posMap.put(docid, posLine.substring(0, countPos));
+                                int freq = Integer.parseInt(freqLine.substring(0,countFreq));
+                                freqMap.put(docid, freq);
+                                String nextDoc = docLine.substring(docLine.indexOf(" ")+1);
+                                String nextFreq = freqLine.substring(freqLine.indexOf(" ")+1);
+                                String nextPos = posLine.substring(posLine.indexOf(" ")+1);
+                                docLine = nextDoc;
+                                freqLine = nextFreq;
+                                posLine = nextPos;
+                                countDoc = nextDoc.indexOf(" ") == -1 ? nextDoc.length()-1 : nextDoc.indexOf(" ");
+                                countFreq = nextFreq.indexOf(" ") == -1 ? nextFreq.length()-1 : nextFreq.indexOf(" ");
+                                countPos = nextPos.indexOf(" ") == -1 ? nextPos.length()-1 : nextPos.indexOf(" ");
+                            }
+                            break;
                             //iteration of all doc_id for the term
                             //save on data structure doc_id , term freq. , position to merge with all doc and then write
-                            for (String doc : docs) {
+                            /*for (String doc : docs) {
                                     //System.out.println(doc);
                                     int docid = Integer.parseInt(doc);
                                     //docHt.put(j, docid);
@@ -203,8 +237,8 @@ public class SPIMI_Invert {
                                     int freq = Integer.parseInt(freqs[j]);
                                     freqMap.put(docid, freq);
                                     j++;
-                            }
-                            break;
+                            }*/
+                            //break;
                         }
 
                     }
