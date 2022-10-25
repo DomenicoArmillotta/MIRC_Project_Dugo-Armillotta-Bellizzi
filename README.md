@@ -18,3 +18,9 @@
 
 ## indexing :
 - [ ] spimi invert
+
+## Document index :
+- [ ] document index
+
+## Daat :
+- [ ] daat
