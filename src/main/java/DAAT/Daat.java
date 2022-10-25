@@ -61,18 +61,20 @@ public class Daat {
         //System.out.println(query_freqs);
         //System.out.println(inverted_lists);
         //System.out.println(docLens);
-        int[][] rank = new int[10][2];
         HashMap<Integer, Double> scores = new HashMap<>();
         int docid = 0;
-        int lastDoc = Collections.max(docLens.keySet());
+        //int lastDoc = Collections.max(docLens.keySet());
         //do this until you processed every doc!!!
-        while(docid<= lastDoc) {
+        LinkedHashMap<Integer,Integer> docSet = new LinkedHashMap<>(docLens);
+        //Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
+        Iterator<Integer> itDocs = docSet.keySet().iterator();
+        while(itDocs.hasNext()) {
             //System.out.println("HERE: " + docid);
             double score = 0.0;
             for (Map.Entry<String, List<Posting>> entry : inverted_lists.entrySet()) {
                 String curTerm = entry.getKey();
                 for (Posting p : entry.getValue()) {
-                    if (p.getDocumentId() == docid && query_freqs.get(curTerm) != null && docLens.get(docid) != null && doc_freqs.get(curTerm)!= null) {
+                    if (p.getDocumentId() == docid){// && query_freqs.get(curTerm) != null && docLens.get(docid) != null && doc_freqs.get(curTerm)!= null) {
                         //apply scoring function
                         score += tfidf(query_freqs.get(curTerm), p.getTermFrequency(), docLens.get(p.getDocumentId()), query_len, doc_freqs.get(curTerm));
                     }
@@ -80,8 +82,8 @@ public class Daat {
             }
             //System.out.println(score);
             if(score!= 0.0) scores.put(docid, score);
-            docid++;
-            //docid = nextGEQ();
+            //docid++;
+            docid = nextGEQ(itDocs);
         }
         //sort the scores
         Comparator<Map.Entry<Integer, Double>> valueComparator =
@@ -347,6 +349,9 @@ public class Daat {
 
     private Posting next(List<Posting> p, int i){
         return p.get(i);
+    }
+    private int nextGEQ(Iterator<Integer> it){
+        return it.next();
     }
 
     private int getScore(Posting p){
