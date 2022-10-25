@@ -9,7 +9,7 @@
 - [x] preprocessing PIPELINE
 
 ## Lexicon: 
-- [ ] lexicon
+- [x] lexicon
 
 ## inverted index : 
 - [ ] compressor
