@@ -29,18 +29,33 @@ public class Normalizer {
         //remove all non-ASCII characters
         String formattedLine = s.replaceAll("[^\\x00-\\x7F]", " ");
         // remove non-printable characters from Unicode
-        formattedLine = formattedLine.replaceAll("\\p{C}", "");
+        formattedLine = formattedLine.replaceAll("\\p{C}", " ");
         //replace urls
         String urlPattern = "((https?|ftp|gopher|telnet|file|Unsure|http):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)";
         formattedLine = formattedLine.replaceAll(urlPattern, " ");
         //remove punctuation
-        formattedLine = formattedLine.replaceAll("\\p{Punct}", " ");
-        //collapse multiple spaces
-        formattedLine = formattedLine.replaceAll("\\s+", " ");
+        formattedLine = formattedLine.replaceAll("\\p{Punct}", "");
         //replace the country codes with the country name
         //formattedLine = replaceCountryCodes(formattedLine);
         //lower case
         formattedLine = formattedLine.toLowerCase();
+        //normalizing text removing malformed terms
+        //replace all single characters
+        formattedLine = formattedLine.replaceAll("(\\s+.(?=\\s))", " ");
+        //replace leading zeros
+        formattedLine = formattedLine.replaceAll("(\\b0+\\s)", "");
+        //replace sequence of two times the same letter
+        //formattedLine = formattedLine.replaceAll("(\\s)(\\w{2,}?)(\\s)", " ");
+        //replace characters repeated three times in a row
+        formattedLine = formattedLine.replaceAll("'{3,}", " ");
+        //replace single digits, double digits, triple digits and with more than 5 digits
+        //we keep only 4 digits numbers because most probably they are gonna be dates
+        formattedLine = formattedLine.replaceAll("(\\s)(\\d{5,}?)(\\s)", " ");
+        formattedLine = formattedLine.replaceAll("\\b\\d{3}?\\s", " ");
+        formattedLine = formattedLine.replaceAll("\\b\\d{2}?\\s+", " ");
+        formattedLine = formattedLine.replaceAll("\\b\\d{1}?\\s", " ");
+        //collapse multiple spaces
+        formattedLine = formattedLine.replaceAll("\\s+", " ");
         return formattedLine;
 
     }

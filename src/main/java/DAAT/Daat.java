@@ -74,7 +74,7 @@ public class Daat {
             for (Map.Entry<String, List<Posting>> entry : inverted_lists.entrySet()) {
                 String curTerm = entry.getKey();
                 for (Posting p : entry.getValue()) {
-                    if (p.getDocumentId() == docid){// && query_freqs.get(curTerm) != null && docLens.get(docid) != null && doc_freqs.get(curTerm)!= null) {
+                    if (p.getDocumentId() == docid && query_freqs.get(curTerm) != null && docLens.get(docid) != null && doc_freqs.get(curTerm)!= null) {
                         //apply scoring function
                         score += tfidf(query_freqs.get(curTerm), p.getTermFrequency(), docLens.get(p.getDocumentId()), query_len, doc_freqs.get(curTerm));
                     }
