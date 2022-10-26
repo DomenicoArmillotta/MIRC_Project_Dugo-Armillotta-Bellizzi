@@ -362,6 +362,9 @@ public class Daat {
         //System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
         double factor1 = ((double)tf_q/q_len);
         double factor2 = (1.0 + Math.log(tf_d)*Math.log(ht_docindex.keySet().size()/doc_freq))/(double)d_len;
+        /*double k1 = 1.0;
+        double factor1 = ((double)tf_q/q_len);
+        double factor2 = (((double)tf_d/(k1+tf_d))*Math.log(ht_docindex.keySet().size()/doc_freq))/(double)d_len;*/
         return factor1*factor2;
     }
 }

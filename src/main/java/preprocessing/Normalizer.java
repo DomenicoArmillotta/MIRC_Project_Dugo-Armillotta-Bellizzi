@@ -30,8 +30,13 @@ public class Normalizer {
         String formattedLine = s.replaceAll("[^\\x00-\\x7F]", " ");
         // remove non-printable characters from Unicode
         formattedLine = formattedLine.replaceAll("\\p{C}", "");
+        //replace urls
+        String urlPattern = "((https?|ftp|gopher|telnet|file|Unsure|http):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)";
+        formattedLine = formattedLine.replaceAll(urlPattern, " ");
         //remove punctuation
         formattedLine = formattedLine.replaceAll("\\p{Punct}", " ");
+        //collapse multiple spaces
+        formattedLine = formattedLine.replaceAll("\\s+", " ");
         //replace the country codes with the country name
         //formattedLine = replaceCountryCodes(formattedLine);
         //lower case

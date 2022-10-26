@@ -160,8 +160,8 @@ public class SPIMI_Invert {
                 String term = "";
                 //iterate through all block
                 for(int i = 0; i <= n; i++){
-                    int j = 0;
-                    String line; //term of the vocabulary
+                    //int j = 0;
+                    String line = ""; //term of the vocabulary
                     itLex[i] = Files.newBufferedReader(Paths.get(lex[i]), StandardCharsets.UTF_8);
                     itId[i] = Files.newBufferedReader(Paths.get(id[i]), StandardCharsets.UTF_8);
                     itTf[i] = Files.newBufferedReader(Paths.get(tf[i]), StandardCharsets.UTF_8);
@@ -182,7 +182,10 @@ public class SPIMI_Invert {
                         //to reach the right line on files , an offset is used
                         if (lexTerm.equals(term)) {
                             int countLine = 0;
-                            String docLine = itId[i].readLine(); //--> doc_id
+                            String docLine = (String) FileUtils.readLines(new File(id[i]), "UTF-8").get(offset);
+                            String freqLine = (String) FileUtils.readLines(new File(tf[i]), "UTF-8").get(offset);
+                            String posLine = (String) FileUtils.readLines(new File(pos[i]), "UTF-8").get(offset);
+                            /*String docLine = itId[i].readLine(); //--> doc_id
                             String freqLine = itTf[i].readLine(); //--> term freq.
                             String posLine = itPos[i].readLine(); //--> String of positions
                             while(countLine != offset){
@@ -190,7 +193,7 @@ public class SPIMI_Invert {
                                 freqLine = itTf[i].readLine();
                                 posLine = itPos[i].readLine();
                                 countLine++;
-                            }
+                            }*/
                             //now we take the docids and positions of the term
                             //we take the docids and then map the positions to them, so they are ordered in the same way
                             //we do the same for term frequencies: we map to docs and sum for the same docs
