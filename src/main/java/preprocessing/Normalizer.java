@@ -41,13 +41,12 @@ public class Normalizer {
         formattedLine = formattedLine.replaceAll("(\\w)\\1+", "$1$1");
         //replace digits
         formattedLine = formattedLine.replaceAll("\\d", "");
+        //replace all single characters
         formattedLine = formattedLine.replaceAll("(\\s+.(?=\\s))", "");
         //replace the country codes with the country name
         //formattedLine = replaceCountryCodes(formattedLine);
         //collapse multiple spaces
         formattedLine = formattedLine.replaceAll("\\s+", " ");
-        //replace all single characters
-        formattedLine = formattedLine.replaceAll("(\\s+.(?=\\s))", "");
         //lower case
         formattedLine = formattedLine.toLowerCase();
 
