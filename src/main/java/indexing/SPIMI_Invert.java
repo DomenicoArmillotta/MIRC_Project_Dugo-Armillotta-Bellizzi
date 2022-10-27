@@ -97,12 +97,11 @@ public class SPIMI_Invert {
      * this is the merging function of n block created by SPIMI, open all file of the "n" block
      * make a scanner of global lexicon , and check the nextline of each lexicon of n block (lexicon are ordered) ,
      * when a match is found it will merge in the finals file according to the info type (tf,doc_id,position)
+     * we save on a .text file using ASCII formatting
      * @param n
      * @throws IOException
      */
 
-
-    //TODO 22/10/2022: aggiungere la compresssione (da qui o da dentro la creazione dei blocchi?)
     private void writeAllFilesASCII(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
         String[] lex = new String[n+1];
         String[] tf = new String[n+1];
@@ -168,11 +167,7 @@ public class SPIMI_Invert {
                     itPos[i] = Files.newBufferedReader(Paths.get(pos[i]), StandardCharsets.UTF_8);
                     //iterate through all lexicon of all block
                     while ((line = itLex[i].readLine()) != null) {
-                        //List<String> terms = new LinkedList<String>();
                         //splitted for the offset
-                        /*String[] inputs = line.split(" ");
-                        term = inputs[0];
-                        int offset = Integer.parseInt(inputs[1]);*/
                         //1,000,000 iterations of split take 3.36s,
                         //while 1,000,000 iterations of substring take only 0.05s.
                         term = line.substring(0, line.indexOf(" "));
@@ -182,66 +177,42 @@ public class SPIMI_Invert {
                         //to reach the right line on files , an offset is used
                         if (lexTerm.equals(term)) {
                             int countLine = 0;
-                            String docLine = (String) FileUtils.readLines(new File(id[i]), "UTF-8").get(offset);
-                            String freqLine = (String) FileUtils.readLines(new File(tf[i]), "UTF-8").get(offset);
-                            String posLine = (String) FileUtils.readLines(new File(pos[i]), "UTF-8").get(offset);
-                            /*String docLine = itId[i].readLine(); //--> doc_id
-                            String freqLine = itTf[i].readLine(); //--> term freq.
-                            String posLine = itPos[i].readLine(); //--> String of positions
-                            while(countLine != offset){
-                                docLine = itId[i].readLine();
-                                freqLine = itTf[i].readLine();
-                                posLine = itPos[i].readLine();
-                                countLine++;
-                            }*/
+                            String docLine = (String) FileUtils.readLines(new File(id[i]), "UTF-8").get(offset); //--> doc_id of selected term
+                            String freqLine = (String) FileUtils.readLines(new File(tf[i]), "UTF-8").get(offset); //--> term freq of selected term
+                            String posLine = (String) FileUtils.readLines(new File(pos[i]), "UTF-8").get(offset); //--> String of positions of selected term
                             //now we take the docids and positions of the term
                             //we take the docids and then map the positions to them, so they are ordered in the same way
                             //we do the same for term frequencies: we map to docs and sum for the same docs
-                            /*String[] docs = docLine.split(" ");
-                            String[] positions = posLine.split(" ");
-                            String[] freqs = freqLine.split(" ");*/
-                            int countDoc = docLine.indexOf(" ");
+                            int countDoc = docLine.indexOf(" "); // in our text the doc_id are separated by white space (" ")
                             int countFreq = freqLine.indexOf(" ");
                             int countPos = posLine.indexOf(" ");
-                            if(countDoc == -1){
+                            if(countDoc == -1){ //if is not founded " " , mean that there is only one value , so a parsing is computed
                                 int docid = Integer.parseInt(docLine);
-                                //docHt.put(j, docid);
                                 docHs.add(docid);
-                                posMap.put(docid, posLine);
+                                posMap.put(docid, posLine); //non si posso avere più posizioni in quel documento?? quindi perche non fa ciclo?
                                 int freq = Integer.parseInt(freqLine);
                                 freqMap.put(docid, freq);
                                 break;
                             }
+                            //iterate thought all doc_id of selected term
                             while(docLine!= ""){
                                 int docid = Integer.parseInt(docLine.substring(0, countDoc));
                                 docHs.add(docid);
                                 posMap.put(docid, posLine.substring(0, countPos));
                                 int freq = Integer.parseInt(freqLine.substring(0,countFreq));
                                 freqMap.put(docid, freq);
-                                String nextDoc = docLine.substring(docLine.indexOf(" ")+1);
-                                String nextFreq = freqLine.substring(freqLine.indexOf(" ")+1);
-                                String nextPos = posLine.substring(posLine.indexOf(" ")+1);
+                                String nextDoc = docLine.substring(docLine.indexOf(" ")+1); //--> next doc_id
+                                String nextFreq = freqLine.substring(freqLine.indexOf(" ")+1); //--> next freq
+                                String nextPos = posLine.substring(posLine.indexOf(" ")+1); //--> next position set
                                 docLine = nextDoc;
                                 freqLine = nextFreq;
                                 posLine = nextPos;
-                                countDoc = nextDoc.indexOf(" ") == -1 ? nextDoc.length()-1 : nextDoc.indexOf(" ");
+                                countDoc = nextDoc.indexOf(" ") == -1 ? nextDoc.length()-1 : nextDoc.indexOf(" "); //--> non capito
                                 countFreq = nextFreq.indexOf(" ") == -1 ? nextFreq.length()-1 : nextFreq.indexOf(" ");
                                 countPos = nextPos.indexOf(" ") == -1 ? nextPos.length()-1 : nextPos.indexOf(" ");
                             }
                             break;
-                            //iteration of all doc_id for the term
-                            //save on data structure doc_id , term freq. , position to merge with all doc and then write
-                            /*for (String doc : docs) {
-                                    //System.out.println(doc);
-                                    int docid = Integer.parseInt(doc);
-                                    //docHt.put(j, docid);
-                                    docHs.add(docid);
-                                    posMap.put(docid, positions[j]);
-                                    int freq = Integer.parseInt(freqs[j]);
-                                    freqMap.put(docid, freq);
-                                    j++;
-                            }*/
-                            //break;
+
                         }
 
                     }
@@ -288,6 +259,17 @@ public class SPIMI_Invert {
     }
 
 
+
+
+    /**
+     * this is the merging function of n block created by SPIMI, open all file of the "n" block
+     * make a scanner of global lexicon , and check the nextline of each lexicon of n block (lexicon are ordered) ,
+     * when a match is found it will merge in the finals file according to the info type (tf,doc_id,position)
+     * we save on a .bin file using Binary formatting
+     * @param n
+     * @throws IOException
+     */
+    //TODO 22/10/2022: aggiungere la compresssione (da qui o da dentro la creazione dei blocchi?)
     private void writeAllFilesBin(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
         //TODO 22/10/2022: implement the binary version of the index merging
         String[] lex = new String[n+1];
@@ -384,25 +366,12 @@ public class SPIMI_Invert {
                             //iteration of all doc_id for the term
                             //save on data structure doc_id , term freq. , position to merge with all doc and then write
                             for (String doc : docs) {
-                                //System.out.println(doc);
                                 int docid = Integer.parseInt(doc);
-                                //docHt.put(j, docid);
                                 docHs.add(docid);
                                 posMap.put(docid, positions[j]);
                                 int freq = Integer.parseInt(freqs[j]);
                                 freqMap.put(docid, freq);
                                 j++;
-                                //System.out.println(freq);
-                                    /*if(freqMap.get(j) == null){
-                                        freqMap.put(j, freq);
-                                    }
-                                    else {
-                                        termf = freqMap.get(j);
-                                        termf += freq;
-                                        freqMap.put(j, termf);
-                                    }*/
-
-                                //System.out.println(docid);
                             }
                             break;
                         }
@@ -452,7 +421,7 @@ public class SPIMI_Invert {
         }
     }
 
-    //fast to count file line --> 5milion in 4/5 s
+
 
     /**
      * count the number of lines in the file
@@ -460,6 +429,7 @@ public class SPIMI_Invert {
      * @param fileName_path
      * @return
      */
+    //fast to count file line --> 5milion in 4/5 s
     public static long countLineFast(String fileName_path) {
 
         long lines = 0;
