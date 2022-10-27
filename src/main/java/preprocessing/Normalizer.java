@@ -28,21 +28,27 @@ public class Normalizer {
     public String normalize(String s) throws IOException {
         //remove all non-ASCII characters
         String formattedLine = s.replaceAll("[^\\x00-\\x7F]", " ");
+        //remove malformed characters
+        formattedLine = formattedLine.replaceAll("[^a-zA-Z0-9/?:().,'+/-]", " ");
         // remove non-printable characters from Unicode
         formattedLine = formattedLine.replaceAll("\\p{C}", " ");
         //replace urls
         String urlPattern = "((https?|ftp|gopher|telnet|file|Unsure|http):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)";
         formattedLine = formattedLine.replaceAll(urlPattern, " ");
         //remove punctuation
-        formattedLine = formattedLine.replaceAll("\\p{Punct}", "");
-        //replace consecutive characters
-        //formattedLine = formattedLine.replaceAll("'{3,}", " ");
+        formattedLine = formattedLine.replaceAll("\\p{Punct}", " ");
+        //replace consecutive character
+        //consecutive characters inside words (max two)
         formattedLine = formattedLine.replaceAll("(\\p{L})\\1+", "$1$1");
         formattedLine = formattedLine.replaceAll("(\\w)\\1+", "$1$1");
+        //consecutive characters between spaces (collapsed to one)
+        formattedLine = formattedLine.replaceAll("\\s+(\\w)\\1+\\s+", "$1");
+        formattedLine = formattedLine.replaceAll("\\s+(\\w)\\1+", "$1");
+        formattedLine = formattedLine.replaceAll("^(\\w)\\1+\\s+", "$1");
         //replace digits
-        formattedLine = formattedLine.replaceAll("\\d", "");
+        formattedLine = formattedLine.replaceAll("\\d", " ");
         //replace all single characters
-        formattedLine = formattedLine.replaceAll("(\\s+.(?=\\s))", "");
+        formattedLine = formattedLine.replaceAll("(\\s+.(?=\\s))", " ");
         //replace the country codes with the country name
         //formattedLine = replaceCountryCodes(formattedLine);
         //collapse multiple spaces
