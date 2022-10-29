@@ -96,6 +96,7 @@ public class Daat {
             //docid++;
             docid = nextGEQ(itDocs);
         }
+        //TODO 29/10/2022: decide whether or not to normalize bm25 scores
         //normalize the scores
         normalizeScores(scores);
         //sort the scores
@@ -385,20 +386,24 @@ public class Daat {
         return avg/ht_docindex.keySet().size();
     }
 
+    //tfidf scoring function for computing term frequencty weights
     private double tfidf(int tf_d, int d_len, int doc_freq){
         //System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
         return (1.0 + Math.log(tf_d)*Math.log(ht_docindex.keySet().size()/doc_freq));
     }
 
+    //normalized version of tfidf
     private double tfidfNorm(int tf_d, int d_len, int doc_freq){
         //System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
         return (1.0 + Math.log(tf_d)*Math.log(ht_docindex.keySet().size()/doc_freq))/(double)d_len;
     }
 
+    //bm25 scoring function for computing weights for term frequency
     private double bm25Weight(int tf_d, int d_len, int doc_freq, double avg_len){
         return (((double)tf_d/((k1*((1-b) + b * (d_len/avg_len)))+tf_d)))*Math.log(ht_docindex.keySet().size()/doc_freq);
     }
 
+    //method for normalizing the scores obtained with bm25
     private void normalizeScores(HashMap<Integer, Double> sortedScores){
         double totalScore = 0;
         for(double val: sortedScores.values()){
