@@ -186,12 +186,24 @@ public class SPIMI_Invert {
                             int countDoc = docLine.indexOf(" "); // in our text the doc_id are separated by white space (" ")
                             int countFreq = freqLine.indexOf(" ");
                             int countPos = posLine.indexOf(" ");
+                            String docs = "";
+                            String freqs = "";
+                            String poss = "";
                             if(countDoc == -1){ //if is not founded " " , mean that there is only one value , so a parsing is computed
                                 int docid = Integer.parseInt(docLine);
+                                docs+=docid;
                                 docHs.add(docid);
                                 posMap.put(docid, posLine); //non si posso avere più posizioni in quel documento?? quindi perche non fa ciclo?
                                 int freq = Integer.parseInt(freqLine);
+                                poss+=posLine;
+                                freqs+=freq;
                                 freqMap.put(docid, freq);
+                                //TODO: this is the new write with clean strings, see this before we decide to update it
+                                //write on different doc different type of value
+                                //THIS WRITES THE DOCIDS AND TF FOR THIS BLOCK ONLY
+                                //outDocs.write(docs + " ");
+                                //outFreqs.write(freqs + " ");
+                                //outPos.write(poss + " ");
                                 break;
                             }
                             //iterate thought all doc_id of selected term
@@ -201,16 +213,28 @@ public class SPIMI_Invert {
                                 posMap.put(docid, posLine.substring(0, countPos));
                                 int freq = Integer.parseInt(freqLine.substring(0,countFreq));
                                 freqMap.put(docid, freq);
+                                docHs.add(docid);
+                                String newPos = posLine.substring(0, countPos);
+                                posMap.put(docid, posLine.substring(0, countPos));
                                 String nextDoc = docLine.substring(docLine.indexOf(" ")+1); //--> next doc_id
                                 String nextFreq = freqLine.substring(freqLine.indexOf(" ")+1); //--> next freq
                                 String nextPos = posLine.substring(posLine.indexOf(" ")+1); //--> next position set
-                                docLine = nextDoc;
-                                freqLine = nextFreq;
-                                posLine = nextPos;
                                 countDoc = nextDoc.indexOf(" ") == -1 ? nextDoc.length()-1 : nextDoc.indexOf(" "); //--> non capito
                                 countFreq = nextFreq.indexOf(" ") == -1 ? nextFreq.length()-1 : nextFreq.indexOf(" ");
                                 countPos = nextPos.indexOf(" ") == -1 ? nextPos.length()-1 : nextPos.indexOf(" ");
+                                docs+= nextDoc.indexOf(" ") == -1 ? docid : docid + " ";
+                                poss+= nextPos.indexOf(" ") == -1 ? newPos: newPos + " ";
+                                freqs+=nextFreq.indexOf(" ") == -1 ? freq: freq + " ";
+                                docLine = nextDoc;
+                                freqLine = nextFreq;
+                                posLine = nextPos;
                             }
+                            //TODO: this is the new write with clean strings, see this before we decide to update it
+                            //write on different doc different type of value
+                            //THIS WRITES THE DOCIDS AND TF FOR THIS BLOCK ONLY
+                            //outDocs.write(docs + " ");
+                            //outFreqs.write(freqs + " ");
+                            //outPos.write(poss + " ");
                             break;
 
                         }
