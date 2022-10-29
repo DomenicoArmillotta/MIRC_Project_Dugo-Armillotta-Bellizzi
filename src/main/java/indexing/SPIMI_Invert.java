@@ -222,9 +222,12 @@ public class SPIMI_Invert {
                                 countDoc = nextDoc.indexOf(" ") == -1 ? nextDoc.length()-1 : nextDoc.indexOf(" "); //--> non capito
                                 countFreq = nextFreq.indexOf(" ") == -1 ? nextFreq.length()-1 : nextFreq.indexOf(" ");
                                 countPos = nextPos.indexOf(" ") == -1 ? nextPos.length()-1 : nextPos.indexOf(" ");
-                                docs+= nextDoc.indexOf(" ") == -1 ? docid : docid + " ";
-                                poss+= nextPos.indexOf(" ") == -1 ? newPos: newPos + " ";
-                                freqs+=nextFreq.indexOf(" ") == -1 ? freq: freq + " ";
+                                docs = docid + " ";
+                                poss = newPos + " ";
+                                freqs = freq + " ";
+                                //outDocs.write(docs);
+                                //outFreqs.write(freqs);
+                                //outPos.write(poss);
                                 docLine = nextDoc;
                                 freqLine = nextFreq;
                                 posLine = nextPos;
