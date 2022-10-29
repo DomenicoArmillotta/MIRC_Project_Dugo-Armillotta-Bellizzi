@@ -7,12 +7,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import preprocessing.Preprocess_doc;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 //voglio copiare le posting list dei termini della query all'interno di una struttura dati
@@ -27,14 +23,26 @@ public class Daat {
     public Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
     public Hashtable<String, Integer> doc_freqs = new Hashtable<>();
 
+    private final double k1 = 1.2;
+    private final double b = 0.75;
 
-    public void daat(String query_string, int k) throws IOException {
-        //HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
+
+    public Daat(){
         Document_index document_index = new Document_index();
         ht_docindex = document_index.document_index_from_text("docs/document_index.txt");
         Lexicon lexicon = new Lexicon();
         ht_lexicon = lexicon.lexicon_from_text("docs/lexicon_tot.txt");
         doc_freqs = lexicon.lexicon_from_text_with_freqs("docs/lexicon_tot.txt");
+    }
+
+
+    public void daat(String query_string, int k) throws IOException {
+        //HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
+        /*Document_index document_index = new Document_index();
+        ht_docindex = document_index.document_index_from_text("docs/document_index.txt");
+        Lexicon lexicon = new Lexicon();
+        ht_lexicon = lexicon.lexicon_from_text("docs/lexicon_tot.txt");
+        doc_freqs = lexicon.lexicon_from_text_with_freqs("docs/lexicon_tot.txt");*/
         Preprocess_doc preprocessing = new Preprocess_doc();
         List<String> pro_query = new ArrayList<>();
         pro_query = preprocessing.preprocess_doc_optimized(query_string);
@@ -77,8 +85,9 @@ public class Daat {
                 for (Posting p : entry.getValue()) {
                     if (p.getDocumentId() == docid && query_freqs.get(curTerm) != null && docLens.get(docid) != null && doc_freqs.get(curTerm)!= null) {
                         //apply scoring function
-                        //score += tfidf(query_freqs.get(curTerm), p.getTermFrequency(), docLens.get(p.getDocumentId()), query_len, doc_freqs.get(curTerm));
-                        score += bm25_weight(query_freqs.get(curTerm), p.getTermFrequency(), docLens.get(p.getDocumentId()), query_len, doc_freqs.get(curTerm), avg_len);
+                        //score += tfidf(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
+                        //score += tfidfNorm(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
+                        score += bm25Weight(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm), avg_len);
                     }
                 }
             }
@@ -87,6 +96,8 @@ public class Daat {
             //docid++;
             docid = nextGEQ(itDocs);
         }
+        //normalize the scores
+        normalizeScores(scores);
         //sort the scores
         Comparator<Map.Entry<Integer, Double>> valueComparator =
                 new Comparator<Map.Entry<Integer,Double>>() {
@@ -105,10 +116,14 @@ public class Daat {
             sortedByValue.put(entry.getKey(), entry.getValue());
         }
         //return the first k scores
-        List<Map.Entry<Integer, Double>> sortedScores = sortedByValue.entrySet().stream()
+        /*List<Map.Entry<Integer, Double>> sortedScores = sortedByValue.entrySet().stream()
+                .limit(k)
+                .collect(Collectors.toList());*/
+        List<Integer> sortedScores = sortedByValue.keySet().stream()
                 .limit(k)
                 .collect(Collectors.toList());
-        System.out.println(sortedScores);
+        System.out.println("Top " + k + " documents: " + sortedScores);
+
         //TODO 22/10/2022: initialize the data structures and implement the scoring function
         // remember that documents have to be processed in parallel in increasing order of docid
         // also we need to implement the iterators to go through all the posting lists we need
@@ -370,20 +385,27 @@ public class Daat {
         return avg/ht_docindex.keySet().size();
     }
 
-    private double tfidf(int tf_q, int tf_d, int d_len, int q_len, int doc_freq){
+    private double tfidf(int tf_d, int d_len, int doc_freq){
         //System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
-        double factor1 = ((double)tf_q/q_len);
-        double factor2 = (1.0 + Math.log(tf_d)*Math.log(ht_docindex.keySet().size()/doc_freq))/(double)d_len;
-        /*double k1 = 1.0;
-        double factor1 = ((double)tf_q/q_len);
-        double factor2 = (((double)tf_d/(k1+tf_d))*Math.log(ht_docindex.keySet().size()/doc_freq))/(double)d_len;*/
-        return factor1*factor2;
+        return (1.0 + Math.log(tf_d)*Math.log(ht_docindex.keySet().size()/doc_freq));
     }
 
-    private double bm25_weight(int tf_q, int tf_d, int d_len, int q_len, int doc_freq, double avg_len){
+    private double tfidfNorm(int tf_d, int d_len, int doc_freq){
         //System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
-        double k1 = 1.2;
-        double b = 0.75;
+        return (1.0 + Math.log(tf_d)*Math.log(ht_docindex.keySet().size()/doc_freq))/(double)d_len;
+    }
+
+    private double bm25Weight(int tf_d, int d_len, int doc_freq, double avg_len){
         return (((double)tf_d/((k1*((1-b) + b * (d_len/avg_len)))+tf_d)))*Math.log(ht_docindex.keySet().size()/doc_freq);
+    }
+
+    private void normalizeScores(HashMap<Integer, Double> sortedScores){
+        double totalScore = 0;
+        for(double val: sortedScores.values()){
+            totalScore+=val;
+        }
+        for(Map.Entry<Integer,Double> e: sortedScores.entrySet()){
+            sortedScores.put(e.getKey(), e.getValue()/totalScore);
+        }
     }
 }
