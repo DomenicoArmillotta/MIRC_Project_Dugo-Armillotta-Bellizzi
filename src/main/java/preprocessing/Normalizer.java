@@ -2,6 +2,8 @@ package preprocessing;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +30,7 @@ public class Normalizer {
     public String normalize(String s) throws IOException {
         //remove all non-ASCII characters
         String formattedLine = s.replaceAll("[^\\x00-\\x7F]", " ");
+        //formattedLine = StringEscapeUtils.unescapeJava(s);
         //remove malformed characters
         formattedLine = formattedLine.replaceAll("[^a-zA-Z0-9/?:().,'+/-]", " ");
         // remove non-printable characters from Unicode
@@ -37,6 +40,7 @@ public class Normalizer {
         formattedLine = formattedLine.replaceAll(urlPattern, " ");
         //remove punctuation
         formattedLine = formattedLine.replaceAll("\\p{Punct}", " ");
+        //formattedLine = formattedLine.replaceAll("\\P{ASCII}", " ");
         //replace consecutive character
         //consecutive characters inside words (max two)
         formattedLine = formattedLine.replaceAll("(\\p{L})\\1+", "$1$1");

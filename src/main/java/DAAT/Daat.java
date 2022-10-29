@@ -68,6 +68,7 @@ public class Daat {
         LinkedHashMap<Integer,Integer> docSet = new LinkedHashMap<>(docLens);
         //Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
         Iterator<Integer> itDocs = docSet.keySet().iterator();
+        double avg_len = averageDocumentLength();
         while(itDocs.hasNext()) {
             //System.out.println("HERE: " + docid);
             double score = 0.0;
@@ -76,7 +77,8 @@ public class Daat {
                 for (Posting p : entry.getValue()) {
                     if (p.getDocumentId() == docid && query_freqs.get(curTerm) != null && docLens.get(docid) != null && doc_freqs.get(curTerm)!= null) {
                         //apply scoring function
-                        score += tfidf(query_freqs.get(curTerm), p.getTermFrequency(), docLens.get(p.getDocumentId()), query_len, doc_freqs.get(curTerm));
+                        //score += tfidf(query_freqs.get(curTerm), p.getTermFrequency(), docLens.get(p.getDocumentId()), query_len, doc_freqs.get(curTerm));
+                        score += bm25_weight(query_freqs.get(curTerm), p.getTermFrequency(), docLens.get(p.getDocumentId()), query_len, doc_freqs.get(curTerm), avg_len);
                     }
                 }
             }
@@ -358,6 +360,16 @@ public class Daat {
         return p.getTermFrequency();
     }
 
+    //TODO 29/10/2022: the average documetn length is over the length of all documents in the collection
+    // or only in the ones matching the query?
+    private double averageDocumentLength(){
+        double avg = 0;
+        for(int len: ht_docindex.values()){
+            avg+= len;
+        }
+        return avg/ht_docindex.keySet().size();
+    }
+
     private double tfidf(int tf_q, int tf_d, int d_len, int q_len, int doc_freq){
         //System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
         double factor1 = ((double)tf_q/q_len);
@@ -366,5 +378,12 @@ public class Daat {
         double factor1 = ((double)tf_q/q_len);
         double factor2 = (((double)tf_d/(k1+tf_d))*Math.log(ht_docindex.keySet().size()/doc_freq))/(double)d_len;*/
         return factor1*factor2;
+    }
+
+    private double bm25_weight(int tf_q, int tf_d, int d_len, int q_len, int doc_freq, double avg_len){
+        //System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
+        double k1 = 1.2;
+        double b = 0.75;
+        return (((double)tf_d/((k1*((1-b) + b * (d_len/avg_len)))+tf_d)))*Math.log(ht_docindex.keySet().size()/doc_freq);
     }
 }
