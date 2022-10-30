@@ -131,6 +131,7 @@ public class SPIMI_Invert {
         //Map<String, Integer> globalLexicon = new HashMap<>(ht_lexicon);
         //TreeMap<String, Integer> sortedLex = new TreeMap<>(globalLexicon);
         TreeSet<String> sortedTerms = new TreeSet<>(globalTerms);
+        //LinkedHashSet: the fastest way to iterate over a hashset
         LinkedHashSet<String> termSet = new LinkedHashSet<>(sortedTerms);
         //Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
         Iterator<String> itTerms = termSet.iterator(); //--> iterator for all term in collection
@@ -157,6 +158,7 @@ public class SPIMI_Invert {
                 Map<Integer,Integer> freqMap = new HashMap<>(); //--> contains term freq for each doc_id
                 HashSet<Integer> docHs = new HashSet<>(); //--> contains doc_id
                 String term = "";
+                int npostings = 0; //to count the posting list size
                 //iterate through all block
                 for(int i = 0; i <= n; i++){
                     //int j = 0;
@@ -177,6 +179,7 @@ public class SPIMI_Invert {
                         //to reach the right line on files , an offset is used
                         if (lexTerm.equals(term)) {
                             int countLine = 0;
+                            //read the postings at the desired offset
                             String docLine = (String) FileUtils.readLines(new File(id[i]), "UTF-8").get(offset); //--> doc_id of selected term
                             String freqLine = (String) FileUtils.readLines(new File(tf[i]), "UTF-8").get(offset); //--> term freq of selected term
                             String posLine = (String) FileUtils.readLines(new File(pos[i]), "UTF-8").get(offset); //--> String of positions of selected term
@@ -189,11 +192,12 @@ public class SPIMI_Invert {
                             String docs = "";
                             String freqs = "";
                             String poss = "";
+                            //we read the postings with substring because it's faster
                             if(countDoc == -1){ //if is not founded " " , mean that there is only one value , so a parsing is computed
                                 int docid = Integer.parseInt(docLine);
                                 docs+=docid;
                                 docHs.add(docid);
-                                posMap.put(docid, posLine); //non si posso avere più posizioni in quel documento?? quindi perche non fa ciclo?
+                                posMap.put(docid, posLine); //reads the list of positions
                                 int freq = Integer.parseInt(freqLine);
                                 poss+=posLine;
                                 freqs+=freq;
@@ -205,6 +209,7 @@ public class SPIMI_Invert {
                                 outDocs.write(docs + " ");
                                 outFreqs.write(freqs + " ");
                                 outPos.write(poss + " ");
+                                npostings++;
                                 break;
                             }
                             //iterate thought all doc_id of selected term
@@ -220,7 +225,9 @@ public class SPIMI_Invert {
                                 String nextDoc = docLine.substring(docLine.indexOf(" ")+1); //--> next doc_id
                                 String nextFreq = freqLine.substring(freqLine.indexOf(" ")+1); //--> next freq
                                 String nextPos = posLine.substring(posLine.indexOf(" ")+1); //--> next position set
-                                countDoc = nextDoc.indexOf(" ") == -1 ? nextDoc.length()-1 : nextDoc.indexOf(" "); //--> non capito
+                                //if there are other values, then the next posting is not the last
+                                // and so take the next posting separated by space, otherwise take the last posting
+                                countDoc = nextDoc.indexOf(" ") == -1 ? nextDoc.length()-1 : nextDoc.indexOf(" ");
                                 countFreq = nextFreq.indexOf(" ") == -1 ? nextFreq.length()-1 : nextFreq.indexOf(" ");
                                 countPos = nextPos.indexOf(" ") == -1 ? nextPos.length()-1 : nextPos.indexOf(" ");
                                 //TODO: add compression here
@@ -233,6 +240,7 @@ public class SPIMI_Invert {
                                 docLine = nextDoc;
                                 freqLine = nextFreq;
                                 posLine = nextPos;
+                                npostings++;
                             }
                             //TODO: this is the new write with clean strings, see this before we decide to update it
                             //write on different doc different type of value
@@ -246,11 +254,11 @@ public class SPIMI_Invert {
 
                     }
                 }
-                TreeSet<Integer> tsdocs = new TreeSet<>(docHs);
+                /*TreeSet<Integer> tsdocs = new TreeSet<>(docHs);
                 TreeMap<Integer, String> tspos = new TreeMap<>(posMap);
-                TreeMap<Integer, Integer> tsfreq = new TreeMap<>(freqMap);
-                countTerm++;
-                int lengthPostingList = tsdocs.size();
+                TreeMap<Integer, Integer> tsfreq = new TreeMap<>(freqMap);*/
+                countTerm++; //increment the offset
+                //int lengthPostingList = tsdocs.size();
                 //write on different doc different type of value
                 // new line for each doc for : doc_id , tfreq. , pos
                 //outDocs.write(String.valueOf(tsdocs));
@@ -260,7 +268,7 @@ public class SPIMI_Invert {
                 //outPos.write(String.valueOf(tspos.values()));
                 outPos.newLine(); // new line on pos file
                 //int docfreq = sortedLex.get(lexTerm);
-                lexTerm += " " + countTerm + " " + lengthPostingList;// + " " + docfreq;
+                lexTerm += " " + countTerm + " " + npostings;// + " " + docfreq;
                 outLex.write(lexTerm);
                 outLex.newLine();
                 outLex.flush();
