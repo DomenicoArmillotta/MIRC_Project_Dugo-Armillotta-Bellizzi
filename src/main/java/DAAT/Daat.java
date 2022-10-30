@@ -38,7 +38,7 @@ public class Daat {
         maxDocID = htDocindex.size();
     }
 
-    //TODO 30/10/2022: da correggere, il caso disjunctive va bene
+    //TODO 30/10/2022: da controllare se va bene
     public void conjunctiveDaat(String query_string, int k) throws IOException {
         //HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
         /*Document_index document_index = new Document_index();
@@ -109,7 +109,7 @@ public class Daat {
                     }
                 }
             }
-            //System.out.println(score);
+            //System.out.println(docid + " " + score);
             if(score!= 0.0) scores.put(docid, score);
             total += score;
             docid++;
@@ -146,7 +146,7 @@ public class Daat {
     }
 
 
-    //finito
+    //TODO 30/11/2022: we need nextGEQ here too or is it fine as it is?
     public void disjunctiveDaat(String query_string, int k) throws IOException {
         //HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
         /*Document_index document_index = new Document_index();
@@ -203,7 +203,6 @@ public class Daat {
                     }
                 }
             }
-            //System.out.println(score);
             if(score!= 0.0) scores.put(docid, score);
             total += score;
             docid = next(itDocs);
@@ -483,6 +482,7 @@ public class Daat {
         return postings;
     }
 
+    //iterate over the posting list ot get the desired term frequency, return 0 otherwise
     private int getFreq(LinkedList<Posting> postingList, int docid){
         for(Posting p: postingList){
             if(p.getDocumentId() == docid) return p.getTermFrequency();
@@ -499,10 +499,10 @@ public class Daat {
     //return its docID. Return value > MAXDID if none exists.
     private int nextGEQ(LinkedList<Posting> invertedLists, int prev) {
         int next = maxDocID;
-        Iterator<Posting> it = invertedLists.iterator();
+        Iterator<Posting> it = invertedLists.iterator(); //iterate over the posting lists to finde the next docid
         while(it.hasNext()){
             next = it.next().getDocumentId();
-            if(next >= prev){
+            if(next >= prev){ //if the next docid is greater or equal the actual one, return it
                 return next;
             }
         }
