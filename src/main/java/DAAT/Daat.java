@@ -92,6 +92,7 @@ public class Daat {
                 else{
                     currDoc = nextGEQ(entry.getValue(), docid);
                 }
+                if(currDoc != docid) break;
             }
             if(currDoc > docid){
                 docid = currDoc; //docid not in the intersection
@@ -100,15 +101,18 @@ public class Daat {
                 for (String curTerm: queryFreqs.keySet()) {
                     LinkedList<Posting> curList = inverted_lists.get(curTerm);
                     int freq  = getFreq(curList, docid);
-                    //apply scoring function
-                    //score += tfidf(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
-                    //score += tfidfNorm(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
-                    score += bm25Weight(freq, docLens.get(docid), docFreqs.get(curTerm), avg_len);
+                    if (queryFreqs.get(curTerm) != null && docLens.get(docid) != null && docFreqs.get(curTerm)!= null) {
+                        //apply scoring function
+                        //score += tfidf(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
+                        //score += tfidfNorm(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
+                        score += bm25Weight(freq, docLens.get(docid), docFreqs.get(curTerm), avg_len);
+                    }
                 }
             }
             //System.out.println(score);
             if(score!= 0.0) scores.put(docid, score);
             total += score;
+            docid++;
             //docid = next(itDocs);
         }
         //normalize the scores
@@ -137,7 +141,7 @@ public class Daat {
         List<Integer> sortedScores = sortedByValue.keySet().stream()
                 .limit(k)
                 .collect(Collectors.toList());
-        System.out.println("Top " + k + " documents for the query \"" +  query_string + "\": " + sortedScores);
+        System.out.println("Top " + k + " documents for the conjunctive query \"" +  query_string + "\": " + sortedScores);
 
     }
 
@@ -479,7 +483,6 @@ public class Daat {
         return postings;
     }
 
-    //TODO 30/11/2022: da fare!!!!!!!!
     private int getFreq(LinkedList<Posting> postingList, int docid){
         for(Posting p: postingList){
             if(p.getDocumentId() == docid) return p.getTermFrequency();
@@ -494,14 +497,16 @@ public class Daat {
 
     //nextGEQ(lp, k) find the next posting in list lp with docID >= k and
     //return its docID. Return value > MAXDID if none exists.
-    //TODO 30/11/2022: da finire!!!!!
     private int nextGEQ(LinkedList<Posting> invertedLists, int prev) {
-        int cur = maxDocID;
+        int next = maxDocID;
         Iterator<Posting> it = invertedLists.iterator();
-        while(cur >= prev && it.hasNext()){
-            cur = it.next().getDocumentId();
+        while(it.hasNext()){
+            next = it.next().getDocumentId();
+            if(next >= prev){
+                return next;
+            }
         }
-        return cur;
+        return next;
     }
 
     //computes the average document length over the whole collection
