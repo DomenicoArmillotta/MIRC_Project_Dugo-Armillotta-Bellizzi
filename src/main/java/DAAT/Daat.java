@@ -111,7 +111,6 @@ public class Daat {
             total += score;
             //docid = next(itDocs);
         }
-        //TODO 29/10/2022: decide whether or not to normalize bm25 scores
         //normalize the scores
         normalizeScores(scores, total);
         //sort the scores
@@ -140,11 +139,6 @@ public class Daat {
                 .collect(Collectors.toList());
         System.out.println("Top " + k + " documents for the query \"" +  query_string + "\": " + sortedScores);
 
-        //TODO 22/10/2022: initialize the data structures and implement the scoring function
-        // remember that documents have to be processed in parallel in increasing order of docid
-        // also we need to implement the iterators to go through all the posting lists we need
-        // so we should call the method for each term and not on the whole query!!! That's why
-        // we need openList and closeList and also other iterators!
     }
 
 
@@ -487,7 +481,10 @@ public class Daat {
 
     //TODO 30/11/2022: da fare!!!!!!!!
     private int getFreq(LinkedList<Posting> postingList, int docid){
-        return docid;
+        for(Posting p: postingList){
+            if(p.getDocumentId() == docid) return p.getTermFrequency();
+        }
+        return 0;
     }
 
     private Posting next(List<Posting> p, int i){
