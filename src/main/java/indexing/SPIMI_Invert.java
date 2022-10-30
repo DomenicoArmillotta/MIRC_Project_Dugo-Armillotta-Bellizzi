@@ -201,9 +201,10 @@ public class SPIMI_Invert {
                                 //TODO: this is the new write with clean strings, see this before we decide to update it
                                 //write on different doc different type of value
                                 //THIS WRITES THE DOCIDS AND TF FOR THIS BLOCK ONLY
-                                //outDocs.write(docs + " ");
-                                //outFreqs.write(freqs + " ");
-                                //outPos.write(poss + " ");
+                                //TODO: add compression here
+                                outDocs.write(docs + " ");
+                                outFreqs.write(freqs + " ");
+                                outPos.write(poss + " ");
                                 break;
                             }
                             //iterate thought all doc_id of selected term
@@ -222,12 +223,13 @@ public class SPIMI_Invert {
                                 countDoc = nextDoc.indexOf(" ") == -1 ? nextDoc.length()-1 : nextDoc.indexOf(" "); //--> non capito
                                 countFreq = nextFreq.indexOf(" ") == -1 ? nextFreq.length()-1 : nextFreq.indexOf(" ");
                                 countPos = nextPos.indexOf(" ") == -1 ? nextPos.length()-1 : nextPos.indexOf(" ");
+                                //TODO: add compression here
                                 docs = docid + " ";
                                 poss = newPos + " ";
                                 freqs = freq + " ";
-                                //outDocs.write(docs);
-                                //outFreqs.write(freqs);
-                                //outPos.write(poss);
+                                outDocs.write(docs);
+                                outFreqs.write(freqs);
+                                outPos.write(poss);
                                 docLine = nextDoc;
                                 freqLine = nextFreq;
                                 posLine = nextPos;
@@ -251,11 +253,11 @@ public class SPIMI_Invert {
                 int lengthPostingList = tsdocs.size();
                 //write on different doc different type of value
                 // new line for each doc for : doc_id , tfreq. , pos
-                outDocs.write(String.valueOf(tsdocs));
+                //outDocs.write(String.valueOf(tsdocs));
                 outDocs.newLine(); // new line on doc file
-                outFreqs.write(String.valueOf(tsfreq.values()));
+                //outFreqs.write(String.valueOf(tsfreq.values()));
                 outFreqs.newLine(); // new line on freq file
-                outPos.write(String.valueOf(tspos.values()));
+                //outPos.write(String.valueOf(tspos.values()));
                 outPos.newLine(); // new line on pos file
                 //int docfreq = sortedLex.get(lexTerm);
                 lexTerm += " " + countTerm + " " + lengthPostingList;// + " " + docfreq;

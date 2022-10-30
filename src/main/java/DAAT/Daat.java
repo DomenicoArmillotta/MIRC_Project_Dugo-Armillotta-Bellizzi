@@ -181,11 +181,11 @@ public class Daat {
         String posLine = null;
         String tfLine = null;
         docLine = itId.nextLine();
-        docLine = docLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+        //docLine = docLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
         posLine = itPos.nextLine();
-        posLine = posLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+        //posLine = posLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
         tfLine = itTf.nextLine();
-        tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+        //tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
         postings_for_term = createPosting(docLine,tfLine,posLine);
         return postings_for_term;
 
@@ -237,11 +237,11 @@ public class Daat {
             String posLine = null;
             String tfLine = null;
             docLine = itId.nextLine();
-            docLine = docLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+            //docLine = docLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
             posLine = itPos.nextLine();
-            posLine = posLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+            //posLine = posLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
             tfLine = itTf.nextLine();
-            tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+            //tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
             postings_for_term = createPosting(docLine,tfLine,posLine);
             inverted_index_query.put(term,postings_for_term);
 
@@ -316,13 +316,13 @@ public class Daat {
             String tfLine = null;
             //docLine = itId.readLine();
             docLine = itId.nextLine();
-            docLine = docLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+            //docLine = docLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
             //posLine = itPos.readLine();
             posLine = itPos.nextLine();
-            posLine = posLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+            //posLine = posLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
             //tfLine = itTf.readLine();
             tfLine = itTf.nextLine();
-            tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+            //tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
             postings_for_term = createPosting(docLine,tfLine,posLine);
             inverted_index_query.put(term,postings_for_term);
 
@@ -336,22 +336,29 @@ public class Daat {
     //questa funzione crea le posting list per ogni termine
     //quindi una posting per ogni doc id
     public List<Posting> createPosting(String docLine , String tfLine , String posLine){
-        List<Posting> postings = new ArrayList<>();
+        List<Posting> postings = new LinkedList<>();
         //System.out.println(docLine); //--> doc_id
         //System.out.println(tfLine);
         //System.out.println(posLine);
-        String[] docs_id = docLine.split(",");
-        String[] tfs = tfLine.split(",");
-        String[] posDoc = posLine.split(",");
+        String[] docs_id = docLine.split(" ");
+        String[] tfs = tfLine.split(" ");
+        String[] posDoc = posLine.split(" ");
+        //String[] docs_id = docLine.split(",");
+        //String[] tfs = tfLine.split(",");
+        //String[] posDoc = posLine.split(",");
         for (int i=0;i<docs_id.length;i++){
-            List<Integer> posList = new ArrayList<>();
+            List<Integer> posList = new LinkedList<>();
             if(posDoc[i].contains("-")){
                 String[] tmp = posDoc[i].split("-");
                 for(String pos : tmp){
                     posList.add(Integer.parseInt(pos));
                     //System.out.println("aggiunto pos = " + Integer.parseInt(pos));
                 }
-                Posting posting = new Posting(Integer.parseInt(docs_id[i]),Integer.parseInt(tfs[i]),posList);
+                //TODO: add decompression here
+                // non abiamo un intero ma una bit string, va decompressa!
+                int doc = Integer.parseInt(docs_id[i]);
+                int freq = Integer.parseInt(tfs[i]);
+                Posting posting = new Posting(doc,freq,posList);
                 //System.out.println("doc id : "+docs_id[i]+" pos : "+ posList + " tfs : " + tfs[i]);
                 postings.add(posting);
             }else{
@@ -372,11 +379,7 @@ public class Daat {
         return it.next();
     }
 
-    private int getScore(Posting p){
-        return p.getTermFrequency();
-    }
-
-    //TODO 29/10/2022: the average documetn length is over the length of all documents in the collection
+    //TODO 29/10/2022: the average document length is over the length of all documents in the collection
     // or only in the ones matching the query?
     private double averageDocumentLength(){
         double avg = 0;
@@ -386,7 +389,7 @@ public class Daat {
         return avg/ht_docindex.keySet().size();
     }
 
-    //tfidf scoring function for computing term frequencty weights
+    //tfidf scoring function for computing term frequency weights
     private double tfidf(int tf_d, int d_len, int doc_freq){
         //System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
         return (1.0 + Math.log(tf_d)*Math.log(ht_docindex.keySet().size()/doc_freq));
