@@ -1,6 +1,6 @@
 package DAAT;
 
-import document_index.Document_index;
+import document_index.DocumentIndex;
 import inverted_index.Posting;
 import lexicon.Lexicon;
 import org.apache.commons.io.FileUtils;
@@ -28,11 +28,11 @@ public class Daat {
 
 
     public Daat(){
-        Document_index document_index = new Document_index();
-        htDocindex = document_index.document_index_from_text("docs/document_index.txt");
+        DocumentIndex document_index = new DocumentIndex();
+        htDocindex = document_index.documentIndexFromText("docs/document_index.txt");
         Lexicon lexicon = new Lexicon();
-        htLexicon = lexicon.lexicon_from_text("docs/lexicon_tot.txt");
-        docFreqs = lexicon.lexicon_from_text_with_freqs("docs/lexicon_tot.txt");
+        htLexicon = lexicon.lexiconFromText("docs/lexicon_tot.txt");
+        docFreqs = lexicon.lexiconFromTextWithFreqs("docs/lexicon_tot.txt");
     }
 
 

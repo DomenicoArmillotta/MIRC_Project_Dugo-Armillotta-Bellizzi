@@ -11,11 +11,11 @@ public class LexiconTest extends TestCase {
         String path = "docs/collection_test.tsv";
         Hashtable<String ,Integer> ht_original = new Hashtable<>();
         Hashtable<String ,Integer> ht_text = new Hashtable<>();
-        ht_original = lexicon.create_lexicon(path);
+        ht_original = lexicon.createLexicon(path);
         System.out.println(ht_original);
-        lexicon.text_from_lexicon(ht_original);
+        lexicon.textFromLexicon(ht_original);
         String save_path = "docs/lexicon_test.tsv";
-        ht_text = lexicon.lexicon_from_text(save_path);
+        ht_text = lexicon.lexiconFromText(save_path);
         System.out.println(ht_text);
         assertTrue(ht_original.equals(ht_text));
 

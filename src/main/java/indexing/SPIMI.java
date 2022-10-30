@@ -1,6 +1,6 @@
 package indexing;
 
-import document_index.Document_index;
+import document_index.DocumentIndex;
 import inverted_index.InvertedIndex;
 import lexicon.Lexicon;
 import org.apache.commons.io.FileUtils;
@@ -24,12 +24,12 @@ public class SPIMI {
      * @param n_block number of block that we want
      * @throws IOException
      */
-    public void spimi_invert_block(String read_path, int n_block) throws IOException {
+    public void spimiInvertBlock(String read_path, int n_block) throws IOException {
         Lexicon lexicon = new Lexicon();
-        ht_lexicon = lexicon.create_lexicon(read_path);
-        Document_index docindex = new Document_index();
-        ht_docindex = docindex.create_document_index(read_path);
-        docindex.text_from_document_index(ht_docindex);
+        ht_lexicon = lexicon.createLexicon(read_path);
+        DocumentIndex docindex = new DocumentIndex();
+        ht_docindex = docindex.createDocumentIndex(read_path);
+        docindex.textFromDocumentIndex(ht_docindex);
         File file = new File(read_path);
         LineIterator it = FileUtils.lineIterator(file, "UTF-8");
         long lines = countLineFast(read_path);
@@ -48,7 +48,7 @@ public class SPIMI {
                 }
                 //System.out.println("________Chunk # ------->" + index_block);
                 //we elaborate one block at time , so we call the function to create inverted index for the block
-                spimi_invert(listDoc, index_block);
+                spimiInvert(listDoc, index_block);
                 index_block++;
             }
 
@@ -69,7 +69,7 @@ public class SPIMI {
      * @param n
      * @throws IOException
      */
-    public void spimi_invert(List<String> fileBlock, int n) throws IOException {
+    public void spimiInvert(List<String> fileBlock, int n) throws IOException {
         InvertedIndex index = new InvertedIndex();//constructor: initializes the dictionary and the output file
         PreprocessDoc preprocessing = new PreprocessDoc();
         for (String doc : fileBlock) { //each row is a doc!
@@ -335,7 +335,7 @@ public class SPIMI {
 
         Lexicon lexicon = new Lexicon();
         Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
-        ht_lexicon = lexicon.create_lexicon(input_docs);
+        ht_lexicon = lexicon.createLexicon(input_docs);
         //implemento Set --> used for Lookup su Set o(1);
         Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
         TreeSet<String> sortedTerms = new TreeSet<>(globalTerms);

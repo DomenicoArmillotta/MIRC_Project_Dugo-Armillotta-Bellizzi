@@ -8,7 +8,7 @@ import java.io.*;
 import java.util.*;
 
 // contain doc_id : doc.size : pagerank
-public class Document_index {
+public class DocumentIndex {
     /**
      * is created the document index with each row :
      * doc_id:document_length
@@ -17,7 +17,7 @@ public class Document_index {
      * @throws IOException
      */
     //list is commented becouse in the original slide there is another parameters called PageRank
-    public Hashtable<Integer ,/*List<*/Integer/*>*/> create_document_index (String path) throws IOException {
+    public Hashtable<Integer ,/*List<*/Integer/*>*/> createDocumentIndex(String path) throws IOException {
         //Hashtable<Integer ,List<Integer>> ht = new Hashtable<>();
         Hashtable<Integer ,Integer> ht = new Hashtable<>();
         PreprocessDoc preprocess_doc = new PreprocessDoc();
@@ -57,7 +57,7 @@ public class Document_index {
      * row : doc_id:doc_length
      * @param map structure to write
      */
-    public void text_from_document_index (Hashtable<Integer ,/*List<*/Integer/*>*/> map){
+    public void textFromDocumentIndex(Hashtable<Integer ,/*List<*/Integer/*>*/> map){
         BufferedWriter bf = null;
         String outputFilePath = "docs/document_index.txt";
         File file = new File(outputFilePath);
@@ -112,7 +112,7 @@ public class Document_index {
      * @param path
      * @return
      */
-    public Hashtable<Integer ,Integer> document_index_from_text (String path){
+    public Hashtable<Integer ,Integer> documentIndexFromText(String path){
         Hashtable<Integer , Integer> map = new Hashtable<>();
         //Map<String, Integer> map = new HashMap<String, Integer>();
         BufferedReader br = null;

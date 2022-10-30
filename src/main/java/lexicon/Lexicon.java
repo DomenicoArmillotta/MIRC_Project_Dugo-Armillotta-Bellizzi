@@ -18,7 +18,7 @@ public class Lexicon {
      * @return
      * @throws IOException
      */
-    public Hashtable<String ,Integer> create_lexicon (String path) throws IOException {
+    public Hashtable<String ,Integer> createLexicon(String path) throws IOException {
         Hashtable<String ,Integer> ht = new Hashtable<>();
         PreprocessDoc preprocessDoc = new PreprocessDoc();
         File file = new File(path);
@@ -62,7 +62,7 @@ public class Lexicon {
      * is written term:df
      * @param map
      */
-    public void text_from_lexicon (Hashtable<String ,Integer> map){
+    public void textFromLexicon(Hashtable<String ,Integer> map){
         TreeMap<String ,Integer> sortedMap;
         TreeMap<String ,Integer> tmi = new TreeMap<>(map);
         sortedMap = tmi;
@@ -111,7 +111,7 @@ public class Lexicon {
      * @param path file of input
      * @return
      */
-    public Hashtable<String ,Integer> lexicon_from_text (String path){
+    public Hashtable<String ,Integer> lexiconFromText(String path){
         Hashtable<String ,Integer> map = new Hashtable<>();
         //Map<String, Integer> map = new HashMap<String, Integer>();
         BufferedReader br = null;
@@ -168,7 +168,7 @@ public class Lexicon {
      * @param path file of input
      * @return
      */
-    public Hashtable<String ,Integer> lexicon_from_text_with_freqs (String path){
+    public Hashtable<String ,Integer> lexiconFromTextWithFreqs(String path){
         Hashtable<String ,Integer> map = new Hashtable<>();
         //Map<String, Integer> map = new HashMap<String, Integer>();
         BufferedReader br = null;
