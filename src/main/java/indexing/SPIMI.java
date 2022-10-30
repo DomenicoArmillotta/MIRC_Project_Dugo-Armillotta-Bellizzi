@@ -1,11 +1,11 @@
 package indexing;
 
 import document_index.Document_index;
-import inverted_index.Inverted_index;
+import inverted_index.InvertedIndex;
 import lexicon.Lexicon;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import preprocessing.Preprocess_doc;
+import preprocessing.PreprocessDoc;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -13,7 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class SPIMI_Invert {
+public class SPIMI {
 
     private Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
     private Hashtable<Integer, Integer> ht_docindex = new Hashtable<>();
@@ -70,8 +70,8 @@ public class SPIMI_Invert {
      * @throws IOException
      */
     public void spimi_invert(List<String> fileBlock, int n) throws IOException {
-        Inverted_index index = new Inverted_index();//constructor: initializes the dictionary and the output file
-        Preprocess_doc preprocessing = new Preprocess_doc();
+        InvertedIndex index = new InvertedIndex();//constructor: initializes the dictionary and the output file
+        PreprocessDoc preprocessing = new PreprocessDoc();
         for (String doc : fileBlock) { //each row is a doc!
             int cont = 1;
             String[] parts = doc.split("\t");

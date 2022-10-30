@@ -4,16 +4,13 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.io.BufferedReader;
 import java.io.File;
 
-public class Stopword_removal {
+public class StopwordRemoval {
 
     /**
      * removes the English language stopwords from the token list and returns a new token list.

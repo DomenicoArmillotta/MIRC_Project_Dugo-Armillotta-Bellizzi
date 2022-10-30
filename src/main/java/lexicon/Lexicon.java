@@ -1,15 +1,10 @@
 package lexicon;
 
-import inverted_index.Posting;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import preprocessing.Preprocess_doc;
+import preprocessing.PreprocessDoc;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 // contain as key the term_id and the document frequency , the number of document in wich the term appears at least onces
 // the key is the pointer to the inverted index
@@ -25,7 +20,7 @@ public class Lexicon {
      */
     public Hashtable<String ,Integer> create_lexicon (String path) throws IOException {
         Hashtable<String ,Integer> ht = new Hashtable<>();
-        Preprocess_doc preprocess_doc = new Preprocess_doc();
+        PreprocessDoc preprocessDoc = new PreprocessDoc();
         File file = new File(path);
         List<String> list_doc = new ArrayList<>();
         // to not read all the documents in memory we use a LineIterator
@@ -38,7 +33,7 @@ public class Lexicon {
                 String doc_corpus = parts[1];
                 List<String> pro_doc = new ArrayList<>();
                 //in output è la lista delle parole di un documento
-                pro_doc = preprocess_doc.preprocess_doc_optimized(doc_corpus);
+                pro_doc = preprocessDoc.preprocess_doc_optimized(doc_corpus);
                 //scorro le parole del documento
                 Set<String> mySet = new HashSet<String>();
                 for (int j = 0; j < pro_doc.size(); j++) {

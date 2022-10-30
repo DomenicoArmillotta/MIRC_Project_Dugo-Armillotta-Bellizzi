@@ -1,16 +1,9 @@
 package inverted_index;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.LineIterator;
-import preprocessing.Preprocess_doc;
-
 import java.io.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.IntStream;
 
-public class Inverted_index{
+public class InvertedIndex {
 
     private Hashtable<String,Integer> dict;
     private String outputFile;
@@ -21,7 +14,7 @@ public class Inverted_index{
     private TreeMap<String, List<Posting>> sortedIndex;
 
 
-    public Inverted_index() {
+    public InvertedIndex() {
         dict = new Hashtable<>();
         index = new HashMap();
     }

@@ -3,17 +3,10 @@ package preprocessing;
 import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import org.apache.lucene.analysis.en.PorterStemFilter;
-import org.tartarus.snowball.SnowballProgram;
 import smile.nlp.stemmer.PorterStemmer;
-import smile.nlp.tokenizer.PennTreebankTokenizer;
-import weka.core.stemmers.SnowballStemmer;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -47,7 +40,7 @@ public class StemmerTest extends TestCase {
             LineIterator.closeQuietly(it);
         }
         //List<String> list = Files.readAllLines(p, StandardCharsets.UTF_8);
-        Preprocess_doc preprocess_doc = new Preprocess_doc();
+        PreprocessDoc preprocess_doc = new PreprocessDoc();
         String test = list.get(40);
         String[] parts = test.split("\t");
         int doc_id = Integer.parseInt(parts[0]);

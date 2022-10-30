@@ -14,7 +14,7 @@ import java.util.List;
 
 public class Preprocess_docTest extends TestCase {
     public void testPreMultiple() throws IOException {
-        Preprocess_doc preprocess_doc = new Preprocess_doc();
+        PreprocessDoc preprocess_doc = new PreprocessDoc();
         String path = "docs/collection_test.tsv";
         File file = new File("docs/collection_test.tsv");
         Path p = Paths.get(path);
@@ -40,7 +40,7 @@ public class Preprocess_docTest extends TestCase {
 
 
     public void testPreOptMultiple() throws IOException {
-        Preprocess_doc preprocess_doc = new Preprocess_doc();
+        PreprocessDoc preprocess_doc = new PreprocessDoc();
         String path = "docs/collection_test.tsv";
         File file = new File("docs/collection_test.tsv");
         Path p = Paths.get(path);
@@ -60,7 +60,7 @@ public class Preprocess_docTest extends TestCase {
 
 
     public void testPreSingle() throws IOException {
-        Preprocess_doc preprocess_doc = new Preprocess_doc();
+        PreprocessDoc preprocess_doc = new PreprocessDoc();
         String path = "docs/collection_test.tsv";
         File file = new File("docs/collection_test.tsv");
         Path p = Paths.get(path);
@@ -86,7 +86,7 @@ public class Preprocess_docTest extends TestCase {
     }
 
     public void testPreMultipleTogheter() throws IOException {
-        Preprocess_doc preprocess_doc = new Preprocess_doc();
+        PreprocessDoc preprocess_doc = new PreprocessDoc();
         String path = "docs/collection_test.tsv";
         File file = new File("docs/collection_test.tsv");
         Path p = Paths.get(path);

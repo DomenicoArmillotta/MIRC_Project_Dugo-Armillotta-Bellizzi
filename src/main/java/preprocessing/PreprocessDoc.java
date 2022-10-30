@@ -3,18 +3,15 @@ package preprocessing;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
-public class Preprocess_doc {
+public class PreprocessDoc {
     /**
      * given a string, runs the preprocessing pipeline and returns a processed word list.
      * In order, it performs: tokenization , stopword removal , stemming
@@ -25,7 +22,7 @@ public class Preprocess_doc {
     public List<String> preprocess_doc (String s) throws IOException {
         Normalizer normalizer = new Normalizer();
         Tokenizer tokenizer = new Tokenizer();
-        Stopword_removal stopword_removal = new Stopword_removal();
+        StopwordRemoval stopword_removal = new StopwordRemoval();
         Stemmer stemmer = new Stemmer();
         String output_normalizer = normalizer.normalize(s);
         List<String> output_tokenizer = new ArrayList<>();

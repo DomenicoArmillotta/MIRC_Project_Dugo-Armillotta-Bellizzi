@@ -5,7 +5,7 @@ import inverted_index.Posting;
 import lexicon.Lexicon;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import preprocessing.Preprocess_doc;
+import preprocessing.PreprocessDoc;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,9 +19,9 @@ public class Daat {
 
     public HashMap<Integer, Integer> docLens = new HashMap<>(); //lengths of the documents containing
     // at least once the terms of the query
-    public Hashtable<Integer,Integer> ht_docindex = new Hashtable<>(); //for keeeping in memory the document index
-    public Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
-    public Hashtable<String, Integer> doc_freqs = new Hashtable<>();
+    public Hashtable<Integer,Integer> htDocindex = new Hashtable<>(); //for keeeping in memory the document index
+    public Hashtable<String, Integer> htLexicon = new Hashtable<>();
+    public Hashtable<String, Integer> docFreqs = new Hashtable<>();
 
     private final double k1 = 1.2;
     private final double b = 0.75;
@@ -29,10 +29,10 @@ public class Daat {
 
     public Daat(){
         Document_index document_index = new Document_index();
-        ht_docindex = document_index.document_index_from_text("docs/document_index.txt");
+        htDocindex = document_index.document_index_from_text("docs/document_index.txt");
         Lexicon lexicon = new Lexicon();
-        ht_lexicon = lexicon.lexicon_from_text("docs/lexicon_tot.txt");
-        doc_freqs = lexicon.lexicon_from_text_with_freqs("docs/lexicon_tot.txt");
+        htLexicon = lexicon.lexicon_from_text("docs/lexicon_tot.txt");
+        docFreqs = lexicon.lexicon_from_text_with_freqs("docs/lexicon_tot.txt");
     }
 
 
@@ -43,27 +43,27 @@ public class Daat {
         Lexicon lexicon = new Lexicon();
         ht_lexicon = lexicon.lexicon_from_text("docs/lexicon_tot.txt");
         doc_freqs = lexicon.lexicon_from_text_with_freqs("docs/lexicon_tot.txt");*/
-        Preprocess_doc preprocessing = new Preprocess_doc();
+        PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> pro_query = new ArrayList<>();
         pro_query = preprocessing.preprocess_doc_optimized(query_string);
         //inverted_index_query = create_inverted_query(query_string);
         //System.out.println(pro_query);
         int query_len = pro_query.size();
         //System.out.println(query_len);
-        HashMap<String, List<Posting>> inverted_lists = new HashMap<>();
-        HashMap<String, Integer> query_freqs = new HashMap<>();
+        HashMap<String, LinkedList<Posting>> inverted_lists = new HashMap<>();
+        HashMap<String, Integer> queryFreqs = new HashMap<>();
         for(String term: pro_query){
             //TODO 23/10/2022: aggiungi controllo duplicati perché sennò cicla più volte senza aggiungere nulla
             // di nuovo, però query freqs va comunque aggiornato
-            List<Posting> postingList = new LinkedList<>();
+            LinkedList<Posting> postingList = new LinkedList<>();
             postingList = openList(term);
             inverted_lists.put(term, postingList);
-            if(query_freqs.get(term) == null){
-                query_freqs.put(term, 1);
+            if(queryFreqs.get(term) == null){
+                queryFreqs.put(term, 1);
             }
             else{
-                int freq = query_freqs.get(term)+1;
-                query_freqs.put(term, freq);
+                int freq = queryFreqs.get(term)+1;
+                queryFreqs.put(term, freq);
             }
         }
         //System.out.println(query_freqs);
@@ -77,28 +77,30 @@ public class Daat {
         //Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
         Iterator<Integer> itDocs = docSet.keySet().iterator();
         double avg_len = averageDocumentLength();
+        double total = 0.0;
         while(itDocs.hasNext()) {
             //System.out.println("HERE: " + docid);
             double score = 0.0;
-            for (Map.Entry<String, List<Posting>> entry : inverted_lists.entrySet()) {
+            for (Map.Entry<String, LinkedList<Posting>> entry : inverted_lists.entrySet()) {
                 String curTerm = entry.getKey();
                 for (Posting p : entry.getValue()) {
-                    if (p.getDocumentId() == docid && query_freqs.get(curTerm) != null && docLens.get(docid) != null && doc_freqs.get(curTerm)!= null) {
+                    if (p.getDocumentId() == docid && queryFreqs.get(curTerm) != null && docLens.get(docid) != null && docFreqs.get(curTerm)!= null) {
                         //apply scoring function
                         //score += tfidf(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
                         //score += tfidfNorm(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
-                        score += bm25Weight(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm), avg_len);
+                        score += bm25Weight(p.getTermFrequency(), docLens.get(p.getDocumentId()), docFreqs.get(curTerm), avg_len);
                     }
                 }
             }
             //System.out.println(score);
             if(score!= 0.0) scores.put(docid, score);
+            total += score;
             //docid++;
             docid = nextGEQ(itDocs);
         }
         //TODO 29/10/2022: decide whether or not to normalize bm25 scores
         //normalize the scores
-        normalizeScores(scores);
+        normalizeScores(scores, total);
         //sort the scores
         Comparator<Map.Entry<Integer, Double>> valueComparator =
                 new Comparator<Map.Entry<Integer,Double>>() {
@@ -123,7 +125,7 @@ public class Daat {
         List<Integer> sortedScores = sortedByValue.keySet().stream()
                 .limit(k)
                 .collect(Collectors.toList());
-        System.out.println("Top " + k + " documents: " + sortedScores);
+        System.out.println("Top " + k + " documents for the query \"" +  query_string + "\": " + sortedScores);
 
         //TODO 22/10/2022: initialize the data structures and implement the scoring function
         // remember that documents have to be processed in parallel in increasing order of docid
@@ -132,7 +134,7 @@ public class Daat {
         // we need openList and closeList and also other iterators!
     }
 
-    public List<Posting> openList(String query_string) throws IOException {
+    public LinkedList<Posting> openList(String query_string) throws IOException {
         //String inputLex = "docs/lexicon_tot.txt";
         String inputDocids = "docs/inverted_index_docids.txt";
         String inputFreqs = "docs/inverted_index_freq.txt";
@@ -147,17 +149,17 @@ public class Daat {
         LineIterator itId = FileUtils.lineIterator(new File(inputDocids), "UTF-8");
         LineIterator itTf = FileUtils.lineIterator(new File(inputFreqs), "UTF-8");
         LineIterator itPos = FileUtils.lineIterator(new File(inputPos), "UTF-8");
-        Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
+        Set<String> globalTerms = new HashSet<>(htLexicon.keySet());
         TreeSet<String> sortedTerms = new TreeSet<>(globalTerms);
         Iterator<String> itTerms = sortedTerms.iterator();
         //System.out.println(query_string);
-        List<Posting> postings_for_term = new ArrayList<>();
+        LinkedList<Posting> postings_for_term = new LinkedList<>();
         int offset = 0;
         //when is founded the term , a copy in data structure of inverted index is made
         while(itTerms.hasNext()){
             String term = itTerms.next();
             if(term.equals(query_string)) {
-                offset = ht_lexicon.get(term);
+                offset = htLexicon.get(term);
                 break;
             }
             /*lexLine = itLex.nextLine();
@@ -193,7 +195,7 @@ public class Daat {
 
     //TODO 22/10/2022: aggiungere la decompressione!!!!
     public HashMap<String, List<Posting>> create_inverted_query (String query_string) throws IOException {
-        Preprocess_doc preprocessing = new Preprocess_doc();
+        PreprocessDoc preprocessing = new PreprocessDoc();
         //preprocessing of query
         List<String> pro_query = new ArrayList<>();
         pro_query = preprocessing.preprocess_doc_optimized(query_string);
@@ -214,7 +216,7 @@ public class Daat {
             LineIterator itTf = FileUtils.lineIterator(new File(inputFreqs), "UTF-8");
             LineIterator itPos = FileUtils.lineIterator(new File(inputPos), "UTF-8");
             System.out.println(term);
-            List<Posting> postings_for_term = new ArrayList<>();
+            List<Posting> postings_for_term;
             int offset = 0;
             //when is founded the term , a copy in data structure of inverted index is made
             while(itLex.hasNext()){
@@ -253,7 +255,7 @@ public class Daat {
 
 
     public HashMap<String, List<Posting>> create_inverted_query_bin (String query_string) throws IOException {
-        Preprocess_doc preprocessing = new Preprocess_doc();
+        PreprocessDoc preprocessing = new PreprocessDoc();
         //preprocessing of query
         List<String> pro_query = new ArrayList<>();
         pro_query = preprocessing.preprocess_doc_optimized(query_string);
@@ -278,7 +280,7 @@ public class Daat {
             LineIterator itTf = FileUtils.lineIterator(new File(inputFreqs), "UTF-8");
             LineIterator itPos = FileUtils.lineIterator(new File(inputPos), "UTF-8");
             //System.out.println(term);
-            List<Posting> postings_for_term = new ArrayList<>();
+            List<Posting> postingsForTerm = new ArrayList<>();
             int offset = 0;
             //when is founded the term , a copy in data structure of inverted index is made
             while(itLex.hasNext()){
@@ -323,8 +325,8 @@ public class Daat {
             //tfLine = itTf.readLine();
             tfLine = itTf.nextLine();
             //tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
-            postings_for_term = createPosting(docLine,tfLine,posLine);
-            inverted_index_query.put(term,postings_for_term);
+            postingsForTerm = createPosting(docLine,tfLine,posLine);
+            inverted_index_query.put(term,postingsForTerm);
 
         }
 
@@ -335,8 +337,8 @@ public class Daat {
     //a posting list for each term
     //questa funzione crea le posting list per ogni termine
     //quindi una posting per ogni doc id
-    public List<Posting> createPosting(String docLine , String tfLine , String posLine){
-        List<Posting> postings = new LinkedList<>();
+    public LinkedList<Posting> createPosting(String docLine , String tfLine , String posLine){
+        LinkedList<Posting> postings = new LinkedList<>();
         //System.out.println(docLine); //--> doc_id
         //System.out.println(tfLine);
         //System.out.println(posLine);
@@ -355,7 +357,7 @@ public class Daat {
                     //System.out.println("aggiunto pos = " + Integer.parseInt(pos));
                 }
                 //TODO: add decompression here
-                // non abiamo un intero ma una bit string, va decompressa!
+                // non abbbiamo un intero ma una bit string, va decompressa!
                 int doc = Integer.parseInt(docs_id[i]);
                 int freq = Integer.parseInt(tfs[i]);
                 Posting posting = new Posting(doc,freq,posList);
@@ -365,7 +367,7 @@ public class Daat {
                 posList.add(Integer.parseInt(posDoc[i]));
                 Posting posting = new Posting(Integer.parseInt(docs_id[i]),Integer.parseInt(tfs[i]),posList);
                 //System.out.println("doc id : "+docs_id[i]+" pos : "+ posList + " tfs : " + tfs[i]);
-                docLens.put(Integer.parseInt(docs_id[i]), ht_docindex.get(Integer.parseInt(docs_id[i])));
+                docLens.put(Integer.parseInt(docs_id[i]), htDocindex.get(Integer.parseInt(docs_id[i])));
                 postings.add(posting);
             }
         }
@@ -379,39 +381,34 @@ public class Daat {
         return it.next();
     }
 
-    //TODO 29/10/2022: the average document length is over the length of all documents in the collection
-    // or only in the ones matching the query?
+    //computes the average document length over the whole collection
     private double averageDocumentLength(){
         double avg = 0;
-        for(int len: ht_docindex.values()){
+        for(int len: htDocindex.values()){
             avg+= len;
         }
-        return avg/ht_docindex.keySet().size();
+        return avg/ htDocindex.keySet().size();
     }
 
     //tfidf scoring function for computing term frequency weights
     private double tfidf(int tf_d, int d_len, int doc_freq){
         //System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
-        return (1.0 + Math.log(tf_d)*Math.log(ht_docindex.keySet().size()/doc_freq));
+        return (1.0 + Math.log(tf_d)*Math.log(htDocindex.keySet().size()/doc_freq));
     }
 
     //normalized version of tfidf
     private double tfidfNorm(int tf_d, int d_len, int doc_freq){
         //System.out.println(tf_q + " " + tf_d + " "  + d_len + " " + q_len + " " + doc_freq);
-        return (1.0 + Math.log(tf_d)*Math.log(ht_docindex.keySet().size()/doc_freq))/(double)d_len;
+        return (1.0 + Math.log(tf_d)*Math.log(htDocindex.keySet().size()/doc_freq))/(double)d_len;
     }
 
     //bm25 scoring function for computing weights for term frequency
     private double bm25Weight(int tf_d, int d_len, int doc_freq, double avg_len){
-        return (((double)tf_d/((k1*((1-b) + b * (d_len/avg_len)))+tf_d)))*Math.log(ht_docindex.keySet().size()/doc_freq);
+        return (((double)tf_d/((k1*((1-b) + b * (d_len/avg_len)))+tf_d)))*Math.log(htDocindex.keySet().size()/doc_freq);
     }
 
     //method for normalizing the scores obtained with bm25
-    private void normalizeScores(HashMap<Integer, Double> sortedScores){
-        double totalScore = 0;
-        for(double val: sortedScores.values()){
-            totalScore+=val;
-        }
+    private void normalizeScores(HashMap<Integer, Double> sortedScores, double totalScore){
         for(Map.Entry<Integer,Double> e: sortedScores.entrySet()){
             sortedScores.put(e.getKey(), e.getValue()/totalScore);
         }

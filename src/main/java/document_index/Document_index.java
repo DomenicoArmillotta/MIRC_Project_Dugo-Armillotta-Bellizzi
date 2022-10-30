@@ -2,13 +2,9 @@ package document_index;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import preprocessing.Preprocess_doc;
+import preprocessing.PreprocessDoc;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 // contain doc_id : doc.size : pagerank
@@ -24,7 +20,7 @@ public class Document_index {
     public Hashtable<Integer ,/*List<*/Integer/*>*/> create_document_index (String path) throws IOException {
         //Hashtable<Integer ,List<Integer>> ht = new Hashtable<>();
         Hashtable<Integer ,Integer> ht = new Hashtable<>();
-        Preprocess_doc preprocess_doc = new Preprocess_doc();
+        PreprocessDoc preprocess_doc = new PreprocessDoc();
         File file = new File(path);
         List<String> list_doc = new ArrayList<>();
         // to not read all the documents in memory we use a LineIterator
@@ -43,13 +39,13 @@ public class Document_index {
         for (int i = 0; i < list_doc.size(); i++) {
             String current_doc = list_doc.get(i);
             String[] parts = current_doc.split("\t");
-            int doc_id = Integer.parseInt(parts[0]);
+            int docid = Integer.parseInt(parts[0]);
             String doc_corpus = parts[1];
-            List<String> pro_doc = new ArrayList<>();
+            List<String> proDoc = new ArrayList<>();
             //in output è la lista delle parole di un documento
-            pro_doc = preprocess_doc.preprocess_doc_optimized(doc_corpus);
+            proDoc = preprocess_doc.preprocess_doc_optimized(doc_corpus);
             //ht.put(doc_id, Arrays.asList(pro_doc.size(),page_rank));
-            ht.put(doc_id, pro_doc.size());
+            ht.put(docid, proDoc.size());
         }
 
         return ht;
