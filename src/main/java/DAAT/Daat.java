@@ -26,6 +26,8 @@ public class Daat {
     private final double k1 = 1.2;
     private final double b = 0.75;
 
+    private int maxDocID;
+
 
     public Daat(){
         DocumentIndex document_index = new DocumentIndex();
@@ -33,10 +35,121 @@ public class Daat {
         Lexicon lexicon = new Lexicon();
         htLexicon = lexicon.lexiconFromText("docs/lexicon_tot.txt");
         docFreqs = lexicon.lexiconFromTextWithFreqs("docs/lexicon_tot.txt");
+        maxDocID = htDocindex.size();
+    }
+
+    //TODO 30/10/2022: da correggere, il caso disjunctive va bene
+    public void conjunctiveDaat(String query_string, int k) throws IOException {
+        //HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
+        /*Document_index document_index = new Document_index();
+        ht_docindex = document_index.document_index_from_text("docs/document_index.txt");
+        Lexicon lexicon = new Lexicon();
+        ht_lexicon = lexicon.lexicon_from_text("docs/lexicon_tot.txt");
+        doc_freqs = lexicon.lexicon_from_text_with_freqs("docs/lexicon_tot.txt");*/
+        PreprocessDoc preprocessing = new PreprocessDoc();
+        List<String> pro_query = new ArrayList<>();
+        pro_query = preprocessing.preprocess_doc_optimized(query_string);
+        //inverted_index_query = create_inverted_query(query_string);
+        //System.out.println(pro_query);
+        int query_len = pro_query.size();
+        //System.out.println(query_len);
+        HashMap<String, LinkedList<Posting>> inverted_lists = new HashMap<>();
+        HashMap<String, Integer> queryFreqs = new HashMap<>();
+        for(String term: pro_query){
+            //TODO 23/10/2022: aggiungi controllo duplicati perché sennò cicla più volte senza aggiungere nulla
+            // di nuovo, però query freqs va comunque aggiornato
+            LinkedList<Posting> postingList = new LinkedList<>();
+            postingList = openList(term);
+            inverted_lists.put(term, postingList);
+            if(queryFreqs.get(term) == null){
+                queryFreqs.put(term, 1);
+            }
+            else{
+                int freq = queryFreqs.get(term)+1;
+                queryFreqs.put(term, freq);
+            }
+        }
+        //System.out.println(query_freqs);
+        //System.out.println(inverted_lists);
+        //System.out.println(docLens);
+        HashMap<Integer, Double> scores = new HashMap<>();
+        int docid = 0;
+        //int lastDoc = Collections.max(docLens.keySet());
+        //do this until you processed every doc!!!
+        LinkedHashMap<Integer,Integer> docSet = new LinkedHashMap<>(docLens);
+        //Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
+        Iterator<Integer> itDocs = docSet.keySet().iterator();
+        double avg_len = averageDocumentLength();
+        double total = 0.0;
+        while(docid < maxDocID) {
+            //System.out.println("HERE: " + docid);
+            double score = 0.0;
+            int currDoc = 0;
+            for (Map.Entry<String, LinkedList<Posting>> entry : inverted_lists.entrySet()) {
+                if(docid == 0){
+                    docid = nextGEQ(entry.getValue(), docid);
+                }
+                else{
+                    currDoc = nextGEQ(entry.getValue(), docid);
+                }
+            }
+            if(currDoc > docid){
+                docid = currDoc; //docid not in the intersection
+            }
+            else{
+                for (String curTerm: queryFreqs.keySet()) {
+                    LinkedList<Posting> curList = inverted_lists.get(curTerm);
+                    int freq  = getFreq(curList, docid);
+                    //apply scoring function
+                    //score += tfidf(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
+                    //score += tfidfNorm(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
+                    score += bm25Weight(freq, docLens.get(docid), docFreqs.get(curTerm), avg_len);
+                }
+            }
+            //System.out.println(score);
+            if(score!= 0.0) scores.put(docid, score);
+            total += score;
+            //docid = next(itDocs);
+        }
+        //TODO 29/10/2022: decide whether or not to normalize bm25 scores
+        //normalize the scores
+        normalizeScores(scores, total);
+        //sort the scores
+        Comparator<Map.Entry<Integer, Double>> valueComparator =
+                new Comparator<Map.Entry<Integer,Double>>() {
+                    @Override
+                    public int compare(Map.Entry<Integer, Double> e1, Map.Entry<Integer, Double> e2) {
+                        Double v1 = e1.getValue();
+                        Double v2 = e2.getValue();
+                        return v2.compareTo(v1);
+                    }
+            };
+        List<Map.Entry<Integer, Double>> listOfEntries
+                = new ArrayList<Map.Entry<Integer, Double>>(scores.entrySet());
+        Collections.sort(listOfEntries, valueComparator);
+        LinkedHashMap<Integer, Double> sortedByValue = new LinkedHashMap<>(listOfEntries.size()); // copying entries from List to Map
+        for(Map.Entry<Integer, Double> entry : listOfEntries){
+            sortedByValue.put(entry.getKey(), entry.getValue());
+        }
+        //return the first k scores
+        /*List<Map.Entry<Integer, Double>> sortedScores = sortedByValue.entrySet().stream()
+                .limit(k)
+                .collect(Collectors.toList());*/
+        List<Integer> sortedScores = sortedByValue.keySet().stream()
+                .limit(k)
+                .collect(Collectors.toList());
+        System.out.println("Top " + k + " documents for the query \"" +  query_string + "\": " + sortedScores);
+
+        //TODO 22/10/2022: initialize the data structures and implement the scoring function
+        // remember that documents have to be processed in parallel in increasing order of docid
+        // also we need to implement the iterators to go through all the posting lists we need
+        // so we should call the method for each term and not on the whole query!!! That's why
+        // we need openList and closeList and also other iterators!
     }
 
 
-    public void daat(String query_string, int k) throws IOException {
+    //finito
+    public void disjunctiveDaat(String query_string, int k) throws IOException {
         //HashMap<String, List<Posting>> inverted_index_query = new HashMap<>();
         /*Document_index document_index = new Document_index();
         ht_docindex = document_index.document_index_from_text("docs/document_index.txt");
@@ -95,8 +208,7 @@ public class Daat {
             //System.out.println(score);
             if(score!= 0.0) scores.put(docid, score);
             total += score;
-            //docid++;
-            docid = nextGEQ(itDocs);
+            docid = next(itDocs);
         }
         //TODO 29/10/2022: decide whether or not to normalize bm25 scores
         //normalize the scores
@@ -110,7 +222,7 @@ public class Daat {
                         Double v2 = e2.getValue();
                         return v2.compareTo(v1);
                     }
-            };
+                };
         List<Map.Entry<Integer, Double>> listOfEntries
                 = new ArrayList<Map.Entry<Integer, Double>>(scores.entrySet());
         Collections.sort(listOfEntries, valueComparator);
@@ -127,12 +239,9 @@ public class Daat {
                 .collect(Collectors.toList());
         System.out.println("Top " + k + " documents for the query \"" +  query_string + "\": " + sortedScores);
 
-        //TODO 22/10/2022: initialize the data structures and implement the scoring function
-        // remember that documents have to be processed in parallel in increasing order of docid
-        // also we need to implement the iterators to go through all the posting lists we need
-        // so we should call the method for each term and not on the whole query!!! That's why
-        // we need openList and closeList and also other iterators!
     }
+
+
 
     public LinkedList<Posting> openList(String query_string) throws IOException {
         //String inputLex = "docs/lexicon_tot.txt";
@@ -192,6 +301,8 @@ public class Daat {
         return postings_for_term;
 
     }
+
+    //TODO 30/10/2022: add closeList() method!
 
     //TODO 22/10/2022: aggiungere la decompressione!!!!
     public HashMap<String, List<Posting>> create_inverted_query (String query_string) throws IOException {
@@ -374,11 +485,26 @@ public class Daat {
         return postings;
     }
 
+    //TODO 30/11/2022: da fare!!!!!!!!
+    private int getFreq(LinkedList<Posting> postingList, int docid){
+        return docid;
+    }
+
     private Posting next(List<Posting> p, int i){
         return p.get(i);
     }
-    private int nextGEQ(Iterator<Integer> it){
-        return it.next();
+    private int next(Iterator<Integer> it){ return it.next(); }
+
+    //nextGEQ(lp, k) find the next posting in list lp with docID >= k and
+    //return its docID. Return value > MAXDID if none exists.
+    //TODO 30/11/2022: da finire!!!!!
+    private int nextGEQ(LinkedList<Posting> invertedLists, int prev) {
+        int cur = maxDocID;
+        Iterator<Posting> it = invertedLists.iterator();
+        while(cur >= prev && it.hasNext()){
+            cur = it.next().getDocumentId();
+        }
+        return cur;
     }
 
     //computes the average document length over the whole collection
