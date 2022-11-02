@@ -58,6 +58,42 @@ public class SPIMI {
         writeAllFilesASCII(n_block); //at the end of the parsing of all the file, merge all the files in the disk
     }
 
+    public void spimiInvertBlockWithRamUsage(String read_path) throws IOException {
+        int n_block = 0;
+        Lexicon lexicon = new Lexicon();
+        ht_lexicon = lexicon.createLexicon(read_path);
+        DocumentIndex docindex = new DocumentIndex();
+        ht_docindex = docindex.createDocumentIndex(read_path);
+        docindex.textFromDocumentIndex(ht_docindex);
+        File input_file = new File(read_path);
+        LineIterator it = FileUtils.lineIterator(input_file, "UTF-8");
+        //long lines = countLineFast(read_path);
+        //int lines_for_block = (int) Math.ceil(lines / n_block);
+        int index_block = 0;
+        try {
+            //create chunk of data , splitting in n different block
+            while (it.hasNext() && (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) > 200) {
+                List<String> listDoc = new ArrayList<>();
+                int i = 0;
+                while (it.hasNext()) {
+                    String line = it.nextLine();
+                    //System.out.println(line);
+                    listDoc.add(line);
+                    i++;
+                }
+                //System.out.println("________Chunk # ------->" + index_block);
+                //we elaborate one block at time , so we call the function to create inverted index for the block
+                spimiInvert(listDoc, index_block);
+                n_block++;
+                index_block++;
+            }
+
+        } finally {
+            LineIterator.closeQuietly(it);
+        }
+        writeAllFilesASCII(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
+    }
+
     //we have for each call a block of the file; for each block we create a inverted index with his dictionary and apply the alghorithm;
     //at the end we use the inverted index method to write to the disk
 
