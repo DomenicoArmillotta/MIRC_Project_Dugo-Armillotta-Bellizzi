@@ -92,7 +92,7 @@ public class Daat {
                 else{
                     currDoc = nextGEQ(entry.getValue(), docid);
                 }
-                if(currDoc != docid) break;
+                if(currDoc > docid) break;
             }
             if(currDoc > docid){
                 docid = currDoc; //docid not in the intersection
@@ -108,13 +108,16 @@ public class Daat {
                         score += bm25Weight(freq, docLens.get(docid), docFreqs.get(curTerm), avg_len);
                     }
                 }
+                if(score!= 0.0) scores.put(docid, score);
+                total += score;
+                docid++;
             }
             //System.out.println(docid + " " + score);
-            if(score!= 0.0) scores.put(docid, score);
-            total += score;
-            docid++;
+            /*if(score!= 0.0) scores.put(docid, score);
+            total += score;*/
             //docid = next(itDocs);
         }
+        //System.out.println(scores);
         //normalize the scores
         normalizeScores(scores, total);
         //sort the scores
@@ -141,6 +144,7 @@ public class Daat {
         List<Integer> sortedScores = sortedByValue.keySet().stream()
                 .limit(k)
                 .collect(Collectors.toList());
+        docLens.clear();
         System.out.println("Top " + k + " documents for the conjunctive query \"" +  query_string + "\": " + sortedScores);
 
     }
@@ -189,12 +193,18 @@ public class Daat {
         Iterator<Integer> itDocs = docSet.keySet().iterator();
         double avg_len = averageDocumentLength();
         double total = 0.0;
-        while(itDocs.hasNext()) {
+        while(docid < maxDocID) {
             //System.out.println("HERE: " + docid);
             double score = 0.0;
             for (Map.Entry<String, LinkedList<Posting>> entry : inverted_lists.entrySet()) {
+                if(docid == 0){
+                    docid = next(itDocs);
+                    //docid = nextGEQ(entry.getValue(), docid);
+                }
                 String curTerm = entry.getKey();
+                //System.out.println(curTerm + " " + docid);
                 for (Posting p : entry.getValue()) {
+                    //System.out.println(curTerm + " " + docid + " " + p.getDocumentId());
                     if (p.getDocumentId() == docid && queryFreqs.get(curTerm) != null && docLens.get(docid) != null && docFreqs.get(curTerm)!= null) {
                         //apply scoring function
                         //score += tfidf(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
@@ -207,6 +217,7 @@ public class Daat {
             total += score;
             docid = next(itDocs);
         }
+        //System.out.println(scores);
         //TODO 29/10/2022: decide whether or not to normalize bm25 scores
         //normalize the scores
         normalizeScores(scores, total);
@@ -234,6 +245,7 @@ public class Daat {
         List<Integer> sortedScores = sortedByValue.keySet().stream()
                 .limit(k)
                 .collect(Collectors.toList());
+        docLens.clear();
         System.out.println("Top " + k + " documents for the query \"" +  query_string + "\": " + sortedScores);
 
     }
@@ -265,7 +277,7 @@ public class Daat {
         while(itTerms.hasNext()){
             String term = itTerms.next();
             if(term.equals(query_string)) {
-                offset = htLexicon.get(term);
+                offset = htLexicon.get(term) - 1;
                 break;
             }
             /*lexLine = itLex.nextLine();
@@ -277,7 +289,11 @@ public class Daat {
             }*/
 
         }
-        int i = 0;
+        String docLine = (String) FileUtils.readLines(new File(inputDocids), "UTF-8").get(offset); //--> doc_id of selected term
+        String tfLine = (String) FileUtils.readLines(new File(inputFreqs), "UTF-8").get(offset); //--> term freq of selected term
+        String posLine = (String) FileUtils.readLines(new File(inputPos), "UTF-8").get(offset);
+        //System.out.println(query_string + ": " + docLine + " " + tfLine);
+        /*int i = 0;
         while(i<(offset-1)) {
             itId.nextLine();
             itTf.nextLine();
@@ -293,7 +309,7 @@ public class Daat {
         posLine = itPos.nextLine();
         //posLine = posLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
         tfLine = itTf.nextLine();
-        //tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");
+        //tfLine = tfLine.replaceAll("\\s+", "").replaceAll("\\[", "").replaceAll("\\]","");*/
         postings_for_term = createPosting(docLine,tfLine,posLine);
         return postings_for_term;
 
@@ -469,6 +485,7 @@ public class Daat {
                 int doc = Integer.parseInt(docs_id[i]);
                 int freq = Integer.parseInt(tfs[i]);
                 Posting posting = new Posting(doc,freq,posList);
+                docLens.put(doc, htDocindex.get(doc));
                 //System.out.println("doc id : "+docs_id[i]+" pos : "+ posList + " tfs : " + tfs[i]);
                 postings.add(posting);
             }else{
@@ -493,7 +510,13 @@ public class Daat {
     private Posting next(List<Posting> p, int i){
         return p.get(i);
     }
-    private int next(Iterator<Integer> it){ return it.next(); }
+    private int next(Iterator<Integer> it){
+        int next = maxDocID;
+        if(it.hasNext()){
+            next = it.next();
+        }
+        return next;
+    }
 
     //nextGEQ(lp, k) find the next posting in list lp with docID >= k and
     //return its docID. Return value > MAXDID if none exists.
