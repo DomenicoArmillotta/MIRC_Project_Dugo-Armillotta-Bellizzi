@@ -2,8 +2,6 @@ package preprocessing;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.StringEscapeUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +28,6 @@ public class Normalizer {
     public String normalize(String s) throws IOException {
         //remove all non-ASCII characters
         String formattedLine = s.replaceAll("[^\\x00-\\x7F]", " ");
-        //formattedLine = StringEscapeUtils.unescapeJava(s);
         //remove malformed characters
         formattedLine = formattedLine.replaceAll("[^a-zA-Z0-9/?:().,'+/-]", " ");
         // remove non-printable characters from Unicode
@@ -40,7 +37,6 @@ public class Normalizer {
         formattedLine = formattedLine.replaceAll(urlPattern, " ");
         //remove punctuation
         formattedLine = formattedLine.replaceAll("\\p{Punct}", " ");
-        //formattedLine = formattedLine.replaceAll("\\P{ASCII}", " ");
         //replace consecutive character
         //consecutive characters inside words (max two)
         formattedLine = formattedLine.replaceAll("(\\p{L})\\1+", "$1$1");
@@ -54,7 +50,6 @@ public class Normalizer {
         //replace all single characters
         formattedLine = formattedLine.replaceAll("(\\s+.(?=\\s))", " ");
         //replace the country codes with the country name
-        //formattedLine = replaceCountryCodes(formattedLine);
         //collapse multiple spaces
         formattedLine = formattedLine.replaceAll("\\s+", " ");
         //lower case
@@ -69,32 +64,6 @@ public class Normalizer {
                 (doc.contains("US ") && doc.indexOf("US")==0)){
             doc = doc.replaceAll("US", "United States");
         }
-        /*File file_nations = new File("docs/nations.txt");
-        List<String> list_codes = new ArrayList<>();
-        // to not read all the documents in memory we use a LineIterator to improve memory efficency
-        LineIterator it = FileUtils.lineIterator(file_nations, "UTF-8");
-        try {
-            while (it.hasNext()) {
-                String line = it.nextLine();
-                list_codes.add(line);
-            }
-        } finally {
-            LineIterator.closeQuietly(it);
-        }
-        for(String nation: list_codes){
-            String[] inputs = nation.split(","); //the line is in the format Country_name, Country_code
-            String code = inputs[1]; //country code
-            String name = inputs[0]; //country name
-            String subDoc1 = "";
-            String subDoc2 = "";
-            if(doc.contains(" " +code + " ")){
-                subDoc1 = doc.substring(doc.indexOf(code)-2, doc.indexOf(code)+4);
-                subDoc2 = subDoc1.toUpperCase();
-            }
-            if(!subDoc2.equals(subDoc1)) {
-                doc = doc.replaceAll(code, name);
-            }
-        }*/
         return doc;
     }
 }
