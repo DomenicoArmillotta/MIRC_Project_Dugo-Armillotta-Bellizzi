@@ -42,7 +42,6 @@ public class SPIMI {
                 int i = 0;
                 while (it.hasNext() && i < lines_for_block) {
                     String line = it.nextLine();
-                    //System.out.println(line);
                     listDoc.add(line);
                     i++;
                 }
@@ -75,7 +74,6 @@ public class SPIMI {
                 int i = 0;
                 while (it.hasNext() && i < lines_for_block) {
                     String line = it.nextLine();
-                    //System.out.println(line);
                     listDoc.add(line);
                     i++;
                 }
@@ -122,8 +120,7 @@ public class SPIMI {
         writeAllFilesASCII(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
     }
 
-    //we have for each call a block of the file; for each block we create a inverted index with his dictionary and apply the alghorithm;
-    //at the end we use the inverted index method to write to the disk
+
 
     /**
      * we elaborate one block at time
@@ -399,7 +396,6 @@ public class SPIMI {
                 int npostings = 0; //to count the posting list size
                 //iterate through all block
                 for(int i = 0; i <= n; i++){
-                    //int j = 0;
                     String line = ""; //term of the vocabulary
                     itLex[i] = Files.newBufferedReader(Paths.get(lex[i]), StandardCharsets.UTF_8);
                     itId[i] = Files.newBufferedReader(Paths.get(id[i]), StandardCharsets.UTF_8);

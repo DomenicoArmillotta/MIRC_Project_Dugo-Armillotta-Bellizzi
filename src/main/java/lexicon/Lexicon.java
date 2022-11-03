@@ -135,7 +135,6 @@ public class Lexicon {
                 // first part is name, second is number
                 String name = parts[0].trim();
                 String number = parts[1].trim();
-                //String number = parts[1];
 
 
                 // put name, number in HashMap if they are
@@ -192,7 +191,6 @@ public class Lexicon {
                 // first part is name, second is number
                 String name = parts[0].trim();
                 String number = parts[2].trim();
-                //String number = parts[1];
 
 
                 // put name, number in HashMap if they are
