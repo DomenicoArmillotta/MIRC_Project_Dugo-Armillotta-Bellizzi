@@ -19,14 +19,14 @@ public class Compressor {
     }
 
     public String unary(int x){
-        String bitString = new String(new char[x-1]).replace("\0", "1");
+        String bitString = new String(new char[x]).replace("\0", "1");
         bitString += "0";
         return bitString;
     }
     public int decodeUnary(String bitString){
         int x = 0;
         String[] ones = bitString.split("0");
-        x = ones[0].length() + 1;
+        x = ones[0].length() ;
         return x;
     }
 
