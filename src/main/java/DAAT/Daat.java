@@ -19,6 +19,8 @@ public class Daat {
 
     public HashMap<Integer, Integer> docLens = new HashMap<>(); //lengths of the documents containing
     // at least once the terms of the query
+    //TODO: non mi piace questo docLens, sistemarlo (almeno non fare un hashmap indicizzato con docid)
+    // il docLens l'ho fatto io tra l'altro ma mi lamento ugualmente
     public Hashtable<Integer,Integer> htDocindex = new Hashtable<>(); //for keeeping in memory the document index
     public Hashtable<String, Integer> htLexicon = new Hashtable<>();
     public Hashtable<String, Integer> docFreqs = new Hashtable<>();
@@ -76,36 +78,38 @@ public class Daat {
         int docid = 0;
         //int lastDoc = Collections.max(docLens.keySet());
         //do this until you processed every doc!!!
-        LinkedHashMap<Integer,Integer> docSet = new LinkedHashMap<>(docLens);
+        TreeMap<Integer,Integer> docSet = new TreeMap<>(docLens);
         //Iterator<String> itTerms = sortedTerms.iterator(); //--> iterator for all term in collection
         Iterator<Integer> itDocs = docSet.keySet().iterator();
+        //System.out.println(docSet);
         double avg_len = averageDocumentLength();
         double total = 0.0;
         while(docid < maxDocID) {
             //System.out.println("HERE: " + docid);
             double score = 0.0;
             int currDoc = 0;
+            docid = next(itDocs);
             for (Map.Entry<String, LinkedList<Posting>> entry : inverted_lists.entrySet()) {
-                if(docid == 0){
-                    docid = nextGEQ(entry.getValue(), docid);
-                }
-                else{
-                    currDoc = nextGEQ(entry.getValue(), docid);
-                }
-                if(currDoc > docid) break;
+                currDoc = nextGEQ(entry.getValue(), docid);
+                //System.out.println(currDoc + " docid: " + docid);
+                if(currDoc != docid) break;
             }
             if(currDoc > docid){
+                //System.out.println("HERE: " + docid + " not in the intersection");
                 docid = currDoc; //docid not in the intersection
+                //System.out.println("Updated docid: " + docid);
+
             }
             else{
-                for (String curTerm: queryFreqs.keySet()) {
-                    LinkedList<Posting> curList = inverted_lists.get(curTerm);
+                for (Map.Entry<String, LinkedList<Posting>> entry : inverted_lists.entrySet()){
+                    String curTerm = entry.getKey();
+                    LinkedList<Posting> curList = entry.getValue();
                     int freq  = getFreq(curList, docid);
-                    if (queryFreqs.get(curTerm) != null && docLens.get(docid) != null && docFreqs.get(curTerm)!= null) {
+                    if (queryFreqs.get(curTerm) != null && htDocindex.get(docid) != null && docFreqs.get(curTerm)!= null) {
                         //apply scoring function
                         //score += tfidf(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
                         //score += tfidfNorm(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
-                        score += bm25Weight(freq, docLens.get(docid), docFreqs.get(curTerm), avg_len);
+                        score += bm25Weight(freq, htDocindex.get(docid), docFreqs.get(curTerm), avg_len);
                     }
                 }
                 if(score!= 0.0) scores.put(docid, score);
@@ -198,18 +202,18 @@ public class Daat {
             double score = 0.0;
             for (Map.Entry<String, LinkedList<Posting>> entry : inverted_lists.entrySet()) {
                 if(docid == 0){
-                    docid = next(itDocs);
+                    docid = next(itDocs); //TODO: non va bene così! Bisogna fare nextGEQ
                     //docid = nextGEQ(entry.getValue(), docid);
                 }
                 String curTerm = entry.getKey();
                 //System.out.println(curTerm + " " + docid);
                 for (Posting p : entry.getValue()) {
                     //System.out.println(curTerm + " " + docid + " " + p.getDocumentId());
-                    if (p.getDocumentId() == docid && queryFreqs.get(curTerm) != null && docLens.get(docid) != null && docFreqs.get(curTerm)!= null) {
+                    if (p.getDocumentId() == docid && queryFreqs.get(curTerm) != null && htDocindex.get(docid) != null && docFreqs.get(curTerm)!= null) {
                         //apply scoring function
                         //score += tfidf(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
                         //score += tfidfNorm(p.getTermFrequency(), docLens.get(p.getDocumentId()), doc_freqs.get(curTerm));
-                        score += bm25Weight(p.getTermFrequency(), docLens.get(p.getDocumentId()), docFreqs.get(curTerm), avg_len);
+                        score += bm25Weight(p.getTermFrequency(), htDocindex.get(p.getDocumentId()), docFreqs.get(curTerm), avg_len);
                     }
                 }
             }
