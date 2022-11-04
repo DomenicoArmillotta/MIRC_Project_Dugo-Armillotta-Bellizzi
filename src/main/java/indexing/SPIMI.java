@@ -1,6 +1,7 @@
 package indexing;
 
 import document_index.DocumentIndex;
+import inverted_index.Compressor;
 import inverted_index.InvertedIndex;
 import lexicon.Lexicon;
 import org.apache.commons.io.FileUtils;
@@ -8,6 +9,9 @@ import org.apache.commons.io.LineIterator;
 import preprocessing.PreprocessDoc;
 
 import java.io.*;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -363,8 +367,9 @@ public class SPIMI {
 
         String outputLex = "docs/lexicon_tot.txt";
         String ouptutDocids = "docs/inverted_index_docids.txt";
-        String outputFreqs = "docs/inverted_index_freq.bin";
+        String outputFreqs = "docs/inverted_index_freq.txt";
         String outputPos = "docs/inverted_index_pos.txt";
+        File fileFreq = new File(outputFreqs);
 
         //implemento Set --> used for Lookup su Set o(1);
         Set<String> globalTerms = new HashSet<>(ht_lexicon.keySet());
@@ -372,17 +377,18 @@ public class SPIMI {
         //LinkedHashSet: the fastest way to iterate over a hashset
         LinkedHashSet<String> termSet = new LinkedHashSet<>(sortedTerms);
         Iterator<String> itTerms = termSet.iterator(); //--> iterator for all term in collection
+        Compressor compressor = new Compressor();
 
         BufferedWriter outLex = null;
         BufferedWriter outDocs = null;
-        BufferedWriter outFreqs = null;
         BufferedWriter outPos = null;
 
         try {
             outLex = new BufferedWriter(new FileWriter(new File(outputLex)));
             outDocs = new BufferedWriter(new FileWriter(new File(ouptutDocids)));
-            outFreqs = new BufferedWriter(new FileWriter(new File(outputFreqs)));
             outPos = new BufferedWriter(new FileWriter(new File(outputPos)));
+            RandomAccessFile stream = new RandomAccessFile(fileFreq, "rw");
+            FileChannel channel = stream.getChannel();
             int countTerm = 0;
 
             //iterate through all term of collections
@@ -437,7 +443,17 @@ public class SPIMI {
                                 freqs+=freq;
                                 freqMap.put(docid, freq);
                                 outDocs.write(docs + " ");
-                                outFreqs.write(freqs + " ");
+                                // outFreqs.write(freqs + " "); //--> _____________SOSTITUIRE QUI___________
+                                String bitString = compressor.unary(Integer.parseInt(freqs));
+                                byte[] ba = new BigInteger(bitString, 2).toByteArray();
+                                ByteBuffer bufferValue = ByteBuffer.allocate(ba.length);
+                                bufferValue.put(ba);
+                                bufferValue.flip();
+                                channel.write(bufferValue);
+                                ByteBuffer bufferSpace = ByteBuffer.allocate(ba.length);
+                                bufferSpace.put(" ".getBytes());
+                                bufferSpace.flip();
+                                channel.write(bufferSpace);
                                 outPos.write(poss + " ");
                                 npostings++;
                                 break;
@@ -460,12 +476,22 @@ public class SPIMI {
                                 countDoc = nextDoc.indexOf(" ") == -1 ? nextDoc.length()-1 : nextDoc.indexOf(" ");
                                 countFreq = nextFreq.indexOf(" ") == -1 ? nextFreq.length()-1 : nextFreq.indexOf(" ");
                                 countPos = nextPos.indexOf(" ") == -1 ? nextPos.length()-1 : nextPos.indexOf(" ");
-                                //TODO: add compression here
                                 docs = docid + " ";
                                 poss = newPos + " ";
                                 freqs = freq + " ";
                                 outDocs.write(docs);
-                                outFreqs.write(freqs);
+                                //outFreqs.write(freqs);--------------------> ATTENZIONE
+                                //compression unary
+                                String bitString = compressor.unary(freq);
+                                byte[] ba = new BigInteger(bitString, 2).toByteArray();
+                                ByteBuffer bufferValue = ByteBuffer.allocate(ba.length);
+                                bufferValue.put(ba);
+                                bufferValue.flip();
+                                channel.write(bufferValue);
+                                ByteBuffer bufferSpace = ByteBuffer.allocate(ba.length);
+                                bufferSpace.put(" ".getBytes());
+                                bufferSpace.flip();
+                                channel.write(bufferSpace);
                                 outPos.write(poss);
                                 docLine = nextDoc;
                                 freqLine = nextFreq;
@@ -480,14 +506,17 @@ public class SPIMI {
                 }
                 countTerm++; //increment the offset
                 outDocs.newLine(); // new line on doc file
-                outFreqs.newLine(); // new line on freq file
+                //NEW LINE BIN FILE
+                ByteBuffer bufferLine = ByteBuffer.allocate(2);
+                bufferLine.put("\n".getBytes());
+                bufferLine.flip();
+                channel.write(bufferLine);
                 outPos.newLine(); // new line on pos file
                 lexTerm += " " + countTerm + " " + npostings;// + " " + docfreq;
                 outLex.write(lexTerm);
                 outLex.newLine();
                 outLex.flush();
                 outDocs.flush();
-                outFreqs.flush();
                 outPos.flush();
             }
 
@@ -500,7 +529,6 @@ public class SPIMI {
             try {
                 // always close the writer at the end of merging phase
                 outDocs.close();
-                outFreqs.close();
                 outPos.close();
                 outLex.close();
             }
