@@ -504,6 +504,7 @@ public class SPIMI {
 
                     }
                 }
+                //TODO 06/11/2022: write to the lexicon file th elength of the posting list and the offset in BYTES!
                 countTerm++; //increment the offset
                 outDocs.newLine(); // new line on doc file
                 //NEW LINE BIN FILE

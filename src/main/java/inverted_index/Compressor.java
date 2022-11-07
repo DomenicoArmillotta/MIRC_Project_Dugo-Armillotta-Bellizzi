@@ -68,7 +68,7 @@ public class Compressor {
             bitString += temp;
             end += 7;
         }
-        //System.out.println(bitString);
+        System.out.println(bitString);
         return bitString;
     }
 
@@ -93,16 +93,17 @@ public class Compressor {
         String bin="";
         int i = 0;
         i = bitString.indexOf("1");
-        if(bitString.length()%8!=0) {
-            bin += bitString.substring(i, bitString.length() % 8);
-        }
-        else {
-            bin += bitString.substring(i, 8);
-        }
-        int cont = 8;
+        bin += bitString.substring(i, bitString.length() % 8);
+        int cont = 8-bitString.length()%8;
         int l = bitString.length();
         while(cont<l){
-            String temp = bitString.substring(cont,cont+8);
+            String temp = "";
+            if(bitString.length() < cont+8){
+                temp = bitString.substring(cont,l);
+            }
+            else{
+                temp = bitString.substring(cont,cont+8);
+            }
             i = temp.indexOf("1") + 1;
             bin += temp.substring(i);
             cont+=8;
