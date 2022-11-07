@@ -117,6 +117,51 @@ public class Compressor {
         return Integer.parseInt(bin,2);
     }
 
+    public String variableByteNew(int x){
+        String bitString = "";
+        String bin = bin(x);
+        int l = bin.length();
+        int mod = l%7;
+        bitString+= new String(new char[mod+2]).replace("\0", "0");
+        int start = 0;
+        int end = mod;
+        while(end<=l) {
+            String temp = "";
+            temp = bin.substring(start, end);
+            if (end != mod) {
+                temp = "1" + temp;
+                start += 7;
+                bitString = temp + bitString;
+            } else {
+                start += mod;
+                bitString+=temp;
+            }
+            end += 7;
+        }
+        return bitString;
+    }
+    public int decodeVariableByteNew(String bitString){
+        String bin="";
+        int i = 0;
+        int cont = 0;
+        int l = bitString.length();
+        while(cont<l){
+            String temp="";
+            int end = cont+8 > l? l : cont+8;
+            temp = bitString.substring(cont,end);
+            if(temp.substring(temp.indexOf("1")).length() != 8){
+                i = temp.indexOf("1");
+            }
+            else {
+                i = temp.indexOf("1") + 1;
+            }
+            bin = temp.substring(i) + bin;
+            cont+=8;
+        }
+        //System.out.println(bin);
+        return Integer.parseInt(bin,2);
+    }
+
     public String stringCompressionWithLF(String x) throws IOException {
         Compressor compressor = new Compressor();
         RandomAccessFile stream = new RandomAccessFile("docs/inverted_index_freq.bin", "rw");
