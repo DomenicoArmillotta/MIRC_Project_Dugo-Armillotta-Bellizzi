@@ -77,8 +77,8 @@ public class Compressor {
         return bitString;
     }
 
-    public int decodeVariableByte(String bitString) {
-        String first = bitString.substring(0, 8);
+    public int decodeVariableByteOld(String bitString){
+        String first = bitString.substring(0,8);
         int i = first.indexOf("1");
         String bin = "";
         bin += first.substring(i);
@@ -92,6 +92,28 @@ public class Compressor {
         }
         //System.out.println(bin);
         return Integer.parseInt(bin, 2);
+    }
+
+    public int decodeVariableByte(String bitString){
+        String bin="";
+        int i = 0;
+        i = bitString.indexOf("1");
+        if(bitString.length()%8!=0) {
+            bin += bitString.substring(i, bitString.length() % 8);
+        }
+        else {
+            bin += bitString.substring(i, 8);
+        }
+        int cont = 8;
+        int l = bitString.length();
+        while(cont<l){
+            String temp = bitString.substring(cont,cont+8);
+            i = temp.indexOf("1") + 1;
+            bin += temp.substring(i);
+            cont+=8;
+        }
+        //System.out.println(bin);
+        return Integer.parseInt(bin,2);
     }
 
     public String stringCompressionWithLF(String x) throws IOException {
