@@ -367,7 +367,7 @@ public class SPIMI {
 
         String outputLex = "docs/lexicon_tot.txt";
         String ouptutDocids = "docs/inverted_index_docids.txt";
-        String outputFreqs = "docs/inverted_index_freq.txt";
+        String outputFreqs = "docs/inverted_index_freq.bin";
         String outputPos = "docs/inverted_index_pos.txt";
         File fileFreq = new File(outputFreqs);
 
@@ -382,11 +382,13 @@ public class SPIMI {
         BufferedWriter outLex = null;
         BufferedWriter outDocs = null;
         BufferedWriter outPos = null;
+        BufferedWriter outFreqs = null;
 
         try {
             outLex = new BufferedWriter(new FileWriter(new File(outputLex)));
             outDocs = new BufferedWriter(new FileWriter(new File(ouptutDocids)));
             outPos = new BufferedWriter(new FileWriter(new File(outputPos)));
+            outFreqs = new BufferedWriter(new FileWriter(new File(outputPos)));
             RandomAccessFile stream = new RandomAccessFile(fileFreq, "rw");
             FileChannel channel = stream.getChannel();
             int countTerm = 0;
@@ -444,7 +446,7 @@ public class SPIMI {
                                 freqMap.put(docid, freq);
                                 outDocs.write(docs + " ");
                                 // outFreqs.write(freqs + " "); //--> _____________SOSTITUIRE QUI___________
-                                String bitString = compressor.unary(Integer.parseInt(freqs));
+                     /*           String bitString = compressor.unary(Integer.parseInt(freqs));
                                 byte[] ba = new BigInteger(bitString, 2).toByteArray();
                                 ByteBuffer bufferValue = ByteBuffer.allocate(ba.length);
                                 bufferValue.put(ba);
@@ -453,7 +455,7 @@ public class SPIMI {
                                 ByteBuffer bufferSpace = ByteBuffer.allocate(ba.length);
                                 bufferSpace.put(" ".getBytes());
                                 bufferSpace.flip();
-                                channel.write(bufferSpace);
+                                channel.write(bufferSpace);*/
                                 outPos.write(poss + " ");
                                 npostings++;
                                 break;
@@ -480,18 +482,8 @@ public class SPIMI {
                                 poss = newPos + " ";
                                 freqs = freq + " ";
                                 outDocs.write(docs);
-                                //outFreqs.write(freqs);--------------------> ATTENZIONE
                                 //compression unary
-                                String bitString = compressor.unary(freq);
-                                byte[] ba = new BigInteger(bitString, 2).toByteArray();
-                                ByteBuffer bufferValue = ByteBuffer.allocate(ba.length);
-                                bufferValue.put(ba);
-                                bufferValue.flip();
-                                channel.write(bufferValue);
-                                ByteBuffer bufferSpace = ByteBuffer.allocate(ba.length);
-                                bufferSpace.put(" ".getBytes());
-                                bufferSpace.flip();
-                                channel.write(bufferSpace);
+                                outFreqs.write(compressor.stringCompressionWithLF(freqs));
                                 outPos.write(poss);
                                 docLine = nextDoc;
                                 freqLine = nextFreq;
@@ -507,10 +499,10 @@ public class SPIMI {
                 countTerm++; //increment the offset
                 outDocs.newLine(); // new line on doc file
                 //NEW LINE BIN FILE
-                ByteBuffer bufferLine = ByteBuffer.allocate(2);
+                /*ByteBuffer bufferLine = ByteBuffer.allocate(2);
                 bufferLine.put("\n".getBytes());
                 bufferLine.flip();
-                channel.write(bufferLine);
+                channel.write(bufferLine)*/;
                 outPos.newLine(); // new line on pos file
                 lexTerm += " " + countTerm + " " + npostings;// + " " + docfreq;
                 outLex.write(lexTerm);
