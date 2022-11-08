@@ -122,7 +122,7 @@ public class Compressor {
         String bin = bin(x);
         int l = bin.length();
         int mod = l%7;
-        bitString+= new String(new char[mod+2]).replace("\0", "0");
+        bitString+= new String(new char[7-mod+1]).replace("\0", "0");
         int start = 0;
         int end = mod;
         while(end<=l) {
