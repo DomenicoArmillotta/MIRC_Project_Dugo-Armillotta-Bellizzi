@@ -1,5 +1,6 @@
 package inverted_index;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.math.BigInteger;
@@ -163,25 +164,52 @@ public class Compressor {
         return Integer.parseInt(bin,2);
     }
 
-    public String stringCompressionWithLF(String x) throws IOException {
+    public String stringCompressionWithLF(int x) throws IOException {
         Compressor compressor = new Compressor();
         RandomAccessFile stream = new RandomAccessFile("docs/inverted_index_freq.bin", "rw");
         FileChannel channel = stream.getChannel();
-        String bitString = compressor.unary(Integer.parseInt(x));
+        String bitString = compressor.unary(x);
         byte[] ba = new BigInteger(bitString, 2).toByteArray();
         ByteBuffer bufferValue = ByteBuffer.allocate(ba.length);
         bufferValue.put(ba);
         bufferValue.flip();
         channel.write(bufferValue);
-        ByteBuffer bufferSpace = ByteBuffer.allocate(ba.length);
-        bufferSpace.put("\n".getBytes());
-        bufferSpace.flip();
-        channel.write(bufferSpace);
+        //ByteBuffer bufferSpace = ByteBuffer.allocate(ba.length);
+        //bufferSpace.put("\n".getBytes());
+        //bufferSpace.flip();
+        //channel.write(bufferSpace);
         stream.close();
         return bitString;
     }
 
+    public String stringCompressionWithVariableByte(int doc){
+        Compressor compressor = new Compressor();
+        String bitString = compressor.variableByteNew(doc);
+        byte[] ba = new BigInteger(bitString, 2).toByteArray();
+        File file = new File("docs/inverted_index_docs.bin");
 
+        //WRITE BINARY OPERATION
+        try (RandomAccessFile stream = new RandomAccessFile(file, "rw");
+             FileChannel channel = stream.getChannel())
+        {
+            ByteBuffer bufferValue = ByteBuffer.allocate(ba.length);
+            bufferValue.put(ba);
+            bufferValue.flip();
+            channel.write(bufferValue);
+            System.out.println("Successfully written data to the file");
+            stream.close();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        return bitString;
+    }
+
+    //TODO 08/11/2022: we need to pass as parameter the offset in bytes of the list in the file and decompress
+    // a block at a time of the posting list
+    // basically, we need to a this function for a bunch of potings and retieve them; then we need to return them together;
+    // for reading the list we need the length of the list in number of bytes and the starting offset in number of
+    // bytes from the start of the file
     public int decompressWithLF(String bitString) throws IOException {
         Compressor compressor = new Compressor();
         RandomAccessFile stream = new RandomAccessFile("docs/inverted_index_freq.bin", "r");
@@ -231,7 +259,51 @@ public class Compressor {
         return res;
     }
 
-
+    //TODO: define the return value(s)
+    public void decompressVariableByte(int offset) throws IOException {
+        String path = "docs/prova.bin";
+        RandomAccessFile fileinput = new RandomAccessFile(path, "r");;
+        FileChannel channel = fileinput.getChannel();
+        //set the buffer size
+        int bufferSize = 1;
+        ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
+        String prev = "";
+        int nextValue = 0;
+        // read the data from filechannel
+        while (channel.read(buffer) != -1) {
+            byte[] input = (buffer.array());
+            BigInteger one = new BigInteger(input);
+            if (one.compareTo(BigInteger.ZERO) < 0)
+                one = one.add(BigInteger.ONE.shiftLeft(8));
+            buffer.clear();
+            String strResult = one.toString(2);
+            //we check if we reached the end of a line and if the code is not the same as 10 in base 10
+            if(strResult.equals("1010") && nextValue>10 && prev.equals("")){
+                break;
+            }
+            if(strResult.length() == 8 || (strResult.equals("0") && nextValue!=0)){
+                prev+=strResult;
+            }
+            else{
+                if(prev!=""){
+                    prev+=strResult;
+                    if(prev.startsWith("0")){
+                        prev = prev.substring(prev.indexOf("0")+1);
+                    }
+                    System.out.println("RESULT: " + decodeVariableByteNew(prev));
+                    prev = "";
+                    nextValue = decodeVariableByte(strResult) + 1;
+                }
+                else{
+                    System.out.println("RESULT: " + decodeVariableByte(strResult));
+                    nextValue = decodeVariableByte(strResult) + 1;
+                }
+            }
+        }
+        // close both channel and file
+        channel.close();
+        fileinput.close();
+    }
 
 
     public int computeDocsProb(int x){

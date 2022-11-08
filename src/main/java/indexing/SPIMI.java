@@ -57,7 +57,7 @@ public class SPIMI {
         } finally {
             LineIterator.closeQuietly(it);
         }
-        writeAllFilesASCII(n_block); //at the end of the parsing of all the file, merge all the files in the disk
+        writeAllFilesASCII(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
     }
 
     public void spimiInvertBlockCompression(String read_path, int n_block) throws IOException {
@@ -89,7 +89,7 @@ public class SPIMI {
         } finally {
             LineIterator.closeQuietly(it);
         }
-        writeAllFilesBin(n_block); //at the end of the parsing of all the file, merge all the files in the disk and write a bin file
+        writeAllFilesBin(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk and write a bin file
     }
 
     public void spimiInvertBlockWithRamUsage(String read_path) throws IOException {
@@ -368,7 +368,6 @@ public class SPIMI {
         String outputLex = "docs/lexicon_tot.txt";
         String ouptutDocids = "docs/inverted_index_docids.txt";
         String outputFreqs = "docs/inverted_index_freq.bin";
-        String outputPos = "docs/inverted_index_pos.txt";
         File fileFreq = new File(outputFreqs);
 
         //implemento Set --> used for Lookup su Set o(1);
@@ -381,14 +380,12 @@ public class SPIMI {
 
         BufferedWriter outLex = null;
         BufferedWriter outDocs = null;
-        BufferedWriter outPos = null;
         BufferedWriter outFreqs = null;
 
         try {
             outLex = new BufferedWriter(new FileWriter(new File(outputLex)));
             outDocs = new BufferedWriter(new FileWriter(new File(ouptutDocids)));
-            outPos = new BufferedWriter(new FileWriter(new File(outputPos)));
-            outFreqs = new BufferedWriter(new FileWriter(new File(outputPos)));
+            outFreqs = new BufferedWriter(new FileWriter(new File(outputFreqs)));
             RandomAccessFile stream = new RandomAccessFile(fileFreq, "rw");
             FileChannel channel = stream.getChannel();
             int countTerm = 0;
@@ -397,7 +394,6 @@ public class SPIMI {
             while (itTerms.hasNext()) {
                 //for(String lexTerm: termSet){
                 String lexTerm = itTerms.next();
-                Map<Integer,String> posMap = new HashMap<>(); //--> contains position for each doc_id
                 Map<Integer,Integer> freqMap = new HashMap<>(); //--> contains term freq for each doc_id
                 HashSet<Integer> docHs = new HashSet<>(); //--> contains doc_id
                 String term = "";
@@ -408,7 +404,6 @@ public class SPIMI {
                     itLex[i] = Files.newBufferedReader(Paths.get(lex[i]), StandardCharsets.UTF_8);
                     itId[i] = Files.newBufferedReader(Paths.get(id[i]), StandardCharsets.UTF_8);
                     itTf[i] = Files.newBufferedReader(Paths.get(tf[i]), StandardCharsets.UTF_8);
-                    itPos[i] = Files.newBufferedReader(Paths.get(pos[i]), StandardCharsets.UTF_8);
                     //iterate through all lexicon of all block
                     while ((line = itLex[i].readLine()) != null) {
                         //splitted for the offset
@@ -424,28 +419,26 @@ public class SPIMI {
                             //read the postings at the desired offset
                             String docLine = (String) FileUtils.readLines(new File(id[i]), "UTF-8").get(offset); //--> doc_id of selected term
                             String freqLine = (String) FileUtils.readLines(new File(tf[i]), "UTF-8").get(offset); //--> term freq of selected term
-                            String posLine = (String) FileUtils.readLines(new File(pos[i]), "UTF-8").get(offset); //--> String of positions of selected term
                             //now we take the docids and positions of the term
                             //we take the docids and then map the positions to them, so they are ordered in the same way
                             //we do the same for term frequencies: we map to docs and sum for the same docs
                             int countDoc = docLine.indexOf(" "); // in our text the doc_id are separated by white space (" ")
                             int countFreq = freqLine.indexOf(" ");
-                            int countPos = posLine.indexOf(" ");
                             String docs = "";
                             String freqs = "";
-                            String poss = "";
                             //we read the postings with substring because it's faster
                             if(countDoc == -1){ //if is not founded " " , mean that there is only one value , so a parsing is computed
                                 int docid = Integer.parseInt(docLine);
                                 docs+=docid;
                                 docHs.add(docid);
-                                posMap.put(docid, posLine); //reads the list of positions
                                 int freq = Integer.parseInt(freqLine);
-                                poss+=posLine;
                                 freqs+=freq;
                                 freqMap.put(docid, freq);
-                                outDocs.write(docs + " ");
-                                // outFreqs.write(freqs + " "); //--> _____________SOSTITUIRE QUI___________
+                                //outDocs.write(docs + " ");
+                                compressor.stringCompressionWithVariableByte(docid);
+                                //TODO: write \n????
+                                //outFreqs.write(freqs + " "); //--> _____________SOSTITUIRE QUI___________
+                                compressor.stringCompressionWithLF(freq);
                      /*           String bitString = compressor.unary(Integer.parseInt(freqs));
                                 byte[] ba = new BigInteger(bitString, 2).toByteArray();
                                 ByteBuffer bufferValue = ByteBuffer.allocate(ba.length);
@@ -456,7 +449,6 @@ public class SPIMI {
                                 bufferSpace.put(" ".getBytes());
                                 bufferSpace.flip();
                                 channel.write(bufferSpace);*/
-                                outPos.write(poss + " ");
                                 npostings++;
                                 break;
                             }
@@ -464,30 +456,22 @@ public class SPIMI {
                             while(docLine!= ""){
                                 int docid = Integer.parseInt(docLine.substring(0, countDoc));
                                 docHs.add(docid);
-                                posMap.put(docid, posLine.substring(0, countPos));
                                 int freq = Integer.parseInt(freqLine.substring(0,countFreq));
                                 freqMap.put(docid, freq);
                                 docHs.add(docid);
-                                String newPos = posLine.substring(0, countPos);
-                                posMap.put(docid, posLine.substring(0, countPos));
                                 String nextDoc = docLine.substring(docLine.indexOf(" ")+1); //--> next doc_id
                                 String nextFreq = freqLine.substring(freqLine.indexOf(" ")+1); //--> next freq
-                                String nextPos = posLine.substring(posLine.indexOf(" ")+1); //--> next position set
                                 //if there are other values, then the next posting is not the last
                                 // and so take the next posting separated by space, otherwise take the last posting
                                 countDoc = nextDoc.indexOf(" ") == -1 ? nextDoc.length()-1 : nextDoc.indexOf(" ");
                                 countFreq = nextFreq.indexOf(" ") == -1 ? nextFreq.length()-1 : nextFreq.indexOf(" ");
-                                countPos = nextPos.indexOf(" ") == -1 ? nextPos.length()-1 : nextPos.indexOf(" ");
                                 docs = docid + " ";
-                                poss = newPos + " ";
                                 freqs = freq + " ";
                                 outDocs.write(docs);
                                 //compression unary
-                                outFreqs.write(compressor.stringCompressionWithLF(freqs));
-                                outPos.write(poss);
+                                //outFreqs.write(compressor.stringCompressionWithLF(freqs));
                                 docLine = nextDoc;
                                 freqLine = nextFreq;
-                                posLine = nextPos;
                                 npostings++;
                             }
                             break;
@@ -504,13 +488,11 @@ public class SPIMI {
                 bufferLine.put("\n".getBytes());
                 bufferLine.flip();
                 channel.write(bufferLine)*/;
-                outPos.newLine(); // new line on pos file
                 lexTerm += " " + countTerm + " " + npostings;// + " " + docfreq;
                 outLex.write(lexTerm);
                 outLex.newLine();
                 outLex.flush();
                 outDocs.flush();
-                outPos.flush();
             }
 
         }
@@ -522,7 +504,6 @@ public class SPIMI {
             try {
                 // always close the writer at the end of merging phase
                 outDocs.close();
-                outPos.close();
                 outLex.close();
             }
             catch (Exception e) {
