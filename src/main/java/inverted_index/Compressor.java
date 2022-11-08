@@ -95,6 +95,7 @@ public class Compressor {
     }
 
     public int decodeVariableByte(String bitString){
+        if(bitString.equals("0")) return 0;
         String bin="";
         int i = 0;
         i = bitString.indexOf("1");
