@@ -36,7 +36,7 @@ public class Daat {
         htDocindex = document_index.documentIndexFromText("docs/document_index.txt");
         Lexicon lexicon = new Lexicon();
         htLexicon = lexicon.lexiconFromText("docs/lexicon_tot.txt");
-        docFreqs = lexicon.lexiconFromTextWithFreqs("docs/lexicon_tot.txt");
+        docFreqs = lexicon.lexiconFromTextWithDocLen("docs/lexicon_tot.txt");
         maxDocID = htDocindex.size();
     }
 

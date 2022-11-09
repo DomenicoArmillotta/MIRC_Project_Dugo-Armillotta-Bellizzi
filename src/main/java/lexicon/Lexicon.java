@@ -161,13 +161,63 @@ public class Lexicon {
         return map;
     }
 
+    public Hashtable<String ,Integer> lexiconFromTextFreq(String path){
+        Hashtable<String ,Integer> map = new Hashtable<>();
+        //Map<String, Integer> map = new HashMap<String, Integer>();
+        BufferedReader br = null;
+
+        try {
+
+            // create file object
+            File file = new File(path);
+
+            // create BufferedReader object from the File
+            br = new BufferedReader(new FileReader(file));
+
+            String line = null;
+
+            // read file line by line
+            while ((line = br.readLine()) != null) {
+
+                // split the line by :
+                String[] parts = line.split(" ");
+
+                // first part is name, second is number
+                String name = parts[0].trim();
+                String number = parts[3].trim();
+
+
+                // put name, number in HashMap if they are
+                // not empty
+                if (!name.equals("") && !number.equals(""))
+                    map.put(name, Integer.valueOf(number));
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            // Always close the BufferedReader
+            if (br != null) {
+                try {
+                    br.close();
+                }
+                catch (Exception e) {
+                };
+            }
+        }
+
+        return map;
+    }
+
     /**
      * method to create structure of lexicon in memory from a file
      * we read term:row_id:df and is taken term:df
      * @param path file of input
      * @return
      */
-    public Hashtable<String ,Integer> lexiconFromTextWithFreqs(String path){
+    public Hashtable<String ,Integer> lexiconFromTextWithDocLen(String path){
         Hashtable<String ,Integer> map = new Hashtable<>();
         //Map<String, Integer> map = new HashMap<String, Integer>();
         BufferedReader br = null;
@@ -216,6 +266,58 @@ public class Lexicon {
 
         return map;
     }
+
+    public Hashtable<String ,Integer> lexiconFromTextWithFreqLen(String path){
+        Hashtable<String ,Integer> map = new Hashtable<>();
+        //Map<String, Integer> map = new HashMap<String, Integer>();
+        BufferedReader br = null;
+
+        try {
+
+            // create file object
+            File file = new File(path);
+
+            // create BufferedReader object from the File
+            br = new BufferedReader(new FileReader(file));
+
+            String line = null;
+
+            // read file line by line
+            while ((line = br.readLine()) != null) {
+
+                // split the line by :
+                String[] parts = line.split(" ");
+
+                // first part is name, second is number
+                String name = parts[0].trim();
+                String number = parts[4].trim();
+
+
+                // put name, number in HashMap if they are
+                // not empty
+                if (!name.equals("") && !number.equals(""))
+                    map.put(name, Integer.valueOf(number));
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+
+            // Always close the BufferedReader
+            if (br != null) {
+                try {
+                    br.close();
+                }
+                catch (Exception e) {
+                };
+            }
+        }
+
+        return map;
+    }
+
+
 }
 
 

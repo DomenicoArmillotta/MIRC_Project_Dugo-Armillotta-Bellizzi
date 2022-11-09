@@ -383,14 +383,15 @@ public class SPIMI {
             FileChannel channelDocs = streamDocs.getChannel();
             RandomAccessFile streamFreq = new RandomAccessFile(fileFreq, "rw");
             FileChannel channelFreq = streamFreq.getChannel();
-            int countTerm = 0;
-
+            int docOffset = 0;
+            int tfOffset = 0;
             //iterate through all term of collections
             while (itTerms.hasNext()) {
                 //for(String lexTerm: termSet){
                 String lexTerm = itTerms.next();
                 String term = "";
-                int npostings = 0; //to count the posting list size
+                int nDocids = 0; //to count the docid list size in bytes
+                int nFreqs = 0; //to count the term frequencies list size in bytes
                 //iterate through all block
                 for(int i = 0; i <= n; i++){
                     String line = ""; //term of the vocabulary
@@ -408,6 +409,7 @@ public class SPIMI {
                         //if a match is founded, a merge is made
                         //to reach the right line on files , an offset is used
                         if (lexTerm.equals(term)) {
+                            System.out.println(term);
                             //read the postings at the desired offset
                             String docLine = (String) FileUtils.readLines(new File(id[i]), "UTF-8").get(offset); //--> doc_id of selected term
                             String freqLine = (String) FileUtils.readLines(new File(tf[i]), "UTF-8").get(offset); //--> term freq of selected term
@@ -429,7 +431,8 @@ public class SPIMI {
                                 channelFreq.write(bufferFreq);
                                 //TODO: write \n????
                                 //System.out.println(docid + " " + baDocs.length);
-                                npostings+=baDocs.length;
+                                nDocids+=baDocs.length;
+                                nFreqs+=baFreqs.length;
                                 break;
                             }
                             //iterate thought all doc_id of selected term
@@ -446,9 +449,8 @@ public class SPIMI {
                                 bufferFreq.put(baFreqs);
                                 bufferFreq.flip();
                                 channelFreq.write(bufferFreq);
-                                //TODO: write \n????
-                                compressor.stringCompressionWithLF(freq);
-                                npostings+=baDocs.length;
+                                nDocids+=baDocs.length;
+                                nFreqs+=baFreqs.length;
                                 //System.out.println(docid + " " + baDocs.length);
                                 String nextDoc = docLine.substring(docLine.indexOf(" ")+1); //--> next doc_id
                                 String nextFreq = freqLine.substring(freqLine.indexOf(" ")+1); //--> next freq
@@ -472,8 +474,9 @@ public class SPIMI {
                 bufferLine.put("\n".getBytes());
                 bufferLine.flip();
                 channel.write(bufferLine)*/;
-                lexTerm += " " + countTerm + " " + npostings;// + " " + docfreq;
-                countTerm+=npostings; //increment the offset
+                lexTerm += " " + docOffset + " " + nDocids + " " + tfOffset + " " + nFreqs;
+                docOffset+=nDocids; //increment the offset
+                tfOffset+=nFreqs;
                 outLex.write(lexTerm);
                 outLex.newLine();
                 outLex.flush();

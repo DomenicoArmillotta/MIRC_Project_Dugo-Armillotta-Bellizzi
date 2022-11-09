@@ -149,6 +149,7 @@ public class Compressor {
     }
 
     public int decodeVariableByteNew(String bitString){
+        if(bitString.equals("0")) return 0;
         String bin="";
         int i = 0;
         int cont = 0;
@@ -175,6 +176,7 @@ public class Compressor {
 
     public byte[] stringCompressionWithLF(int x) throws IOException {
         String bitString = unary(x);
+        //System.out.println(x + " " + bitString);
         byte[] ba = new BigInteger(bitString, 2).toByteArray();
         return ba;
     }
@@ -190,36 +192,42 @@ public class Compressor {
 
     }
 
-    //TODO 08/11/2022: we need to pass as parameter the offset in bytes of the list in the file and decompress
-    // a block at a time of the posting list
-    // basically, we need to a this function for a bunch of potings and retieve them; then we need to return them together;
-    // for reading the list we need the length of the list in number of bytes and the starting offset in number of
-    // bytes from the start of the file
-    public int decompressWithLF(String bitString) throws IOException {
+    public void decompressWithLF(int offset, int end, String path) throws IOException {
         Compressor compressor = new Compressor();
-        RandomAccessFile stream = new RandomAccessFile("docs/inverted_index_freq.bin", "r");
+        RandomAccessFile stream = new RandomAccessFile(path, "r");
         FileChannel channel = stream.getChannel();
         //set the buffer size
         int bufferSize = 1;
         int res = 0;
         ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
         String prev = "";
+        int cont = 0;
+        int n = 0;
         // read the data from filechannel
         while (channel.read(buffer) != -1) {
             byte[] input = (buffer.array());
+            if(cont!=offset){
+                cont++;
+                buffer.clear();
+                continue;
+            }
             BigInteger one = new BigInteger(input);
             if (one.compareTo(BigInteger.ZERO) < 0)
                 one = one.add(BigInteger.ONE.shiftLeft(8));
             //--> unario
             String strResult = one.toString(2);
-            if (strResult.equals("1010")) {
+            /*if (strResult.equals("1010")) {
                 //System.out.println("end line!");
                 break;
-            }
-            if (strResult.indexOf("0") == -1 || strResult.equals("0")) {
+            }*/
+            //check if the string is all ones
+            //if (strResult.indexOf("0") == -1 || strResult.equals("0")) {
+            if (strResult.indexOf("0") == -1) {
                 //System.out.println("not zero: " + strResult);
                 prev += strResult;
-            } else {
+                n++;
+            }
+            else {
                 if (prev != "") {
                     //System.out.println("previous: " + prev);
                     prev += strResult;
@@ -228,20 +236,22 @@ public class Compressor {
                     if (prev.startsWith("0")) {
                         prev = prev.substring(prev.indexOf("0") + 1);
                     }
-                    //System.out.println(compressor.decodeUnary(prev));
+                    System.out.println("RESULT: " + compressor.decodeUnary(prev));
                     prev = "";
+                    n++;
                 } else {
-                    System.out.println("string: " + strResult);
-                    System.out.println(compressor.decodeUnary(strResult));
+                    System.out.println("RESULT: " + decodeUnary(strResult));
+                    n++;
                 }
             }
-            res = compressor.decodeUnary(strResult);
+            //res = compressor.decodeUnary(strResult);
             buffer.clear();
+            if(n==end) break;
         }
         // clode both channel and file
         channel.close();
         stream.close();
-        return res;
+        //return res;
     }
 
     //TODO: define the return value(s)
@@ -269,10 +279,6 @@ public class Compressor {
             buffer.clear();
             String strResult = one.toString(2);
             //System.out.println(strResult);
-            if(strResult.equals("1010") && nextValue>10 && prev.equals("")){
-                //System.out.println("end line!");
-                break;
-            }
             if(strResult.length() == 8){
                 prev+= strResult;
                 nextValue++;
