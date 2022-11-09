@@ -276,6 +276,7 @@ public class Compressor {
             if(strResult.length() == 8){
                 prev+= strResult;
                 nextValue++;
+                n++;
             }
             else if(strResult.equals("0") && nextValue > 0){
                 if(!prev.equals("")){
