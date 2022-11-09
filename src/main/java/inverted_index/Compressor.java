@@ -181,6 +181,7 @@ public class Compressor {
 
     public byte[] stringCompressionWithVariableByte(int doc){
         String bitString = variableByteNew(doc);
+        //System.out.println(bitString);
         byte[] ba = new BigInteger(bitString, 2).toByteArray();
         if(ba[0]==0 && ba.length>1){ //because toByteArray() adds one bit 0 for the sign, so we have one extra byte
             ba = Arrays.copyOfRange(ba, 1, ba.length);
@@ -244,36 +245,45 @@ public class Compressor {
     }
 
     //TODO: define the return value(s)
-    public void decompressVariableByte(int offset) throws IOException {
-        String path = "docs/prova.bin";
-        RandomAccessFile fileinput = new RandomAccessFile(path, "r");;
+    public void decompressVariableByte(int offset, int end, String path) throws IOException {
+        RandomAccessFile fileinput = new RandomAccessFile(path, "r");
         FileChannel channel = fileinput.getChannel();
         //set the buffer size
         int bufferSize = 1;
         ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
         String prev = "";
         int nextValue = 0;
+        int cont = 0;
+        int n = 0;
         // read the data from filechannel
         while (channel.read(buffer) != -1) {
             byte[] input = (buffer.array());
+            if(cont!=offset){
+                cont++;
+                buffer.clear();
+                continue;
+            }
             BigInteger one = new BigInteger(input);
             if (one.compareTo(BigInteger.ZERO) < 0)
                 one = one.add(BigInteger.ONE.shiftLeft(8));
             buffer.clear();
             String strResult = one.toString(2);
-            System.out.println(strResult);
+            //System.out.println(strResult);
             if(strResult.equals("1010") && nextValue>10 && prev.equals("")){
                 //System.out.println("end line!");
                 break;
             }
             if(strResult.length() == 8){
                 prev+= strResult;
+                nextValue++;
             }
             else if(strResult.equals("0") && nextValue > 0){
                 if(!prev.equals("")){
-                    //System.out.println("RESULT: " + decodeVariableByteNew(prev));
-                    nextValue = decodeVariableByte(prev) + 1;
+                    System.out.println("RESULT: " + decodeVariableByteNew(prev));
+                    nextValue = decodeVariableByteNew(prev) + 1;
                     prev ="";
+                    n++;
+                    if(n==end) break;
                 }
             }
             else{
@@ -282,14 +292,16 @@ public class Compressor {
                     if(prev.startsWith("0")){
                         prev = prev.substring(prev.indexOf("0")+1);
                     }
-                    //System.out.println("RESULT: " + decodeVariableByteNew(prev));
+                    System.out.println("RESULT: " + decodeVariableByteNew(prev));
                     prev = "";
                     nextValue = decodeVariableByte(strResult) + 1;
                 }
                 else{
-                    //System.out.println("RESULT: " + decodeVariableByte(strResult));
+                    System.out.println("RESULT: " + decodeVariableByteNew(strResult));
                     nextValue = decodeVariableByte(strResult) + 1;
                 }
+                n++;
+                if(n==end) break;
             }
         }
         // close both channel and file

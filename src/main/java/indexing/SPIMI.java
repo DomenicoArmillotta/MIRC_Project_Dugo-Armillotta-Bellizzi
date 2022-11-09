@@ -349,7 +349,6 @@ public class SPIMI {
     private void writeAllFilesBin(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
         String[] lex = new String[n+1];
         String[] tf = new String[n+1];
-        String[] pos = new String[n+1];
         String[] id = new String[n+1];
 
         BufferedReader[] itLex = new BufferedReader[n+1];
@@ -360,12 +359,11 @@ public class SPIMI {
         for (int i = 0; i <= n; i++) {
             lex[i] = "docs/lexicon_" + i + ".txt";
             tf[i] = "docs/inverted_index_term_freq_" + i + ".txt";
-            pos[i] = "docs/inverted_index_positions_" + i + ".txt";
             id[i] = "docs/inverted_index_docids_" + i + ".txt";
         }
 
-        String outputLex = "docs/lexicon_tot.txt";
-        String ouptutDocids = "docs/inverted_index_docids.txt";
+        String outputLex = "docs/lexicon_tot.bin";
+        String outputDocids = "docs/inverted_index_docids.bin";
         String outputFreqs = "docs/inverted_index_freq.bin";
         File fileFreq = new File(outputFreqs);
 
@@ -378,14 +376,10 @@ public class SPIMI {
         Compressor compressor = new Compressor();
 
         BufferedWriter outLex = null;
-        BufferedWriter outDocs = null;
-        BufferedWriter outFreqs = null;
 
         try {
             outLex = new BufferedWriter(new FileWriter(new File(outputLex)));
-            outDocs = new BufferedWriter(new FileWriter(new File(ouptutDocids)));
-            outFreqs = new BufferedWriter(new FileWriter(new File(outputFreqs)));
-            RandomAccessFile streamDocs = new RandomAccessFile(new File(ouptutDocids), "rw");
+            RandomAccessFile streamDocs = new RandomAccessFile(new File(outputDocids), "rw");
             FileChannel channelDocs = streamDocs.getChannel();
             RandomAccessFile streamFreq = new RandomAccessFile(fileFreq, "rw");
             FileChannel channelFreq = streamFreq.getChannel();
@@ -395,8 +389,6 @@ public class SPIMI {
             while (itTerms.hasNext()) {
                 //for(String lexTerm: termSet){
                 String lexTerm = itTerms.next();
-                Map<Integer,Integer> freqMap = new HashMap<>(); //--> contains term freq for each doc_id
-                HashSet<Integer> docHs = new HashSet<>(); //--> contains doc_id
                 String term = "";
                 int npostings = 0; //to count the posting list size
                 //iterate through all block
@@ -413,16 +405,14 @@ public class SPIMI {
                         term = line.substring(0, line.indexOf(" "));
                         String input = line.substring(line.indexOf(" ")+1, line.length());
                         int offset = Integer.parseInt(input);
-                        //if a match is founded  , a merge is made
+                        //if a match is founded, a merge is made
                         //to reach the right line on files , an offset is used
                         if (lexTerm.equals(term)) {
-                            int countLine = 0;
                             //read the postings at the desired offset
                             String docLine = (String) FileUtils.readLines(new File(id[i]), "UTF-8").get(offset); //--> doc_id of selected term
                             String freqLine = (String) FileUtils.readLines(new File(tf[i]), "UTF-8").get(offset); //--> term freq of selected term
                             int countDoc = docLine.indexOf(" "); // in our text the doc_id are separated by white space (" ")
                             int countFreq = freqLine.indexOf(" ");
-                            String docs = "";
                             //we read the postings with substring because it's faster
                             if(countDoc == -1){ //if is not founded " " , mean that there is only one value , so a parsing is computed
                                 int docid = Integer.parseInt(docLine);
@@ -438,8 +428,7 @@ public class SPIMI {
                                 bufferFreq.flip();
                                 channelFreq.write(bufferFreq);
                                 //TODO: write \n????
-                                //outFreqs.write(freqs + " "); //--> _____________SOSTITUIRE QUI___________
-                                compressor.stringCompressionWithLF(freq);
+                                //System.out.println(docid + " " + baDocs.length);
                                 npostings+=baDocs.length;
                                 break;
                             }
@@ -460,6 +449,7 @@ public class SPIMI {
                                 //TODO: write \n????
                                 compressor.stringCompressionWithLF(freq);
                                 npostings+=baDocs.length;
+                                //System.out.println(docid + " " + baDocs.length);
                                 String nextDoc = docLine.substring(docLine.indexOf(" ")+1); //--> next doc_id
                                 String nextFreq = freqLine.substring(freqLine.indexOf(" ")+1); //--> next freq
                                 //if there are other values, then the next posting is not the last
@@ -469,7 +459,6 @@ public class SPIMI {
                                 //compression unary
                                 docLine = nextDoc;
                                 freqLine = nextFreq;
-                                npostings++;
                             }
                             break;
                         }
@@ -477,7 +466,6 @@ public class SPIMI {
                     }
                 }
                 //TODO 06/11/2022: write to the lexicon file the length of the posting list and the offset in BYTES!
-                outDocs.newLine(); // new line on doc file
                 //countTerm++; //increment the offset
                 //NEW LINE BIN FILE
                 /*ByteBuffer bufferLine = ByteBuffer.allocate(2);
@@ -489,7 +477,6 @@ public class SPIMI {
                 outLex.write(lexTerm);
                 outLex.newLine();
                 outLex.flush();
-                outDocs.flush();
             }
 
         }
@@ -500,7 +487,6 @@ public class SPIMI {
 
             try {
                 // always close the writer at the end of merging phase
-                outDocs.close();
                 outLex.close();
             }
             catch (Exception e) {
