@@ -6,6 +6,7 @@ import java.io.RandomAccessFile;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
 
 public class Compressor {
 
@@ -124,7 +125,11 @@ public class Compressor {
         String bin = bin(x);
         int l = bin.length();
         int mod = l%7;
-        bitString+= new String(new char[7-mod+1]).replace("\0", "0");
+        /*if(mod!=0) {
+            bitString += new String(new char[7 - mod + 1]).replace("\0", "0");
+        }*/
+        //place the leading zeros to identify the last byte of the encoding
+        bitString += new String(new char[7 - mod + 1]).replace("\0", "0");
         int start = 0;
         int end = mod;
         while(end<=l) {
@@ -142,6 +147,7 @@ public class Compressor {
         }
         return bitString;
     }
+
     public int decodeVariableByteNew(String bitString){
         String bin="";
         int i = 0;
@@ -151,7 +157,10 @@ public class Compressor {
             String temp="";
             int end = cont+8 > l? l : cont+8;
             temp = bitString.substring(cont,end);
-            if(temp.substring(temp.indexOf("1")).length() != 8){
+            if(temp.equals("0")){
+                continue;
+            }
+            else if(temp.substring(temp.indexOf("1")).length() != 8){
                 i = temp.indexOf("1");
             }
             else {
@@ -164,45 +173,20 @@ public class Compressor {
         return Integer.parseInt(bin,2);
     }
 
-    public String stringCompressionWithLF(int x) throws IOException {
-        Compressor compressor = new Compressor();
-        RandomAccessFile stream = new RandomAccessFile("docs/inverted_index_freq.bin", "rw");
-        FileChannel channel = stream.getChannel();
-        String bitString = compressor.unary(x);
+    public byte[] stringCompressionWithLF(int x) throws IOException {
+        String bitString = unary(x);
         byte[] ba = new BigInteger(bitString, 2).toByteArray();
-        ByteBuffer bufferValue = ByteBuffer.allocate(ba.length);
-        bufferValue.put(ba);
-        bufferValue.flip();
-        channel.write(bufferValue);
-        //ByteBuffer bufferSpace = ByteBuffer.allocate(ba.length);
-        //bufferSpace.put("\n".getBytes());
-        //bufferSpace.flip();
-        //channel.write(bufferSpace);
-        stream.close();
-        return bitString;
+        return ba;
     }
 
-    public String stringCompressionWithVariableByte(int doc){
-        Compressor compressor = new Compressor();
-        String bitString = compressor.variableByteNew(doc);
+    public byte[] stringCompressionWithVariableByte(int doc){
+        String bitString = variableByteNew(doc);
         byte[] ba = new BigInteger(bitString, 2).toByteArray();
-        File file = new File("docs/inverted_index_docs.bin");
+        if(ba[0]==0 && ba.length>1){ //because toByteArray() adds one bit 0 for the sign, so we have one extra byte
+            ba = Arrays.copyOfRange(ba, 1, ba.length);
+        }
+        return ba;
 
-        //WRITE BINARY OPERATION
-        try (RandomAccessFile stream = new RandomAccessFile(file, "rw");
-             FileChannel channel = stream.getChannel())
-        {
-            ByteBuffer bufferValue = ByteBuffer.allocate(ba.length);
-            bufferValue.put(ba);
-            bufferValue.flip();
-            channel.write(bufferValue);
-            System.out.println("Successfully written data to the file");
-            stream.close();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-        return bitString;
     }
 
     //TODO 08/11/2022: we need to pass as parameter the offset in bytes of the list in the file and decompress
@@ -228,22 +212,22 @@ public class Compressor {
             //--> unario
             String strResult = one.toString(2);
             if (strResult.equals("1010")) {
-                System.out.println("end line!");
+                //System.out.println("end line!");
                 break;
             }
             if (strResult.indexOf("0") == -1 || strResult.equals("0")) {
-                System.out.println("not zero: " + strResult);
+                //System.out.println("not zero: " + strResult);
                 prev += strResult;
             } else {
                 if (prev != "") {
-                    System.out.println("previous: " + prev);
+                    //System.out.println("previous: " + prev);
                     prev += strResult;
-                    System.out.println("ending string: " + strResult);
-                    System.out.println(prev);
+                    //System.out.println("ending string: " + strResult);
+                    //System.out.println(prev);
                     if (prev.startsWith("0")) {
                         prev = prev.substring(prev.indexOf("0") + 1);
                     }
-                    System.out.println(compressor.decodeUnary(prev));
+                    //System.out.println(compressor.decodeUnary(prev));
                     prev = "";
                 } else {
                     System.out.println("string: " + strResult);
@@ -277,12 +261,20 @@ public class Compressor {
                 one = one.add(BigInteger.ONE.shiftLeft(8));
             buffer.clear();
             String strResult = one.toString(2);
-            //we check if we reached the end of a line and if the code is not the same as 10 in base 10
+            System.out.println(strResult);
             if(strResult.equals("1010") && nextValue>10 && prev.equals("")){
+                //System.out.println("end line!");
                 break;
             }
-            if(strResult.length() == 8 || (strResult.equals("0") && nextValue!=0)){
-                prev+=strResult;
+            if(strResult.length() == 8){
+                prev+= strResult;
+            }
+            else if(strResult.equals("0") && nextValue > 0){
+                if(!prev.equals("")){
+                    //System.out.println("RESULT: " + decodeVariableByteNew(prev));
+                    nextValue = decodeVariableByte(prev) + 1;
+                    prev ="";
+                }
             }
             else{
                 if(prev!=""){
@@ -290,12 +282,12 @@ public class Compressor {
                     if(prev.startsWith("0")){
                         prev = prev.substring(prev.indexOf("0")+1);
                     }
-                    System.out.println("RESULT: " + decodeVariableByteNew(prev));
+                    //System.out.println("RESULT: " + decodeVariableByteNew(prev));
                     prev = "";
                     nextValue = decodeVariableByte(strResult) + 1;
                 }
                 else{
-                    System.out.println("RESULT: " + decodeVariableByte(strResult));
+                    //System.out.println("RESULT: " + decodeVariableByte(strResult));
                     nextValue = decodeVariableByte(strResult) + 1;
                 }
             }

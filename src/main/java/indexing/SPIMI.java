@@ -355,7 +355,6 @@ public class SPIMI {
         BufferedReader[] itLex = new BufferedReader[n+1];
         BufferedReader[] itId = new BufferedReader[n+1];
         BufferedReader[] itTf = new BufferedReader[n+1];
-        BufferedReader[] itPos = new BufferedReader[n+1];
 
         //open all files
         for (int i = 0; i <= n; i++) {
@@ -386,8 +385,10 @@ public class SPIMI {
             outLex = new BufferedWriter(new FileWriter(new File(outputLex)));
             outDocs = new BufferedWriter(new FileWriter(new File(ouptutDocids)));
             outFreqs = new BufferedWriter(new FileWriter(new File(outputFreqs)));
-            RandomAccessFile stream = new RandomAccessFile(fileFreq, "rw");
-            FileChannel channel = stream.getChannel();
+            RandomAccessFile streamDocs = new RandomAccessFile(new File(ouptutDocids), "rw");
+            FileChannel channelDocs = streamDocs.getChannel();
+            RandomAccessFile streamFreq = new RandomAccessFile(fileFreq, "rw");
+            FileChannel channelFreq = streamFreq.getChannel();
             int countTerm = 0;
 
             //iterate through all term of collections
@@ -419,76 +420,72 @@ public class SPIMI {
                             //read the postings at the desired offset
                             String docLine = (String) FileUtils.readLines(new File(id[i]), "UTF-8").get(offset); //--> doc_id of selected term
                             String freqLine = (String) FileUtils.readLines(new File(tf[i]), "UTF-8").get(offset); //--> term freq of selected term
-                            //now we take the docids and positions of the term
-                            //we take the docids and then map the positions to them, so they are ordered in the same way
-                            //we do the same for term frequencies: we map to docs and sum for the same docs
                             int countDoc = docLine.indexOf(" "); // in our text the doc_id are separated by white space (" ")
                             int countFreq = freqLine.indexOf(" ");
                             String docs = "";
-                            String freqs = "";
                             //we read the postings with substring because it's faster
                             if(countDoc == -1){ //if is not founded " " , mean that there is only one value , so a parsing is computed
                                 int docid = Integer.parseInt(docLine);
-                                docs+=docid;
-                                docHs.add(docid);
                                 int freq = Integer.parseInt(freqLine);
-                                freqs+=freq;
-                                freqMap.put(docid, freq);
-                                //outDocs.write(docs + " ");
-                                compressor.stringCompressionWithVariableByte(docid);
+                                byte[] baDocs = compressor.stringCompressionWithVariableByte(docid);
+                                ByteBuffer bufferValue = ByteBuffer.allocate(baDocs.length);
+                                bufferValue.put(baDocs);
+                                bufferValue.flip();
+                                channelDocs.write(bufferValue);
+                                byte[] baFreqs = compressor.stringCompressionWithLF(freq);
+                                ByteBuffer bufferFreq = ByteBuffer.allocate(baFreqs.length);
+                                bufferFreq.put(baFreqs);
+                                bufferFreq.flip();
+                                channelFreq.write(bufferFreq);
                                 //TODO: write \n????
                                 //outFreqs.write(freqs + " "); //--> _____________SOSTITUIRE QUI___________
                                 compressor.stringCompressionWithLF(freq);
-                     /*           String bitString = compressor.unary(Integer.parseInt(freqs));
-                                byte[] ba = new BigInteger(bitString, 2).toByteArray();
-                                ByteBuffer bufferValue = ByteBuffer.allocate(ba.length);
-                                bufferValue.put(ba);
-                                bufferValue.flip();
-                                channel.write(bufferValue);
-                                ByteBuffer bufferSpace = ByteBuffer.allocate(ba.length);
-                                bufferSpace.put(" ".getBytes());
-                                bufferSpace.flip();
-                                channel.write(bufferSpace);*/
-                                npostings++;
+                                npostings+=baDocs.length;
                                 break;
                             }
                             //iterate thought all doc_id of selected term
                             while(docLine!= ""){
                                 int docid = Integer.parseInt(docLine.substring(0, countDoc));
-                                docHs.add(docid);
                                 int freq = Integer.parseInt(freqLine.substring(0,countFreq));
-                                freqMap.put(docid, freq);
-                                docHs.add(docid);
+                                byte[] baDocs = compressor.stringCompressionWithVariableByte(docid);
+                                ByteBuffer bufferValue = ByteBuffer.allocate(baDocs.length);
+                                bufferValue.put(baDocs);
+                                bufferValue.flip();
+                                channelDocs.write(bufferValue);
+                                byte[] baFreqs = compressor.stringCompressionWithLF(freq);
+                                ByteBuffer bufferFreq = ByteBuffer.allocate(baFreqs.length);
+                                bufferFreq.put(baFreqs);
+                                bufferFreq.flip();
+                                channelFreq.write(bufferFreq);
+                                //TODO: write \n????
+                                compressor.stringCompressionWithLF(freq);
+                                npostings+=baDocs.length;
                                 String nextDoc = docLine.substring(docLine.indexOf(" ")+1); //--> next doc_id
                                 String nextFreq = freqLine.substring(freqLine.indexOf(" ")+1); //--> next freq
                                 //if there are other values, then the next posting is not the last
                                 // and so take the next posting separated by space, otherwise take the last posting
                                 countDoc = nextDoc.indexOf(" ") == -1 ? nextDoc.length()-1 : nextDoc.indexOf(" ");
                                 countFreq = nextFreq.indexOf(" ") == -1 ? nextFreq.length()-1 : nextFreq.indexOf(" ");
-                                docs = docid + " ";
-                                freqs = freq + " ";
-                                outDocs.write(docs);
                                 //compression unary
-                                //outFreqs.write(compressor.stringCompressionWithLF(freqs));
                                 docLine = nextDoc;
                                 freqLine = nextFreq;
                                 npostings++;
                             }
                             break;
-
                         }
 
                     }
                 }
-                //TODO 06/11/2022: write to the lexicon file th elength of the posting list and the offset in BYTES!
-                countTerm++; //increment the offset
+                //TODO 06/11/2022: write to the lexicon file the length of the posting list and the offset in BYTES!
                 outDocs.newLine(); // new line on doc file
+                //countTerm++; //increment the offset
                 //NEW LINE BIN FILE
                 /*ByteBuffer bufferLine = ByteBuffer.allocate(2);
                 bufferLine.put("\n".getBytes());
                 bufferLine.flip();
                 channel.write(bufferLine)*/;
                 lexTerm += " " + countTerm + " " + npostings;// + " " + docfreq;
+                countTerm+=npostings; //increment the offset
                 outLex.write(lexTerm);
                 outLex.newLine();
                 outLex.flush();
