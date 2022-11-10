@@ -6,6 +6,11 @@ import java.io.RandomAccessFile;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 
 public class Compressor {
@@ -193,12 +198,13 @@ public class Compressor {
     }
 
     public void decompressWithLF(int offset, int end, String path) throws IOException {
-        Compressor compressor = new Compressor();
         RandomAccessFile stream = new RandomAccessFile(path, "r");
-        FileChannel channel = stream.getChannel();
+        //FileChannel channel = stream.getChannel();
+        Path filepath = Paths.get(path);
+        SeekableByteChannel channel = Files.newByteChannel(filepath, StandardOpenOption.READ);
+        channel = channel.position(offset);
         //set the buffer size
         int bufferSize = 1;
-        int res = 0;
         ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
         String prev = "";
         int cont = 0;
@@ -206,11 +212,11 @@ public class Compressor {
         // read the data from filechannel
         while (channel.read(buffer) != -1) {
             byte[] input = (buffer.array());
-            if(cont!=offset){
+            /*if(cont!=offset){
                 cont++;
                 buffer.clear();
                 continue;
-            }
+            }*/
             BigInteger one = new BigInteger(input);
             if (one.compareTo(BigInteger.ZERO) < 0)
                 one = one.add(BigInteger.ONE.shiftLeft(8));
@@ -223,7 +229,7 @@ public class Compressor {
             //check if the string is all ones
             //if (strResult.indexOf("0") == -1 || strResult.equals("0")) {
             if (strResult.indexOf("0") == -1) {
-                //System.out.println("not zero: " + strResult);
+                System.out.println("not zero: " + strResult);
                 prev += strResult;
                 n++;
             }
@@ -236,7 +242,7 @@ public class Compressor {
                     if (prev.startsWith("0")) {
                         prev = prev.substring(prev.indexOf("0") + 1);
                     }
-                    System.out.println("RESULT: " + compressor.decodeUnary(prev));
+                    System.out.println("RESULT: " + decodeUnary(prev));
                     prev = "";
                     n++;
                 } else {
@@ -244,23 +250,25 @@ public class Compressor {
                     n++;
                 }
             }
-            //res = compressor.decodeUnary(strResult);
             buffer.clear();
             if(n==end) break;
         }
-        // clode both channel and file
+        // close both channel and file
         channel.close();
         stream.close();
-        //return res;
     }
 
     //TODO: define the return value(s)
     public void decompressVariableByte(int offset, int end, String path) throws IOException {
         RandomAccessFile fileinput = new RandomAccessFile(path, "r");
-        FileChannel channel = fileinput.getChannel();
+        //FileChannel channel = fileinput.getChannel();
         //set the buffer size
         int bufferSize = 1;
+        Path filepath = Paths.get(path);
+        SeekableByteChannel channel = Files.newByteChannel(filepath, StandardOpenOption.READ);
         ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
+        channel = channel.position(offset);
+        //channel = channel.truncate(end);
         String prev = "";
         int nextValue = 0;
         int cont = 0;
@@ -268,11 +276,11 @@ public class Compressor {
         // read the data from filechannel
         while (channel.read(buffer) != -1) {
             byte[] input = (buffer.array());
-            if(cont!=offset){
+            /*if(cont!=offset){
                 cont++;
                 buffer.clear();
                 continue;
-            }
+            }*/
             BigInteger one = new BigInteger(input);
             if (one.compareTo(BigInteger.ZERO) < 0)
                 one = one.add(BigInteger.ONE.shiftLeft(8));

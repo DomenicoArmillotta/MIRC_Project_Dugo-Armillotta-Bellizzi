@@ -123,6 +123,37 @@ public class SPIMI {
         }
         writeAllFilesASCII(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
     }
+    public void spimiInvertBlockWithRamUsageCompressed(String read_path) throws IOException {
+        int n_block = 0;
+        Lexicon lexicon = new Lexicon();
+        ht_lexicon = lexicon.createLexicon(read_path);
+        DocumentIndex docindex = new DocumentIndex();
+        ht_docindex = docindex.createDocumentIndex(read_path);
+        docindex.textFromDocumentIndex(ht_docindex);
+        File input_file = new File(read_path);
+        LineIterator it = FileUtils.lineIterator(input_file, "UTF-8");
+        int index_block = 0;
+        try {
+            //create chunk of data , splitting in n different block
+            while (it.hasNext() && (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) > 200) {  //--> its the ram of jvm
+                List<String> listDoc = new ArrayList<>();
+                int i = 0;
+                while (it.hasNext()) {
+                    String line = it.nextLine();
+                    listDoc.add(line);
+                    i++;
+                }
+                //we elaborate one block at time , so we call the function to create inverted index for the block
+                spimiInvert(listDoc, index_block);
+                n_block++;
+                index_block++;
+            }
+
+        } finally {
+            LineIterator.closeQuietly(it);
+        }
+        writeAllFilesBin(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
+    }
 
 
 
@@ -409,7 +440,7 @@ public class SPIMI {
                         //if a match is founded, a merge is made
                         //to reach the right line on files , an offset is used
                         if (lexTerm.equals(term)) {
-                            System.out.println(term);
+                            //System.out.println(term);
                             //read the postings at the desired offset
                             String docLine = (String) FileUtils.readLines(new File(id[i]), "UTF-8").get(offset); //--> doc_id of selected term
                             String freqLine = (String) FileUtils.readLines(new File(tf[i]), "UTF-8").get(offset); //--> term freq of selected term
