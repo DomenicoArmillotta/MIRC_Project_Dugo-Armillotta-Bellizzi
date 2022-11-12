@@ -104,7 +104,7 @@ public class SPIMI {
         int index_block = 0;
         try {
             //create chunk of data , splitting in n different block
-            while (it.hasNext() && (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) > 200) {  //--> its the ram of jvm
+            while (it.hasNext() && (Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().freeMemory())){  //--> its the ram of jvm
                 List<String> listDoc = new ArrayList<>();
                 int i = 0;
                 while (it.hasNext()) {
@@ -135,7 +135,7 @@ public class SPIMI {
         int index_block = 0;
         try {
             //create chunk of data , splitting in n different block
-            while (it.hasNext() && (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) > 200) {  //--> its the ram of jvm
+            while (it.hasNext() && (Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().freeMemory())) {  //--> its the ram of jvm
                 List<String> listDoc = new ArrayList<>();
                 int i = 0;
                 while (it.hasNext()) {
