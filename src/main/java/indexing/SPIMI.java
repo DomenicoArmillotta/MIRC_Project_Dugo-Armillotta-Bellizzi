@@ -3,9 +3,14 @@ package indexing;
 import document_index.DocumentIndex;
 import inverted_index.Compressor;
 import inverted_index.InvertedIndex;
+import inverted_index.Posting;
 import lexicon.Lexicon;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
+import org.mapdb.HTreeMap;
+import org.mapdb.Serializer;
 import preprocessing.PreprocessDoc;
 
 import java.io.*;
@@ -21,6 +26,10 @@ public class SPIMI {
 
     private Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
     private Hashtable<Integer, Integer> ht_docindex = new Hashtable<>();
+    private DB db;
+    private HTreeMap<String, Integer> documentIndex;
+
+    public int doc_id = 0;
     /**
      * the collection is divided in n block
      * then we call the function to apply the algorithm to create the inverted index
@@ -155,6 +164,38 @@ public class SPIMI {
         writeAllFilesBin(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
     }
 
+    public void spimiInvertBlockMapped(String read_path) throws IOException {
+        int n_block = 0;
+        db = DBMaker.fileDB("docs/testDB.db").make();
+        documentIndex = db
+                .hashMap("documentIndex")
+                .keySerializer(Serializer.STRING)
+                .valueSerializer(Serializer.INTEGER)
+                .create();
+        File input_file = new File(read_path);
+        LineIterator it = FileUtils.lineIterator(input_file, "UTF-8");
+        int index_block = 0;
+        try {
+            //create chunk of data , splitting in n different block
+            while (it.hasNext() && (Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().freeMemory())){  //--> its the ram of jvm
+                List<String> listDoc = new ArrayList<>();
+                int i = 0;
+                while (it.hasNext()) {
+                    String line = it.nextLine();
+                    listDoc.add(line);
+                    i++;
+                }
+                //we elaborate one block at time , so we call the function to create inverted index for the block
+                spimiInvertMapped(listDoc, index_block);
+                n_block++;
+                index_block++;
+            }
+
+        } finally {
+            LineIterator.closeQuietly(it);
+        }
+        //writeAllFilesASCII(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
+    }
 
 
     /**
@@ -187,6 +228,45 @@ public class SPIMI {
         index.sortPosting();
         //then we write the block to the disk
         index.writeToDisk(n); //-> created a file for each type of info : doc_id,position,tf,term
+    }
+
+    public void spimiInvertMapped(List<String> fileBlock, int n) throws IOException {
+        InvertedIndex index = new InvertedIndex(n);//constructor: initializes the dictionary and the output file
+        PreprocessDoc preprocessDoc = new PreprocessDoc();
+        for (String doc : fileBlock) { //each row is a doc!
+            int cont = 1;
+            String[] parts = doc.split("\t");
+            String docno = parts[0];
+            String doc_corpus = parts[1];
+            List<String> pro_doc = preprocessDoc.preprocess_doc_optimized(doc_corpus);
+            //read the terms and generate postings
+            //write postings
+            for (String term : pro_doc) {
+                index.addToLexicon(term);
+                index.addPosting(term, doc_id, 1);
+                cont++;
+            }
+            documentIndex.put(docno, cont);
+            doc_id++;
+
+        }
+        //at the end of the block we have to sort the posting lists in lexicographic order
+        //index.sortPosting();
+        //then we write the block to the disk
+        //index.writeToDisk(n); //-> created a file for each type of info : doc_id,position,tf,term
+    }
+
+    private void mergeBlocks(int n){
+        String[] lex = new String[n+1];
+        String[] tf = new String[n+1];
+        String[] id = new String[n+1];
+
+        //open all files
+        for (int i = 0; i <= n; i++) {
+            lex[i] = "docs/lexicon_" + i;
+            tf[i] = "docs/inverted_index_term_freq_" + i;
+            id[i] = "docs/inverted_index_docids_" + i;
+        }
     }
 
     /**

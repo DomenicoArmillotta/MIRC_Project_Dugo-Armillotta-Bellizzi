@@ -1,5 +1,10 @@
 package inverted_index;
 
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
+import org.mapdb.HTreeMap;
+import org.mapdb.Serializer;
+
 import java.io.*;
 import java.util.*;
 
@@ -12,11 +17,28 @@ public class InvertedIndex {
 
     private TreeMap<String, Integer> sortedDict;
     private TreeMap<String, List<Posting>> sortedIndex;
+    private DB db;
+    private HTreeMap<String, List<Posting>> invertedIndex;
+    private HTreeMap<String, Integer> lexicon;
 
 
     public InvertedIndex() {
         dict = new Hashtable<>();
         index = new HashMap();
+    }
+
+    public InvertedIndex(int n){
+        db =  DBMaker.fileDB("docs/index"+n+".db").make();
+        invertedIndex =  db
+                .hashMap("invertedIndex"+n)
+                .keySerializer(Serializer.STRING)
+                .valueSerializer(Serializer.JAVA)
+                .create();
+        lexicon =  db
+                .hashMap("lexicon"+n)
+                .keySerializer(Serializer.STRING)
+                .valueSerializer(Serializer.INTEGER)
+                .create();
     }
 
     public List<Posting> getPostings(String term){
@@ -25,9 +47,29 @@ public class InvertedIndex {
         return postingList;
     }
 
+    public void addPosting(String term, int docid, int freq){
+        if(invertedIndex.get(term) == null){
+            List<Posting> l = new LinkedList<>();
+            l.add(new Posting(docid, freq));
+            invertedIndex.put(term,l);
+        }
+        else{
+            List<Posting> l = invertedIndex.get(term);
+            for(Posting posting: l){
+                if(posting.getDocumentId() == docid){
+                    posting.addOccurrence();
+                    invertedIndex.put(term, l);
+                    return;
+                }
+            }
+            l.add(new Posting(docid, 1));
+            invertedIndex.put(term, l);
+        }
+    }
+
     public void addPosting(String term, int docid, int freq, int pos){
         if(index.get(term) == null){
-            List<Posting> l = new LinkedList<>();
+            List<Posting> l = new ArrayList<>();
             l.add(new Posting(docid, freq, pos));
             index.put(term,l);
         }
@@ -50,6 +92,14 @@ public class InvertedIndex {
          }else{
              dict.put(term , 1);
          }
+    }
+
+    public void addToLexicon(String term){
+        if(lexicon.containsKey(term)){
+            lexicon.put(term, lexicon.get(term) + 1);
+        }else{
+            lexicon.put(term , 1);
+        }
     }
 
     public Set<String> getTerms(){

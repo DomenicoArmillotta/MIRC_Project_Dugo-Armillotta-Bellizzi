@@ -1,12 +1,18 @@
 package inverted_index;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Posting implements Comparable<Posting>{
+public class Posting implements Comparable<Posting>, Serializable {
     private int docid;
     private int termfreq;
     private List<Integer> pos = new ArrayList<>();
+
+    public Posting(int docid, int termfreq) {
+        this.docid = docid;
+        this.termfreq = termfreq;
+    }
 
     public Posting(int docid, int termfreq, int pos) {
         this.docid = docid;
