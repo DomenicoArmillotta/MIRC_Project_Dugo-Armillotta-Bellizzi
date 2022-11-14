@@ -118,6 +118,11 @@ public class InvertedIndex {
         sortedIndex = tmi;
     }
 
+    public void writePostings(){
+        db.commit();
+        db.close();
+    }
+
     public void writeToDisk(int n){
         writeDict(n);
         writeDocids(n);

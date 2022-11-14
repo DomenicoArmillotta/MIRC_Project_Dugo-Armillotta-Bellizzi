@@ -194,6 +194,9 @@ public class SPIMI {
         } finally {
             LineIterator.closeQuietly(it);
         }
+        db.commit();
+        db.close();
+        //TODO 14/11/2022: add merging!!!!!
         //writeAllFilesASCII(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
     }
 
@@ -253,7 +256,7 @@ public class SPIMI {
         //at the end of the block we have to sort the posting lists in lexicographic order
         //index.sortPosting();
         //then we write the block to the disk
-        //index.writeToDisk(n); //-> created a file for each type of info : doc_id,position,tf,term
+        index.writePostings(); //-> commit the data to the db and close it
     }
 
     private void mergeBlocks(int n){
