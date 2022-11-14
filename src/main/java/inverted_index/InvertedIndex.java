@@ -33,12 +33,12 @@ public class InvertedIndex {
                 .hashMap("invertedIndex"+n)
                 .keySerializer(Serializer.STRING)
                 .valueSerializer(Serializer.JAVA)
-                .create();
+                .createOrOpen();
         lexicon =  db
                 .hashMap("lexicon"+n)
                 .keySerializer(Serializer.STRING)
                 .valueSerializer(Serializer.INTEGER)
-                .create();
+                .createOrOpen();
     }
 
     public List<Posting> getPostings(String term){

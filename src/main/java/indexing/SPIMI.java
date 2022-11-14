@@ -171,7 +171,7 @@ public class SPIMI {
                 .hashMap("documentIndex")
                 .keySerializer(Serializer.STRING)
                 .valueSerializer(Serializer.INTEGER)
-                .create();
+                .createOrOpen();
         File input_file = new File(read_path);
         LineIterator it = FileUtils.lineIterator(input_file, "UTF-8");
         int index_block = 0;
