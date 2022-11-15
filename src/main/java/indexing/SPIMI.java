@@ -254,7 +254,7 @@ public class SPIMI {
 
         }
         //at the end of the block we have to sort the posting lists in lexicographic order
-        //index.sortPosting();
+        index.sortTerms();
         //then we write the block to the disk
         index.writePostings(); //-> commit the data to the db and close it
     }
@@ -262,6 +262,8 @@ public class SPIMI {
     private void mergeBlocks(int n){
         String[] lex = new String[n+1];
         String[] invind = new String[n+1];
+        String[] dbs = new String[n+1];
+        String docindex = "documentIndex";
 
         //open all files
         for (int i = 0; i <= n; i++) {

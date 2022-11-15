@@ -19,7 +19,8 @@ public class InvertedIndex {
     private TreeMap<String, List<Posting>> sortedIndex;
     private DB db;
     private HTreeMap<String, List<Posting>> invertedIndex;
-    private HTreeMap<String, Integer> lexicon;
+    //private HTreeMap<String, Integer> lexicon;
+    private List<String> lexicon;
 
 
     public InvertedIndex() {
@@ -34,11 +35,12 @@ public class InvertedIndex {
                 .keySerializer(Serializer.STRING)
                 .valueSerializer(Serializer.JAVA)
                 .createOrOpen();
-        lexicon =  db
+        lexicon = db.indexTreeList("lexicon"+n, Serializer.STRING).createOrOpen();
+        /*lexicon =  db
                 .hashMap("lexicon"+n)
                 .keySerializer(Serializer.STRING)
                 .valueSerializer(Serializer.INTEGER)
-                .createOrOpen();
+                .createOrOpen();*/
     }
 
     public List<Posting> getPostings(String term){
@@ -94,12 +96,15 @@ public class InvertedIndex {
          }
     }
 
-    public void addToLexicon(String term){
+    /*public void addToLexicon(String term){
         if(lexicon.containsKey(term)){
             lexicon.put(term, lexicon.get(term) + 1);
         }else{
             lexicon.put(term , 1);
         }
+    }*/
+    public void addToLexicon(String term){
+        if(invertedIndex.get(term) == null) lexicon.add(term);
     }
 
     public Set<String> getTerms(){
@@ -116,6 +121,10 @@ public class InvertedIndex {
         }
         TreeMap<String, List<Posting>> tmi = new TreeMap<>(index);
         sortedIndex = tmi;
+    }
+
+    public void sortTerms() {
+        Collections.sort(lexicon);
     }
 
     public void writePostings(){
