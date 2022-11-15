@@ -30,140 +30,10 @@ public class SPIMI {
     private HTreeMap<String, Integer> documentIndex;
 
     public int doc_id = 0;
-    /**
-     * the collection is divided in n block
-     * then we call the function to apply the algorithm to create the inverted index
-     * @param read_path input file of entire collection
-     * @param n_block number of block that we want
-     * @throws IOException
-     */
-    public void spimiInvertBlock(String read_path, int n_block) throws IOException {
-        Lexicon lexicon = new Lexicon();
-        ht_lexicon = lexicon.createLexicon(read_path);
-        DocumentIndex docindex = new DocumentIndex();
-        ht_docindex = docindex.createDocumentIndex(read_path);
-        docindex.textFromDocumentIndex(ht_docindex);
-        File file = new File(read_path);
-        LineIterator it = FileUtils.lineIterator(file, "UTF-8");
-        long lines = countLineFast(read_path);
-        int lines_for_block = (int) Math.ceil(lines / n_block);
-        int index_block = 0;
-        try {
-            //create chunk of data , splitting in n different block
-            while (it.hasNext() && index_block <= n_block) {
-                List<String> listDoc = new ArrayList<>();
-                int i = 0;
-                while (it.hasNext() && i < lines_for_block) {
-                    String line = it.nextLine();
-                    listDoc.add(line);
-                    i++;
-                }
-                //we elaborate one block at time , so we call the function to create inverted index for the block
-                spimiInvert(listDoc, index_block);
-                index_block++;
-            }
 
-        } finally {
-            LineIterator.closeQuietly(it);
-        }
-        writeAllFilesASCII(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
-    }
 
-    public void spimiInvertBlockCompression(String read_path, int n_block) throws IOException {
-        Lexicon lexicon = new Lexicon();
-        ht_lexicon = lexicon.createLexicon(read_path);
-        DocumentIndex docindex = new DocumentIndex();
-        ht_docindex = docindex.createDocumentIndex(read_path);
-        docindex.textFromDocumentIndex(ht_docindex);
-        File file = new File(read_path);
-        LineIterator it = FileUtils.lineIterator(file, "UTF-8");
-        long lines = countLineFast(read_path);
-        int lines_for_block = (int) Math.ceil(lines / n_block);
-        int index_block = 0;
-        try {
-            //create chunk of data , splitting in n different block
-            while (it.hasNext() && index_block <= n_block) {
-                List<String> listDoc = new ArrayList<>();
-                int i = 0;
-                while (it.hasNext() && i < lines_for_block) {
-                    String line = it.nextLine();
-                    listDoc.add(line);
-                    i++;
-                }
-                //we elaborate one block at time , so we call the function to create inverted index for the block
-                spimiInvert(listDoc, index_block);
-                index_block++;
-            }
 
-        } finally {
-            LineIterator.closeQuietly(it);
-        }
-        writeAllFilesBin(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk and write a bin file
-    }
-
-    public void spimiInvertBlockWithRamUsage(String read_path) throws IOException {
-        int n_block = 0;
-        Lexicon lexicon = new Lexicon();
-        ht_lexicon = lexicon.createLexicon(read_path);
-        DocumentIndex docindex = new DocumentIndex();
-        ht_docindex = docindex.createDocumentIndex(read_path);
-        docindex.textFromDocumentIndex(ht_docindex);
-        File input_file = new File(read_path);
-        LineIterator it = FileUtils.lineIterator(input_file, "UTF-8");
-        int index_block = 0;
-        try {
-            //create chunk of data , splitting in n different block
-            while (it.hasNext() && (Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().freeMemory())){  //--> its the ram of jvm
-                List<String> listDoc = new ArrayList<>();
-                int i = 0;
-                while (it.hasNext()) {
-                    String line = it.nextLine();
-                    listDoc.add(line);
-                    i++;
-                }
-                //we elaborate one block at time , so we call the function to create inverted index for the block
-                spimiInvert(listDoc, index_block);
-                n_block++;
-                index_block++;
-            }
-
-        } finally {
-            LineIterator.closeQuietly(it);
-        }
-        writeAllFilesASCII(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
-    }
-    public void spimiInvertBlockWithRamUsageCompressed(String read_path) throws IOException {
-        int n_block = 0;
-        Lexicon lexicon = new Lexicon();
-        ht_lexicon = lexicon.createLexicon(read_path);
-        DocumentIndex docindex = new DocumentIndex();
-        ht_docindex = docindex.createDocumentIndex(read_path);
-        docindex.textFromDocumentIndex(ht_docindex);
-        File input_file = new File(read_path);
-        LineIterator it = FileUtils.lineIterator(input_file, "UTF-8");
-        int index_block = 0;
-        try {
-            //create chunk of data , splitting in n different block
-            while (it.hasNext() && (Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().freeMemory())) {  //--> its the ram of jvm
-                List<String> listDoc = new ArrayList<>();
-                int i = 0;
-                while (it.hasNext()) {
-                    String line = it.nextLine();
-                    listDoc.add(line);
-                    i++;
-                }
-                //we elaborate one block at time , so we call the function to create inverted index for the block
-                spimiInvert(listDoc, index_block);
-                n_block++;
-                index_block++;
-            }
-
-        } finally {
-            LineIterator.closeQuietly(it);
-        }
-        writeAllFilesBin(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
-    }
-
+    //NUOVA ---> OK
     public void spimiInvertBlockMapped(String read_path) throws IOException {
         int n_block = 0;
         db = DBMaker.fileDB("docs/testDB.db").make();
@@ -209,6 +79,7 @@ public class SPIMI {
      * @param n
      * @throws IOException
      */
+    //----> OK
     public void spimiInvert(List<String> fileBlock, int n) throws IOException {
         InvertedIndex index = new InvertedIndex();//constructor: initializes the dictionary and the output file
         PreprocessDoc preprocessing = new PreprocessDoc();
@@ -233,6 +104,8 @@ public class SPIMI {
         index.writeToDisk(n); //-> created a file for each type of info : doc_id,position,tf,term
     }
 
+
+    // NUOVA ---> OK
     public void spimiInvertMapped(List<String> fileBlock, int n) throws IOException {
         InvertedIndex index = new InvertedIndex(n);//constructor: initializes the dictionary and the output file
         PreprocessDoc preprocessDoc = new PreprocessDoc();
@@ -272,15 +145,114 @@ public class SPIMI {
         }
     }
 
-    /**
-     * this is the merging function of n block created by SPIMI, open all file of the "n" block
-     * make a scanner of global lexicon , and check the nextline of each lexicon of n block (lexicon are ordered) ,
-     * when a match is found it will merge in the finals file according to the info type (tf,doc_id,position)
-     * we save on a .text file using ASCII formatting
-     * @param n
-     * @throws IOException
-     */
 
+
+
+
+
+
+
+
+
+    /**
+     * count the number of lines in the file
+     * it should be the fastest way possible according to online benchmark
+     * @param fileName_path
+     * @return
+     */
+    //fast to count file line --> 5milion in 4/5 s
+    public static long countLineFast(String fileName_path) {
+
+        long lines = 0;
+
+        try (InputStream is = new BufferedInputStream(new FileInputStream(fileName_path))) {
+            byte[] c = new byte[1024];
+            int count = 0;
+            int readChars = 0;
+            boolean endsWithoutNewLine = false;
+            while ((readChars = is.read(c)) != -1) {
+                for (int i = 0; i < readChars; ++i) {
+                    if (c[i] == '\n')
+                        ++count;
+                }
+                endsWithoutNewLine = (c[readChars - 1] != '\n');
+            }
+            if (endsWithoutNewLine) {
+                ++count;
+            }
+            lines = count;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return lines;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //VECCHIA MA USARE PER TEST
+    @Deprecated
+    public void spimiInvertBlockWithRamUsage(String read_path) throws IOException {
+        int n_block = 0;
+        Lexicon lexicon = new Lexicon();
+        ht_lexicon = lexicon.createLexicon(read_path);
+        DocumentIndex docindex = new DocumentIndex();
+        ht_docindex = docindex.createDocumentIndex(read_path);
+        docindex.textFromDocumentIndex(ht_docindex);
+        File input_file = new File(read_path);
+        LineIterator it = FileUtils.lineIterator(input_file, "UTF-8");
+        int index_block = 0;
+        try {
+            //create chunk of data , splitting in n different block
+            while (it.hasNext() && (Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().freeMemory())){  //--> its the ram of jvm
+                List<String> listDoc = new ArrayList<>();
+                int i = 0;
+                while (it.hasNext()) {
+                    String line = it.nextLine();
+                    listDoc.add(line);
+                    i++;
+                }
+                //we elaborate one block at time , so we call the function to create inverted index for the block
+                spimiInvert(listDoc, index_block);
+                n_block++;
+                index_block++;
+            }
+
+        } finally {
+            LineIterator.closeQuietly(it);
+        }
+        writeAllFilesASCII(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
+    }
+
+
+    //VECCHIA MA DA USARE PER TEST
+    @Deprecated
     private void writeAllFilesASCII(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
         String[] lex = new String[n+1];
         String[] tf = new String[n+1];
@@ -326,7 +298,7 @@ public class SPIMI {
 
             //iterate through all term of collections
             while (itTerms.hasNext()) {
-            //for(String lexTerm: termSet){
+                //for(String lexTerm: termSet){
                 String lexTerm = itTerms.next();
                 Map<Integer,String> posMap = new HashMap<>(); //--> contains position for each doc_id
                 Map<Integer,Integer> freqMap = new HashMap<>(); //--> contains term freq for each doc_id
@@ -451,16 +423,21 @@ public class SPIMI {
 
 
 
-    /**
-     * this is the merging function of n block created by SPIMI, open all file of the "n" block
-     * make a scanner of global lexicon , and check the nextline of each lexicon of n block (lexicon are ordered) ,
-     * when a match is found it will merge in the finals file according to the info type (tf,doc_id,position)
-     * we save on a .bin file using Binary formatting
-     * @param n
-     * @throws IOException
-     */
-    //TODO 22/10/2022: aggiungere la compresssione (da qui o da dentro la creazione dei blocchi?)
-    private void writeAllFilesBin(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
+
+
+
+}
+
+
+
+
+
+
+
+
+//VECCHIA CON COMPRESSIONE SBAGLIATA
+    /*
+        private void writeAllFilesBin(int n) throws IOException { //writes to the disk all the n block files generated during the algorirhm
         String[] lex = new String[n+1];
         String[] tf = new String[n+1];
         String[] id = new String[n+1];
@@ -584,10 +561,6 @@ public class SPIMI {
                 //TODO 06/11/2022: write to the lexicon file the length of the posting list and the offset in BYTES!
                 //countTerm++; //increment the offset
                 //NEW LINE BIN FILE
-                /*ByteBuffer bufferLine = ByteBuffer.allocate(2);
-                bufferLine.put("\n".getBytes());
-                bufferLine.flip();
-                channel.write(bufferLine)*/;
                 lexTerm += " " + docOffset + " " + nDocids + " " + tfOffset + " " + nFreqs;
                 docOffset+=nDocids; //increment the offset
                 tfOffset+=nFreqs;
@@ -613,39 +586,78 @@ public class SPIMI {
 
 
 
-    /**
-     * count the number of lines in the file
-     * it should be the fastest way possible according to online benchmark
-     * @param fileName_path
-     * @return
-     */
-    //fast to count file line --> 5milion in 4/5 s
-    public static long countLineFast(String fileName_path) {
 
-        long lines = 0;
 
-        try (InputStream is = new BufferedInputStream(new FileInputStream(fileName_path))) {
-            byte[] c = new byte[1024];
-            int count = 0;
-            int readChars = 0;
-            boolean endsWithoutNewLine = false;
-            while ((readChars = is.read(c)) != -1) {
-                for (int i = 0; i < readChars; ++i) {
-                    if (c[i] == '\n')
-                        ++count;
+
+
+    //VECCHIA CON COMPRESSIONE SBAGLIATA
+    public void spimiInvertBlockCompression(String read_path, int n_block) throws IOException {
+        Lexicon lexicon = new Lexicon();
+        ht_lexicon = lexicon.createLexicon(read_path);
+        DocumentIndex docindex = new DocumentIndex();
+        ht_docindex = docindex.createDocumentIndex(read_path);
+        docindex.textFromDocumentIndex(ht_docindex);
+        File file = new File(read_path);
+        LineIterator it = FileUtils.lineIterator(file, "UTF-8");
+        long lines = countLineFast(read_path);
+        int lines_for_block = (int) Math.ceil(lines / n_block);
+        int index_block = 0;
+        try {
+            //create chunk of data , splitting in n different block
+            while (it.hasNext() && index_block <= n_block) {
+                List<String> listDoc = new ArrayList<>();
+                int i = 0;
+                while (it.hasNext() && i < lines_for_block) {
+                    String line = it.nextLine();
+                    listDoc.add(line);
+                    i++;
                 }
-                endsWithoutNewLine = (c[readChars - 1] != '\n');
+                //we elaborate one block at time , so we call the function to create inverted index for the block
+                spimiInvert(listDoc, index_block);
+                index_block++;
             }
-            if (endsWithoutNewLine) {
-                ++count;
-            }
-            lines = count;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        return lines;
+        } finally {
+            LineIterator.closeQuietly(it);
+        }
+        writeAllFilesBin(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk and write a bin file
     }
 
 
-}
+
+
+
+
+     public void spimiInvertBlockWithRamUsageCompressed(String read_path) throws IOException {
+        int n_block = 0;
+        Lexicon lexicon = new Lexicon();
+        ht_lexicon = lexicon.createLexicon(read_path);
+        DocumentIndex docindex = new DocumentIndex();
+        ht_docindex = docindex.createDocumentIndex(read_path);
+        docindex.textFromDocumentIndex(ht_docindex);
+        File input_file = new File(read_path);
+        LineIterator it = FileUtils.lineIterator(input_file, "UTF-8");
+        int index_block = 0;
+        try {
+            //create chunk of data , splitting in n different block
+            while (it.hasNext() && (Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().freeMemory())) {  //--> its the ram of jvm
+                List<String> listDoc = new ArrayList<>();
+                int i = 0;
+                while (it.hasNext()) {
+                    String line = it.nextLine();
+                    listDoc.add(line);
+                    i++;
+                }
+                //we elaborate one block at time , so we call the function to create inverted index for the block
+                spimiInvert(listDoc, index_block);
+                n_block++;
+                index_block++;
+            }
+
+        } finally {
+            LineIterator.closeQuietly(it);
+        }
+        writeAllFilesBin(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
+    }
+     */
+
