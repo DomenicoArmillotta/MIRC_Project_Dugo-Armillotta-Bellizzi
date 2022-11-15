@@ -237,7 +237,7 @@ public class SPIMI {
         InvertedIndex index = new InvertedIndex(n);//constructor: initializes the dictionary and the output file
         PreprocessDoc preprocessDoc = new PreprocessDoc();
         for (String doc : fileBlock) { //each row is a doc!
-            int cont = 1;
+            int cont = 0;
             String[] parts = doc.split("\t");
             String docno = parts[0];
             String doc_corpus = parts[1];
@@ -249,7 +249,7 @@ public class SPIMI {
                 index.addPosting(term, doc_id, 1);
                 cont++;
             }
-            documentIndex.put(docno, cont);
+            documentIndex.put(docno, cont); //put the pid as docno
             doc_id++;
 
         }
@@ -261,14 +261,12 @@ public class SPIMI {
 
     private void mergeBlocks(int n){
         String[] lex = new String[n+1];
-        String[] tf = new String[n+1];
-        String[] id = new String[n+1];
+        String[] invind = new String[n+1];
 
         //open all files
         for (int i = 0; i <= n; i++) {
-            lex[i] = "docs/lexicon_" + i;
-            tf[i] = "docs/inverted_index_term_freq_" + i;
-            id[i] = "docs/inverted_index_docids_" + i;
+            lex[i] = "lexicon" + i;
+            invind[i] = "invertedIndex" + i;
         }
     }
 
