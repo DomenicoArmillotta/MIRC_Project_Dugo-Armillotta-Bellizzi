@@ -142,7 +142,11 @@ public class SPIMI {
         for (int i = 0; i <= n; i++) {
             lex[i] = "lexicon" + i;
             invind[i] = "invertedIndex" + i;
+            dbs[i] = "docs/index"+i;
         }
+        DB readDB = DBMaker.fileDB("docs/testDB.db").make();
+        DB[] indexDbs = new DB[n];
+        DB writeDB = DBMaker.fileDB("docs/index").make();
     }
 
 

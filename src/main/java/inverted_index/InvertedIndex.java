@@ -69,6 +69,22 @@ public class InvertedIndex {
         }
     }
 
+    public void addToLexicon(String term){
+        if(invertedIndex.get(term) == null) lexicon.add(term);
+    }
+
+    public void sortTerms() {
+        Collections.sort(lexicon);
+    }
+
+    public void writePostings(){
+        db.commit();
+        db.close();
+    }
+
+
+    //CODICE VECCHIO!!
+
     public void addPosting(String term, int docid, int freq, int pos){
         if(index.get(term) == null){
             List<Posting> l = new ArrayList<>();
@@ -103,9 +119,6 @@ public class InvertedIndex {
             lexicon.put(term , 1);
         }
     }*/
-    public void addToLexicon(String term){
-        if(invertedIndex.get(term) == null) lexicon.add(term);
-    }
 
     public Set<String> getTerms(){
         Set<String> terms = index.keySet();
@@ -121,15 +134,6 @@ public class InvertedIndex {
         }
         TreeMap<String, List<Posting>> tmi = new TreeMap<>(index);
         sortedIndex = tmi;
-    }
-
-    public void sortTerms() {
-        Collections.sort(lexicon);
-    }
-
-    public void writePostings(){
-        db.commit();
-        db.close();
     }
 
     public void writeToDisk(int n){
