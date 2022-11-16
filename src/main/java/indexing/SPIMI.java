@@ -147,6 +147,9 @@ public class SPIMI {
         DB readDB = DBMaker.fileDB("docs/testDB.db").make();
         DB[] indexDbs = new DB[n];
         DB writeDB = DBMaker.fileDB("docs/index").make();
+
+        //TODO 16/11/2022: open all the buffers; scan the lexicon for each block, then take the posting list of the first
+        // term, write it, the go on with next term, after writing it to the total lexicon
     }
 
 

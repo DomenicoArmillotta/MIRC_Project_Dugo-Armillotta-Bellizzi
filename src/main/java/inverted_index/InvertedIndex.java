@@ -4,9 +4,13 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
+import org.mapdb.elsa.ElsaSerializerBase;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static java.util.Map.Entry.comparingByKey;
 
 public class InvertedIndex {
 
@@ -21,6 +25,7 @@ public class InvertedIndex {
     private HTreeMap<String, List<Posting>> invertedIndex;
     //private HTreeMap<String, Integer> lexicon;
     private List<String> lexicon;
+    //private Set<String> lexicon;
 
 
     public InvertedIndex() {
@@ -36,17 +41,15 @@ public class InvertedIndex {
                 .valueSerializer(Serializer.JAVA)
                 .createOrOpen();
         lexicon = db.indexTreeList("lexicon"+n, Serializer.STRING).createOrOpen();
+        /*lexicon = db
+                .hashSet("lexicon"+n)
+                .serializer(Serializer.STRING)
+                .createOrOpen();*/
         /*lexicon =  db
                 .hashMap("lexicon"+n)
                 .keySerializer(Serializer.STRING)
                 .valueSerializer(Serializer.INTEGER)
                 .createOrOpen();*/
-    }
-
-    public List<Posting> getPostings(String term){
-        List<Posting> postingList= new LinkedList<>();
-        postingList = index.get(term);
-        return postingList;
     }
 
     public void addPosting(String term, int docid, int freq){
@@ -74,6 +77,9 @@ public class InvertedIndex {
     }
 
     public void sortTerms() {
+        invertedIndex.entrySet()
+                .stream()
+                .sorted(Map.Entry.<String, List<Posting>>comparingByKey());
         Collections.sort(lexicon);
     }
 
@@ -110,6 +116,12 @@ public class InvertedIndex {
          }else{
              dict.put(term , 1);
          }
+    }
+
+    public List<Posting> getPostings(String term){
+        List<Posting> postingList= new LinkedList<>();
+        postingList = index.get(term);
+        return postingList;
     }
 
     /*public void addToLexicon(String term){
