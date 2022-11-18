@@ -14,24 +14,21 @@ import static java.util.Map.Entry.comparingByKey;
 
 public class InvertedIndex {
 
-    private Hashtable<String,Integer> dict;
-    private String outputFile;
-
-    private HashMap<String, List<Posting>> index;
-
-    private TreeMap<String, Integer> sortedDict;
-    private TreeMap<String, List<Posting>> sortedIndex;
     private DB db;
     private HTreeMap<String, List<Posting>> invertedIndex;
     //private HTreeMap<String, Integer> lexicon;
     private List<String> lexicon;
     //private Set<String> lexicon;
 
+    //old variables
+    //<---
+    private Hashtable<String,Integer> dict;
+    private String outputFile;
+    private HashMap<String, List<Posting>> index;
+    private TreeMap<String, Integer> sortedDict;
+    private TreeMap<String, List<Posting>> sortedIndex;
+    //--->
 
-    public InvertedIndex() {
-        dict = new Hashtable<>();
-        index = new HashMap();
-    }
 
     public InvertedIndex(int n){
         db =  DBMaker.fileDB("docs/index"+n+".db").make();
@@ -89,7 +86,14 @@ public class InvertedIndex {
     }
 
 
-    //CODICE VECCHIO!!
+
+
+    //-------CODICE VECCHIO!!--------
+
+    public InvertedIndex() {
+        dict = new Hashtable<>();
+        index = new HashMap();
+    }
 
     public void addPosting(String term, int docid, int freq, int pos){
         if(index.get(term) == null){

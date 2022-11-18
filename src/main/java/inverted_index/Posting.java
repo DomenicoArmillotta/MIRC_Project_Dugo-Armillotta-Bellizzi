@@ -14,16 +14,6 @@ public class Posting implements Comparable<Posting>, Serializable {
         this.termfreq = termfreq;
     }
 
-    public Posting(int docid, int termfreq, int pos) {
-        this.docid = docid;
-        this.termfreq = termfreq;
-        this.pos.add(pos);
-    }
-    public Posting(int docid, int termfreq, List<Integer> pos) {
-        this.docid = docid;
-        this.termfreq = termfreq;
-        this.pos = pos;
-    }
 
     public int getDocumentId() {
         return docid;
@@ -36,8 +26,7 @@ public class Posting implements Comparable<Posting>, Serializable {
     public void setTermfreq(int termfreq) {
         this.termfreq = termfreq;
     }
-
-
+    
 
     public int getTermFrequency() {
         return termfreq;
@@ -46,6 +35,30 @@ public class Posting implements Comparable<Posting>, Serializable {
     public void addOccurrence() {
         this.termfreq++;
     }
+
+    public String toString() {
+        return String.format("%d,%d", this.docid, this.termfreq);
+    }
+
+    @Override
+    public int compareTo(Posting o) {
+        return this.docid - o.getDocumentId();
+    }
+
+
+
+    //OLD!!!!
+    public Posting(int docid, int termfreq, int pos) {
+        this.docid = docid;
+        this.termfreq = termfreq;
+        this.pos.add(pos);
+    }
+    public Posting(int docid, int termfreq, List<Integer> pos) {
+        this.docid = docid;
+        this.termfreq = termfreq;
+        this.pos = pos;
+    }
+
 
     public List getPos() {
         return pos;
@@ -65,14 +78,5 @@ public class Posting implements Comparable<Posting>, Serializable {
 
     public void setPos(List pos) {
         this.pos = pos;
-    }
-
-    public String toString() {
-        return String.format("%d,%d", this.docid, this.termfreq);
-    }
-
-    @Override
-    public int compareTo(Posting o) {
-        return this.docid - o.getDocumentId();
     }
 }

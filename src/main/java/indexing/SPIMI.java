@@ -24,12 +24,15 @@ import java.util.*;
 
 public class SPIMI {
 
-    private Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
-    private Hashtable<Integer, Integer> ht_docindex = new Hashtable<>();
     private DB db;
     private HTreeMap<String, Integer> documentIndex;
-
     public int doc_id = 0;
+
+    //old variables
+    //<---
+    private Hashtable<String, Integer> ht_lexicon = new Hashtable<>();
+    private Hashtable<Integer, Integer> ht_docindex = new Hashtable<>();
+    //--->
 
 
 
@@ -47,10 +50,10 @@ public class SPIMI {
         int index_block = 0;
         try {
             //create chunk of data , splitting in n different block
-            while (it.hasNext() && (Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().freeMemory())){  //--> its the ram of jvm
+            while (it.hasNext()){  //--> its the ram of jvm
                 List<String> listDoc = new ArrayList<>();
                 int i = 0;
-                while (it.hasNext()) {
+                while (it.hasNext() && (Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().freeMemory())) {
                     String line = it.nextLine();
                     listDoc.add(line);
                     i++;
@@ -67,43 +70,8 @@ public class SPIMI {
         db.commit();
         db.close();
         //TODO 14/11/2022: add merging!!!!!
-        //writeAllFilesASCII(n_block-1); //at the end of the parsing of all the file, merge all the files in the disk
+        //mergeblocks(n_blocks-1);
     }
-
-
-    /**
-     * we elaborate one block at time
-     * for each block an inverted index is created
-     * with the function "writeToDisk" , we wrote on file with the right formatting
-     * @param fileBlock
-     * @param n
-     * @throws IOException
-     */
-    //----> OK
-    public void spimiInvert(List<String> fileBlock, int n) throws IOException {
-        InvertedIndex index = new InvertedIndex();//constructor: initializes the dictionary and the output file
-        PreprocessDoc preprocessing = new PreprocessDoc();
-        for (String doc : fileBlock) { //each row is a doc!
-            int cont = 1;
-            String[] parts = doc.split("\t");
-            int doc_id = Integer.parseInt(parts[0]);
-            String doc_corpus = parts[1];
-            List<String> pro_doc = preprocessing.preprocess_doc_optimized(doc_corpus);
-            //read the terms and generate postings
-            //write postings
-            for (String term : pro_doc) {
-                index.addToDict(term);
-                index.addPosting(term, doc_id, 1, cont);
-                cont++;
-            }
-
-        }
-        //at the end of the block we have to sort the posting lists in lexicographic order
-        index.sortPosting();
-        //then we write the block to the disk
-        index.writeToDisk(n); //-> created a file for each type of info : doc_id,position,tf,term
-    }
-
 
     // NUOVA ---> OK
     public void spimiInvertMapped(List<String> fileBlock, int n) throws IOException {
@@ -156,6 +124,39 @@ public class SPIMI {
 
 
 
+
+    /**
+     * we elaborate one block at time
+     * for each block an inverted index is created
+     * with the function "writeToDisk" , we wrote on file with the right formatting
+     * @param fileBlock
+     * @param n
+     * @throws IOException
+     */
+    //----> OK
+    public void spimiInvert(List<String> fileBlock, int n) throws IOException {
+        InvertedIndex index = new InvertedIndex();//constructor: initializes the dictionary and the output file
+        PreprocessDoc preprocessing = new PreprocessDoc();
+        for (String doc : fileBlock) { //each row is a doc!
+            int cont = 1;
+            String[] parts = doc.split("\t");
+            int doc_id = Integer.parseInt(parts[0]);
+            String doc_corpus = parts[1];
+            List<String> pro_doc = preprocessing.preprocess_doc_optimized(doc_corpus);
+            //read the terms and generate postings
+            //write postings
+            for (String term : pro_doc) {
+                index.addToDict(term);
+                index.addPosting(term, doc_id, 1, cont);
+                cont++;
+            }
+
+        }
+        //at the end of the block we have to sort the posting lists in lexicographic order
+        index.sortPosting();
+        //then we write the block to the disk
+        index.writeToDisk(n); //-> created a file for each type of info : doc_id,position,tf,term
+    }
 
 
 
