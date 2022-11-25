@@ -1,6 +1,5 @@
 package indexing;
 
-import inverted_index.Compressor;
 import junit.framework.TestCase;
 
 import java.io.File;
