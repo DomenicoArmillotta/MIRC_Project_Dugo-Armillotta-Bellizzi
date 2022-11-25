@@ -503,6 +503,10 @@ public class Daat {
         return postings;
     }
 
+    //TODO 15/11/2022: we need a method to merge posting list with the same term; this is because
+    // stemming is optional, and when enabled, we will have more different posting lists for
+    // each term; so we need to merge this lists together; also take into account tha we have compression!
+
     //iterate over the posting list ot get the desired term frequency, return 0 otherwise
     private int getFreq(LinkedList<Posting> postingList, int docid){
         for(Posting p: postingList){

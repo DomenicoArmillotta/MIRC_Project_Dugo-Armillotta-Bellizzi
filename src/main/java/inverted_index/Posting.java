@@ -26,7 +26,7 @@ public class Posting implements Comparable<Posting>, Serializable {
     public void setTermfreq(int termfreq) {
         this.termfreq = termfreq;
     }
-    
+
 
     public int getTermFrequency() {
         return termfreq;
