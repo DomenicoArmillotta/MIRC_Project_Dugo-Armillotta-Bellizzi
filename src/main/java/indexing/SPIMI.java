@@ -20,18 +20,10 @@ import java.util.*;
 
 public class SPIMI {
 
-    private DB db;
-    private HTreeMap<String, Integer> documentIndex;
 
-    //creazione dei blocchi usando la ram
+    //creazione dei blocchi usando il limite su ram
     public void spimiInvertBlockMapped(String read_path) throws IOException {
         int n_block = 0;
-        db = DBMaker.fileDB("docs/testDB.db").make();
-        documentIndex = db
-                .hashMap("documentIndex")
-                .keySerializer(Serializer.STRING)
-                .valueSerializer(Serializer.INTEGER)
-                .createOrOpen();
         File input_file = new File(read_path);
         LineIterator it = FileUtils.lineIterator(input_file, "UTF-8");
         int index_block = 0;
@@ -54,9 +46,7 @@ public class SPIMI {
         } finally {
             LineIterator.closeQuietly(it);
         }
-        db.commit();
-        db.close();
-        //FARE MERGE
+        //FARE MERGE dei VARI BLOCCHI qui
     }
 
     public void spimiInvertMapped(List<String> fileBlock, int n) throws IOException {
@@ -77,35 +67,6 @@ public class SPIMI {
 
 
 
-
-
-    //fast to count file line --> 5milion in 4/5 s
-    public static long countLineFast(String fileName_path) {
-
-        long lines = 0;
-
-        try (InputStream is = new BufferedInputStream(new FileInputStream(fileName_path))) {
-            byte[] c = new byte[1024];
-            int count = 0;
-            int readChars = 0;
-            boolean endsWithoutNewLine = false;
-            while ((readChars = is.read(c)) != -1) {
-                for (int i = 0; i < readChars; ++i) {
-                    if (c[i] == '\n')
-                        ++count;
-                }
-                endsWithoutNewLine = (c[readChars - 1] != '\n');
-            }
-            if (endsWithoutNewLine) {
-                ++count;
-            }
-            lines = count;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return lines;
-    }
 
 
 }
