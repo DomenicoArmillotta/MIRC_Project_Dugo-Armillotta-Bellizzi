@@ -1,4 +1,4 @@
-package inverted_index;
+package invertedIndex;
 
 import java.io.Serializable;
 import java.util.ArrayList;

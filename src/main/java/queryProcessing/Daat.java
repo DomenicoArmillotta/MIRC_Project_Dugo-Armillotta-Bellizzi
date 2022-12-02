@@ -1,6 +1,6 @@
-package query_processing;
+package queryProcessing;
 
-import inverted_index.Posting;
+import invertedIndex.Posting;
 import preprocessing.PreprocessDoc;
 
 import java.io.IOException;

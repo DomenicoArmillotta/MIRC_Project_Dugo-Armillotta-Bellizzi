@@ -1,4 +1,4 @@
-package inverted_index;
+package invertedIndex;
 
 import org.mapdb.DB;
 import org.mapdb.HTreeMap;

@@ -1,7 +1,7 @@
 package indexing;
 
 
-import inverted_index.InvertedIndex;
+import invertedIndex.InvertedIndex;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.mapdb.DB;
@@ -10,13 +10,8 @@ import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import preprocessing.PreprocessDoc;
 
+import java.nio.*;
 import java.io.*;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 public class SPIMI {

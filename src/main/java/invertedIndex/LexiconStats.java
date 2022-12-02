@@ -1,4 +1,4 @@
-package inverted_index;
+package invertedIndex;
 
 public class LexiconStats {
 
