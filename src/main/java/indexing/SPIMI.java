@@ -1,6 +1,7 @@
 package indexing;
 
 
+import inverted_index.InvertedIndex;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.mapdb.DB;
@@ -20,26 +21,37 @@ import java.util.*;
 
 public class SPIMI {
 
+    private DB db;
+    private HTreeMap<String, Integer> documentIndex;
+
+    private InvertedIndex invertedIndex;
+
+    private int docid = 0;
+
 
     //creazione dei blocchi usando il limite su ram
-    public void spimiInvertBlockMapped(String read_path) throws IOException {
-        int n_block = 0;
-        File input_file = new File(read_path);
-        LineIterator it = FileUtils.lineIterator(input_file, "UTF-8");
+    public void spimiInvertBlockMapped(String readPath) throws IOException {
+        db = DBMaker.fileDB("docs/docIndex.db").make();
+        documentIndex = db
+                .hashMap("documentIndex")
+                .keySerializer(Serializer.STRING)
+                .valueSerializer(Serializer.INTEGER)
+                .create();
+        File inputFile = new File(readPath);
+        LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
         int index_block = 0;
         try {
             //create chunk of data , splitting in n different block
-            while (it.hasNext()){  //--> its the ram of jvm
-                List<String> listDoc = new ArrayList<>();
-                int i = 0;
+            while (it.hasNext()){
+                //instantiate a new Inverted Index and Lexicon per block
+                invertedIndex = new InvertedIndex(index_block);
                 while (it.hasNext() && (Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().freeMemory())) {
+                    //--> its the ram of jvm
                     String line = it.nextLine();
-                    listDoc.add(line);
-                    i++;
+                    spimiInvertMapped(line);
                 }
-                //we elaborate one block at time , so we call the function to create inverted index for the block
-                spimiInvertMapped(listDoc, index_block);
-                n_block++;
+                invertedIndex.sortTerms();
+                invertedIndex.writePostings();
                 index_block++;
             }
 
@@ -49,8 +61,23 @@ public class SPIMI {
         //FARE MERGE dei VARI BLOCCHI qui
     }
 
-    public void spimiInvertMapped(List<String> fileBlock, int n) throws IOException {
-
+    public void spimiInvertMapped(String doc) throws IOException {
+        //initialize a new InvertedIndex
+        PreprocessDoc preprocessDoc = new PreprocessDoc();
+        int cont = 0;
+        String[] parts = doc.split("\t");
+        String docno = parts[0];
+        String doc_corpus = parts[1];
+        List<String> pro_doc = preprocessDoc.preprocess_doc_optimized(doc_corpus);
+        //read the terms and generate postings
+        //write postings
+        for (String term : pro_doc) {
+            invertedIndex.addToLexicon(term);
+            invertedIndex.addPosting(term, docid, 1);
+            cont++;
+        }
+        documentIndex.put(docno, cont);
+        docid++;
     }
 
     private void mergeBlocks(int n){
