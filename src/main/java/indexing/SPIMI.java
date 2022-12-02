@@ -20,6 +20,7 @@ public class SPIMI {
     private HTreeMap<String, Integer> documentIndex;
 
     private InvertedIndex invertedIndex;
+    private String outPath;
 
     private int docid = 0;
 
@@ -40,6 +41,7 @@ public class SPIMI {
             while (it.hasNext()){
                 //instantiate a new Inverted Index and Lexicon per block
                 invertedIndex = new InvertedIndex(index_block);
+                outPath = "index"+index_block+".txt";
                 while (it.hasNext() && (Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().freeMemory())) {
                     //--> its the ram of jvm
                     String line = it.nextLine();
@@ -67,8 +69,8 @@ public class SPIMI {
         //read the terms and generate postings
         //write postings
         for (String term : pro_doc) {
-            invertedIndex.addToLexicon(term);
             invertedIndex.addPosting(term, docid, 1);
+            invertedIndex.addToLexicon(term);
             cont++;
         }
         documentIndex.put(docno, cont);

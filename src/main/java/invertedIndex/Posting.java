@@ -1,5 +1,8 @@
 package invertedIndex;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +10,6 @@ import java.util.List;
 public class Posting implements Comparable<Posting>, Serializable {
     private int docid;
     private int termfreq;
-    private List<Integer> pos = new ArrayList<>();
 
     public Posting(int docid, int termfreq) {
         this.docid = docid;
@@ -42,5 +44,19 @@ public class Posting implements Comparable<Posting>, Serializable {
     @Override
     public int compareTo(Posting o) {
         return this.docid - o.getDocumentId();
+    }
+
+    private void writeObject(ObjectOutputStream oos)
+            throws IOException {
+        oos.defaultWriteObject();
+        oos.writeInt(this.docid);
+        oos.writeInt(this.termfreq);
+    }
+
+    private void readObject(ObjectInputStream ois)
+            throws ClassNotFoundException, IOException {
+        ois.defaultReadObject();
+        this.docid = ois.readInt();
+        this.termfreq = ois.readInt();
     }
 }

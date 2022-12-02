@@ -15,12 +15,24 @@ import java.util.Arrays;
 
 public class Compressor {
 
+    public byte[] unary(int x) {
+        //TODO: implement
+        byte[] b = new byte[1024];
+        return b;
+    }
+
     public String variableByte(int x) {
         //TODO: implement
        return "";
     }
 
-    public int decodeVariableByteOld(String bitString){
+    public byte[] variableByteB(int x) {
+        //TODO: implement
+        byte[] b = new byte[1024];
+        return b;
+    }
+
+    public int decodeVariableByte(String bitString){
        //TODO: implement:
         return 0;
     }
