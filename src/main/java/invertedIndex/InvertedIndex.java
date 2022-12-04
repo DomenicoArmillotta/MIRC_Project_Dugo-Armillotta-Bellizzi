@@ -4,6 +4,7 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
+import org.mapdb.elsa.ElsaSerializerBase;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -12,7 +13,10 @@ import java.io.RandomAccessFile;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
 
 public class InvertedIndex {
 
@@ -31,9 +35,11 @@ public class InvertedIndex {
     }
 
     //TODO: update statistics of lexicon
+    //TODO: è troppo lento, trova un'alternativa per le posting list
 
     public void addPosting(String term, int docid, int freq){
         List<Posting> pl = (List<Posting>) db.indexTreeList(term, Serializer.JAVA).createOrOpen();
+        //List<Posting> pl = new ArrayList<>();
         if(lexicon.get(term) != null){
             for (int i = 0; i < pl.size(); i++) {
                 if (pl.get(i).getDocumentId() == docid) {
@@ -44,7 +50,7 @@ public class InvertedIndex {
                 }
             }
         }
-        pl.add(new Posting(docid, 1));
+        pl.add(new Posting(docid, freq));
     }
 
     public void addToLexicon(String term){
@@ -57,6 +63,13 @@ public class InvertedIndex {
 
     public void writePostings() {
         //TODO: declare FileChannel for three different files: one for docids, one for tfs, one for lexicon
+        /*for (Map.Entry<String, LexiconStats> entry :
+                lexicon.getEntries()) {
+
+            // put key and value separated by a colon
+            System.out.println(entry.getKey() + ":"
+                    + entry.getValue());
+        }*/
         File lexFile = new File("lexicon"+outPath);
         File docFile = new File("docids"+outPath);
         File tfFile = new File("tfs"+outPath);
@@ -72,6 +85,7 @@ public class InvertedIndex {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }*/
+        db.close();
     }
 }
 
