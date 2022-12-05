@@ -76,7 +76,6 @@ public class SPIMI {
         //write postings
         for (String term : pro_doc) {
             invertedIndex.addPosting(term, docid, 1);
-            invertedIndex.addToLexicon(term);
             cont++;
         }
         documentIndex.put(docno, cont);

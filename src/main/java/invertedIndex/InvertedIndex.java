@@ -22,7 +22,9 @@ public class InvertedIndex {
 
     private DB db;
     private String outPath;
-    private HTreeMap<String, LexiconStats> lexicon;
+    private HTreeMap<String, Integer> lexicon;
+    private List<List<Posting>> invIndex;
+    private int nList = 0; //pointer of the list for a term in the lexicon
 
     public InvertedIndex(int n){
         outPath = "_"+n;
@@ -31,6 +33,7 @@ public class InvertedIndex {
                 .keySerializer(Serializer.STRING)
                 .valueSerializer(Serializer.JAVA)
                 .createOrOpen();
+        invIndex = (List<List<Posting>>)db.indexTreeList("invIndex", Serializer.JAVA).createOrOpen();
 
     }
 
@@ -38,23 +41,32 @@ public class InvertedIndex {
     //TODO: è troppo lento, trova un'alternativa per le posting list
 
     public void addPosting(String term, int docid, int freq){
-        List<Posting> pl = (List<Posting>) db.indexTreeList(term, Serializer.JAVA).createOrOpen();
-        //List<Posting> pl = new ArrayList<>();
-        if(lexicon.get(term) != null){
+        List<Posting> pl = new ArrayList<>();
+        if(lexicon.get(term) != null && lexicon.get(term) < nList){
+            pl = invIndex.get(lexicon.get(term));
             for (int i = 0; i < pl.size(); i++) {
                 if (pl.get(i).getDocumentId() == docid) {
                     int newTf = pl.get(i).getTermFrequency()+1;
                     pl.remove(i);
                     pl.add(new Posting(docid,newTf));
+                    invIndex.set(lexicon.get(term),pl);
                     return;
                 }
             }
+            pl.add(new Posting(docid, freq));
+            invIndex.set(lexicon.get(term),pl);
         }
-        pl.add(new Posting(docid, freq));
+        else{
+            lexicon.put(term, nList);
+            nList++;
+            pl.add(new Posting(docid, freq));
+            invIndex.add(pl);
+        }
+
     }
 
     public void addToLexicon(String term){
-        lexicon.put(term, new LexiconStats());
+        lexicon.put(term, 0);
     }
 
     public void sortTerms() {
@@ -73,6 +85,11 @@ public class InvertedIndex {
         File lexFile = new File("lexicon"+outPath);
         File docFile = new File("docids"+outPath);
         File tfFile = new File("tfs"+outPath);
+        List<Posting> list = invIndex.get(lexicon.get("bile"));
+
+        List<Posting> list2 = invIndex.get(lexicon.get("american"));
+        System.out.println(list);
+        System.out.println(list2);
         /*File file = new File(outPath);
         try (RandomAccessFile stream = new RandomAccessFile(file, "rw");
              FileChannel channel = stream.getChannel()) {
