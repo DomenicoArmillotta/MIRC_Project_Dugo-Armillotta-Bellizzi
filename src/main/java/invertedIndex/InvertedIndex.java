@@ -18,11 +18,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 
+import static java.util.Map.Entry.comparingByKey;
+import static java.util.stream.Collectors.toMap;
+
 public class InvertedIndex {
 
     private DB db;
     private String outPath;
-    private HTreeMap<String, Integer> lexicon;
+    private Map<String, Integer> lexicon;
     private List<List<Posting>> invIndex;
     private int nList = 0; //pointer of the list for a term in the lexicon
 
@@ -38,11 +41,10 @@ public class InvertedIndex {
     }
 
     //TODO: update statistics of lexicon
-    //TODO: è troppo lento, trova un'alternativa per le posting list
 
     public void addPosting(String term, int docid, int freq){
         List<Posting> pl = new ArrayList<>();
-        if(lexicon.get(term) != null && lexicon.get(term) < nList){
+        if(lexicon.get(term) != null){
             pl = invIndex.get(lexicon.get(term));
             for (int i = 0; i < pl.size(); i++) {
                 if (pl.get(i).getDocumentId() == docid) {
@@ -65,18 +67,23 @@ public class InvertedIndex {
 
     }
 
-    public void addToLexicon(String term){
-        lexicon.put(term, 0);
-    }
+    //public void addToLexicon(String term){lexicon.put(term, 0);}
 
     public void sortTerms() {
-        //lexicon = lexicon.entrySet().stream().sorted();
+        /*lexicon.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByKey())
+                        .forEach(System.out::println);*/
+        lexicon.putAll(lexicon.entrySet()
+                .stream()
+                .sorted(comparingByKey())
+                .collect(toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2)));
     }
 
     public void writePostings() {
         //TODO: declare FileChannel for three different files: one for docids, one for tfs, one for lexicon
-        /*for (Map.Entry<String, LexiconStats> entry :
-                lexicon.getEntries()) {
+        /*for (Map.Entry<String, Integer> entry :
+                lexicon.entrySet()) {
 
             // put key and value separated by a colon
             System.out.println(entry.getKey() + ":"
@@ -85,6 +92,12 @@ public class InvertedIndex {
         File lexFile = new File("lexicon"+outPath);
         File docFile = new File("docids"+outPath);
         File tfFile = new File("tfs"+outPath);
+        RandomAccessFile streamLex;
+        RandomAccessFile streamDocs;
+        RandomAccessFile streamTf;
+        FileChannel lexChannel;
+        FileChannel docChannel;
+        FileChannel tfChannel;
         List<Posting> list = invIndex.get(lexicon.get("bile"));
 
         List<Posting> list2 = invIndex.get(lexicon.get("american"));
