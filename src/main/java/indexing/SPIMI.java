@@ -12,6 +12,10 @@ import preprocessing.PreprocessDoc;
 
 import java.nio.*;
 import java.io.*;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 public class SPIMI {
@@ -82,9 +86,36 @@ public class SPIMI {
         docid++;
     }
 
-    private void mergeBlocks(int n){
+    /*private void mergeBlocks(int n) throws IOException {
+        TreeSet<String> treeSet = new TreeSet<>();
+        int bytesRead = 0;
+        boolean isTerm = true;
+        int[] isCompleted = new int[n];
+        //tantissimi channel
+        FileChannel[] listOfChannel = new FileChannel[n];
+        for (int i = 0; i<n; i++) {
+            Path path = Paths.get("ouptut_" + i + ".txt");
+            listOfChannel[i] = FileChannel.open(path, StandardOpenOption.READ);
+            //tantissimi buffer
+        }
 
-    }
+        long[] pos = new long[n];
+        while (isTerm == true){
+            for(int j=0;j<n;j++){
+                //è stato creato un array di dimensione n , se nella posizione c'è  = 1 il file ha finito i termini altrimenti li ha ancora
+                if(isCompleted[j]==0){
+                    //accediamo al file j
+                    listOfChannel[j].position(pos[j]);
+                    ByteBuffer buffer = ByteBuffer.allocate(1024);
+                    listOfChannel[j].read(buffer);
+                    buffer.flip();
+                    //qui stiamo leggendo i primi 1024 byte del file
+                    for (int k = 0; k<n; )
+
+                }
+            }
+        }
+    }*/
 
 
 
