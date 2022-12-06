@@ -13,10 +13,8 @@ import java.io.RandomAccessFile;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Map.Entry.comparingByKey;
 import static java.util.stream.Collectors.toMap;
@@ -26,6 +24,8 @@ public class InvertedIndex {
     private DB db;
     private String outPath;
     private Map<String, Integer> lexicon;
+
+    private List<String> sortedTerms;
     private List<List<Posting>> invIndex;
     private int nList = 0; //pointer of the list for a term in the lexicon
 
@@ -37,6 +37,7 @@ public class InvertedIndex {
                 .valueSerializer(Serializer.JAVA)
                 .createOrOpen();
         invIndex = (List<List<Posting>>)db.indexTreeList("invIndex", Serializer.JAVA).createOrOpen();
+        sortedTerms = db.indexTreeList("sortedTerms", Serializer.STRING).createOrOpen();
 
     }
 
@@ -70,14 +71,8 @@ public class InvertedIndex {
     //public void addToLexicon(String term){lexicon.put(term, 0);}
 
     public void sortTerms() {
-        /*lexicon.entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByKey())
-                        .forEach(System.out::println);*/
-        lexicon.putAll(lexicon.entrySet()
-                .stream()
-                .sorted(comparingByKey())
-                .collect(toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2)));
+        sortedTerms = lexicon.keySet().stream().sorted().collect(Collectors.toList());
+        System.out.println(sortedTerms);
     }
 
     public void writePostings() {
