@@ -49,9 +49,7 @@ public class InvertedIndex {
             pl = invIndex.get(lexicon.get(term));
             for (int i = 0; i < pl.size(); i++) {
                 if (pl.get(i).getDocumentId() == docid) {
-                    int newTf = pl.get(i).getTermFrequency()+1;
-                    pl.remove(i);
-                    pl.add(new Posting(docid,newTf));
+                    pl.get(i).addOccurrence();
                     invIndex.set(lexicon.get(term),pl);
                     return;
                 }
