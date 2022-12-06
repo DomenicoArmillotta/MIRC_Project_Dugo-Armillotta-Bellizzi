@@ -36,29 +36,35 @@ public class SPIMI {
                 .hashMap("documentIndex")
                 .keySerializer(Serializer.STRING)
                 .valueSerializer(Serializer.INTEGER)
-                .create();
+                .createOrOpen();
         File inputFile = new File(readPath);
         LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
         int index_block = 0;
+        //int cont = 0;
         try {
             //create chunk of data , splitting in n different block
             while (it.hasNext()){
                 //instantiate a new Inverted Index and Lexicon per block
                 invertedIndex = new InvertedIndex(index_block);
                 outPath = "index"+index_block+".txt";
-                while (it.hasNext() && (Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().freeMemory())) {
+                while (it.hasNext() && Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) {
                     //--> its the ram of jvm
                     String line = it.nextLine();
                     spimiInvertMapped(line);
+                    //System.out.println(cont);
+                    //cont++;
                 }
+                //System.out.println(cont);
                 invertedIndex.sortTerms();
                 invertedIndex.writePostings();
                 index_block++;
+                System.gc();
             }
-
         } finally {
             LineIterator.closeQuietly(it);
         }
+        db.commit();
+        db.close();
         //FARE MERGE dei VARI BLOCCHI qui
     }
 
@@ -74,7 +80,6 @@ public class SPIMI {
         //write postings
         for (String term : pro_doc) {
             invertedIndex.addPosting(term, docid, 1);
-            invertedIndex.addToLexicon(term);
             cont++;
         }
         documentIndex.put(docno, cont);

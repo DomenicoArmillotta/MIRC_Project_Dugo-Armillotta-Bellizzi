@@ -11,6 +11,8 @@ public class LexiconStats implements Serializable {
     private long cf; //collection frequency
     private long offsetDocid; //offset of the posting list of the term
     private long offsetTf;
+    private int docidsLen;
+    private int tfLen;
 
     public LexiconStats(){
         this.dF = 0;
@@ -35,12 +37,36 @@ public class LexiconStats implements Serializable {
         this.cf = cf;
     }
 
-    public long getOffset() {
+    public long getOffsetDocid() {
         return offsetDocid;
     }
 
-    public void setOffset(long offset) {
+    public void setOffsetDocid(long offset) {
         this.offsetDocid = offset;
+    }
+
+    public long getOffsetTf() {
+        return offsetTf;
+    }
+
+    public void setOffsetTf(long offsetTf) {
+        this.offsetTf = offsetTf;
+    }
+
+    public int getDocidsLen() {
+        return docidsLen;
+    }
+
+    public void setDocidsLen(int docidsLen) {
+        this.docidsLen = docidsLen;
+    }
+
+    public int getTfLen() {
+        return tfLen;
+    }
+
+    public void setTfLen(int tfLen) {
+        this.tfLen = tfLen;
     }
 
     private void writeObject(ObjectOutputStream oos)
