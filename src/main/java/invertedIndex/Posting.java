@@ -1,52 +1,41 @@
 package invertedIndex;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.ByteBuffer;
 
 public class Posting implements Comparable<Posting>, Serializable {
-    private int docid;
-    private int termfreq;
 
-    public Posting(int docid, int termfreq) {
-        this.docid = docid;
-        this.termfreq = termfreq;
+    private byte[] docid;
+
+    private byte[] tf;
+
+    public Posting(byte[] docidb, byte[] tfb){
+        this.docid = ByteBuffer.allocate(4).putInt(ByteBuffer.wrap(docidb).getInt()).array();
+        this.tf = ByteBuffer.allocate(4).putInt(ByteBuffer.wrap(tfb).getInt()).array();
     }
 
-    public int getDocumentId() {
+    public byte[] getDocid() {
         return docid;
     }
 
-    public void setDocid(int docid) {
-        this.docid = docid;
+    public byte[] getTf() {
+        return tf;
     }
 
-    public void setTermfreq(int termfreq) {
-        this.termfreq = termfreq;
-    }
-
-
-    public int getTermFrequency() {
-        return termfreq;
-    }
-
-    public void addOccurrence() {
-        this.termfreq++;
+    public void setTf(byte[] tf) {
+        this.tf = tf;
     }
 
     public String toString() {
-        return String.format("%d,%d", this.docid, this.termfreq);
+        return String.format("%d,%d", ByteBuffer.wrap(this.docid).getInt(), ByteBuffer.wrap(this.tf).getInt());
     }
 
     @Override
     public int compareTo(Posting o) {
-        return this.docid - o.getDocumentId();
+        return ByteBuffer.wrap(this.docid).getInt() - ByteBuffer.wrap(o.getDocid()).getInt();
     }
 
-    private void writeObject(ObjectOutputStream oos)
+    /*private void writeObject(ObjectOutputStream oos)
             throws IOException {
         oos.defaultWriteObject();
         oos.writeInt(this.docid);
@@ -58,5 +47,5 @@ public class Posting implements Comparable<Posting>, Serializable {
         ois.defaultReadObject();
         this.docid = ois.readInt();
         this.termfreq = ois.readInt();
-    }
+    }*/
 }

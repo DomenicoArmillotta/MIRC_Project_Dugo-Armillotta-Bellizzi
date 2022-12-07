@@ -2,14 +2,10 @@ package invertedIndex;
 
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
-import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
-import org.mapdb.elsa.ElsaSerializerBase;
 
 import java.io.*;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,9 +18,8 @@ public class InvertedIndex {
     private String outPath;
     private Map<String, Integer> lexicon;
     private List<String> sortedTerms;
+
     private List<List<Posting>> invIndex;
-    private List<byte[]> docids;
-    private List<byte[]> tfs;
     private int nList = 0; //pointer of the list for a term in the lexicon
 
     public InvertedIndex(int n){
@@ -35,72 +30,39 @@ public class InvertedIndex {
                 .valueSerializer(Serializer.JAVA)
                 .createOrOpen();
         invIndex = (List<List<Posting>>)db.indexTreeList("invIndex", Serializer.JAVA).createOrOpen();
-        docids = db.indexTreeList("invIndex", Serializer.BYTE_ARRAY).createOrOpen();
-        tfs = db.indexTreeList("invIndex", Serializer.BYTE_ARRAY).createOrOpen();
         sortedTerms = db.indexTreeList("sortedTerms", Serializer.STRING).createOrOpen();
 
     }
 
     //TODO: update statistics of lexicon
+    //TODO: add compression
 
     public void addPosting(String term, int docid, int freq) throws IOException {
         List<Posting> pl = new ArrayList<>();
+        byte[] doc = ByteBuffer.allocate(4).putInt(docid).array();
+        byte[] tf = ByteBuffer.allocate(4).putInt(freq).array();
         if(lexicon.get(term) != null){
             pl = invIndex.get(lexicon.get(term));
             for (int i = 0; i < pl.size(); i++) {
-                if (pl.get(i).getDocumentId() == docid) {
-                    pl.get(i).addOccurrence();
+                if (ByteBuffer.wrap(pl.get(i).getDocid()).getInt() == docid) {
+                    byte[] curTf = pl.get(i).getTf();
+                    int oldTf = ByteBuffer.wrap(curTf).getInt();
+                    oldTf++;
+                    pl.get(i).setTf(ByteBuffer.allocate(4).putInt(oldTf).array());
                     invIndex.set(lexicon.get(term),pl);
                     return;
                 }
             }
-            pl.add(new Posting(docid, freq));
+            pl.add(new Posting(doc, tf));
             invIndex.set(lexicon.get(term),pl);
         }
         else{
             lexicon.put(term, nList);
             nList++;
-            pl.add(new Posting(docid, freq));
+            pl.add(new Posting(doc, tf));
             invIndex.add(pl);
         }
-        //METODO ALTERNATIVO (potrebbe essere il definitivo)
-        //TODO: ricorda per dopo, i byte sono con il segno, quando li leggerai, devono essere senza segno
-        /*
-        if(lexicon.get(term) != null){
-            byte[] d = docids.get(lexicon.get(term));
-            byte[] t = tfs.get(lexicon.get(term));
-            int b = 0;
-            for(int i = 0; i < d.length; i++){
-            //while((b = new ByteArrayInputStream(d).read()) != -1){
-                b = new ByteArrayInputStream(d).read();
-                if (b == docid) {
-                    int curFreq = t[i];
-                    curFreq++;
-                    t[i] = (byte) curFreq;
-                    tfs.set(lexicon.get(term), t);
-                    //update tf
-                    return;
-                }
-            }
-            byte[] doc = ByteBuffer.allocate(4).putInt(docid).array();
-            byte[] out = new byte[d.length + doc.length];
-            System.arraycopy(d, 0, out, 0, d.length);
-            System.arraycopy(doc, 0, out, d.length, doc.length);
-            docids.set(lexicon.get(term),out);
-            byte[] tf = ByteBuffer.allocate(4).putInt(freq).array();
-            byte[] outFreq = new byte[t.length + tf.length];
-            System.arraycopy(t, 0, outFreq, 0, t.length);
-            System.arraycopy(tf, 0, outFreq, t.length, tf.length);
-            tfs.set(lexicon.get(term),outFreq);
-        }
-        else{
-            lexicon.put(term, nList);
-            byte[] doc = ByteBuffer.allocate(4).putInt(docid).array();
-            docids.add(doc);
-            byte[] tf = ByteBuffer.allocate(4).putInt(freq).array();
-            docids.add(tf);
-        }
-        */
+
     }
 
     //public void addToLexicon(String term){lexicon.put(term, 0);}
@@ -111,11 +73,11 @@ public class InvertedIndex {
     }
 
     public void writePostings() throws IOException {
-        //db.commit();
-        /*List<Posting> list = invIndex.get(lexicon.get("bile"));
+        db.commit();
+        List<Posting> list = invIndex.get(lexicon.get("bile"));
         List<Posting> list2 = invIndex.get(lexicon.get("american"));
         System.out.println(list);
-        System.out.println(list2);*/
+        System.out.println(list2);
         /*File lexFile = new File("lexicon"+outPath);
         File docFile = new File("docids"+outPath);
         File tfFile = new File("tfs"+outPath);
