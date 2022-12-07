@@ -14,6 +14,8 @@ public class LexiconStats implements Serializable {
     private int docidsLen;
     private int tfLen;
 
+    private int index;
+
     //TODO: decidere se metter qua l'indice e creare le statistiche man mano in spimi
 
     public LexiconStats(){
@@ -69,6 +71,14 @@ public class LexiconStats implements Serializable {
 
     public void setTfLen(int tfLen) {
         this.tfLen = tfLen;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
     }
 
     private void writeObject(ObjectOutputStream oos)
