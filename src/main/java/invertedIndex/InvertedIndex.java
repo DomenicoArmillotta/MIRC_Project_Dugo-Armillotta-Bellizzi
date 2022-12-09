@@ -48,19 +48,20 @@ public class InvertedIndex {
             if(l.getCurdoc() == docid){
                 int oldTf = l.getCurTf(); //get the current term frequency value of the term
                 oldTf++; //increase term frequency by one
-                pl.get(pl.size()-1).setTf(ByteBuffer.allocate(4).putInt(oldTf).array()); //update term frequency
+                //pl.get(pl.size()-1).setTf(ByteBuffer.allocate(4).putInt(oldTf).array());
+                byte[] newTf = ByteBuffer.allocate(4).putInt(oldTf).array(); //update term frequency
                 //update data structures
                 l.setCurTf(oldTf);
-                invIndex.set(lexicon.get(term).getIndex(),pl);
+                invIndex.get(lexicon.get(term).getIndex()).get(pl.size()-1).setTf(newTf);
                 lexicon.put(term, l);
                 return; //we already had the given docID so we exit after updating the term and collection frequency
             }
             l.setdF(l.getdF()+1); //update document frequency, since this docID was not present before in the list
             l.setCurdoc(docid);
             l.setCurTf(freq);
-            pl.add(new Posting(doc, tf)); //add the posting to the list
+            //pl.add(new Posting(doc, tf)); //add the posting to the list
             //update data structures
-            invIndex.set(lexicon.get(term).getIndex(),pl);
+            invIndex.get(lexicon.get(term).getIndex()).add(new Posting(doc, tf));
             lexicon.put(term, l);
         }
         else{ //create new posting list
