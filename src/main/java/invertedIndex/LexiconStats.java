@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.List;
 
 public class LexiconStats implements Serializable {
 
@@ -16,6 +17,8 @@ public class LexiconStats implements Serializable {
     private int index;
     private int curdoc;
     private int curTf;
+
+    //public List<Posting> pointer;
 
     //TODO: decidere se metter qua l'indice e creare le statistiche man mano in spimi
 
