@@ -32,7 +32,6 @@ public class InvertedIndex {
         sortedTerms = db.indexTreeList("sortedTerms", Serializer.STRING).createOrOpen();
     }
 
-    //TODO: update statistics of lexicon
     //TODO: add compression
 
     public void addPosting(String term, int docid, int freq) throws IOException {
@@ -44,20 +43,19 @@ public class InvertedIndex {
             LexiconStats l = lexicon.get(term); //get the pointer of the list
             l.setCf(l.getCf()+1); //update collection frequency
             pl = invIndex.get(lexicon.get(term).getIndex()); //get the list
-            for (int i = 0; i < pl.size(); i++) {
-                //check for each posting if the docID matches with the input docID
-                if (ByteBuffer.wrap(pl.get(i).getDocid()).getInt() == docid) {
-                    byte[] curTf = pl.get(i).getTf(); //get the term frequency of the term
-                    int oldTf = ByteBuffer.wrap(curTf).getInt(); //convert to int
-                    oldTf++; //increase term frequency by one
-                    pl.get(i).setTf(ByteBuffer.allocate(4).putInt(oldTf).array());
-                    //update data structures
-                    invIndex.set(lexicon.get(term).getIndex(),pl);
-                    lexicon.put(term, l);
-                    return; //we already had the given docID so we exit after updating the term and collection frequency
-                }
+            if(l.getCurdoc() == docid){
+                int oldTf = l.getCurTf(); //get the current term frequency value of the term
+                oldTf++; //increase term frequency by one
+                pl.get(pl.size()-1).setTf(ByteBuffer.allocate(4).putInt(oldTf).array()); //update term frequency
+                //update data structures
+                l.setCurTf(oldTf);
+                invIndex.set(lexicon.get(term).getIndex(),pl);
+                lexicon.put(term, l);
+                return; //we already had the given docID so we exit after updating the term and collection frequency
             }
             l.setdF(l.getdF()+1); //update document frequency, since this docID was not present before in the list
+            l.setCurdoc(docid);
+            l.setCurTf(freq);
             pl.add(new Posting(doc, tf)); //add the posting to the list
             //update data structures
             invIndex.set(lexicon.get(term).getIndex(),pl);
@@ -67,14 +65,15 @@ public class InvertedIndex {
             LexiconStats l = new LexiconStats();
             //initialize the lexicon statistics for the term and add it to the lexicon
             l.setIndex(nList);
-            l.setCf(1);
-            l.setdF(1);
+            l.setCf(1); //initialize collection frequency to 1
+            l.setdF(1); //initialize document frequency by 1
+            l.setCurdoc(docid); //set the current document id
+            l.setCurTf(freq); //set the current term frequency
             lexicon.put(term, l);
             nList++; //increase the pointer for the next list
             pl.add(new Posting(doc, tf)); //add posting to the new list
             invIndex.add(pl); //insert the new list in the inverted index
         }
-
     }
 
     public void sortTerms() {
@@ -84,12 +83,12 @@ public class InvertedIndex {
 
     public void writePostings() throws IOException {
         db.commit();
-        /*List<Posting> list = invIndex.get(lexicon.get("bile").getIndex());
+        List<Posting> list = invIndex.get(lexicon.get("bile").getIndex());
         List<Posting> list2 = invIndex.get(lexicon.get("american").getIndex());
         System.out.println(lexicon.get("bile").getCf() + " " + lexicon.get("bile").getdF());
         System.out.println(list);
         System.out.println(lexicon.get("american").getCf() + " " + lexicon.get("american").getdF());
-        System.out.println(list2);*/
+        System.out.println(list2);
         /*File lexFile = new File("lexicon"+outPath);
         File docFile = new File("docids"+outPath);
         File tfFile = new File("tfs"+outPath);

@@ -13,8 +13,9 @@ public class LexiconStats implements Serializable {
     private long offsetTf;
     private int docidsLen;
     private int tfLen;
-
     private int index;
+    private int curdoc;
+    private int curTf;
 
     //TODO: decidere se metter qua l'indice e creare le statistiche man mano in spimi
 
@@ -23,6 +24,7 @@ public class LexiconStats implements Serializable {
         this.cf = 0;
         this.offsetDocid = 0;
         this.offsetTf = 0;
+        this.curdoc = 0;
     }
 
     public int getdF() {
@@ -80,6 +82,25 @@ public class LexiconStats implements Serializable {
     public void setIndex(int index) {
         this.index = index;
     }
+
+
+    public int getCurdoc() {
+        return curdoc;
+    }
+
+    public void setCurdoc(int curdoc) {
+        this.curdoc = curdoc;
+    }
+
+
+    public int getCurTf() {
+        return curTf;
+    }
+
+    public void setCurTf(int curTf) {
+        this.curTf = curTf;
+    }
+
 
     private void writeObject(ObjectOutputStream oos)
             throws IOException {
