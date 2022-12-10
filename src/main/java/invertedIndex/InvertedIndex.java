@@ -6,6 +6,7 @@ import org.mapdb.Serializer;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -130,9 +131,10 @@ public class InvertedIndex {
         System.out.println(list);
         System.out.println(lexicon.get("american").getCf() + " " + lexicon.get("american").getdF());
         System.out.println(list2);
-        /*File lexFile = new File("lexicon"+outPath);
-        File docFile = new File("docids"+outPath);
-        File tfFile = new File("tfs"+outPath);
+        //TODO: scrivi su file le posting e il lexicon ordinato
+        File lexFile = new File("docs/lexicon"+outPath+".txt");
+        File docFile = new File("docs/docids"+outPath+".txt");
+        File tfFile = new File("docs/tfs"+outPath+".txt");
         RandomAccessFile streamLex = new RandomAccessFile(lexFile, "rw");
         RandomAccessFile streamDocs = new RandomAccessFile(docFile, "rw");
         RandomAccessFile streamTf = new RandomAccessFile(tfFile, "rw");;
@@ -143,36 +145,38 @@ public class InvertedIndex {
         int offsetDocs = 0;
         int offsetTfs = 0;
         for(String term : sortedTerms){
-            int index = lexicon.get(term);
-            LexiconStats stats = new LexiconStats();
+            LexiconStats l = lexicon.get(term);
+            int index = l.getIndex();
             List<Posting> pl = invIndex.get(index);
             int docLen = 0;
-            int posLen = 0;
+            int tfLen = 0;
             for(Posting p: pl){
-                //df: sum of number of docids
-                //cd: sum of tfs
                 //take the posting list
                 //write posting list
-                int docid = p.getDocumentId();
-                int tf = p.getTermFrequency();
-                byte[] baDocs = ByteBuffer.allocate(4).putInt(docid).array();
-                ByteBuffer bufferValue = ByteBuffer.allocate(baDocs.length).putInt(docid);
+                byte[] baDocs = p.getDocid();
+                ByteBuffer bufferValue = ByteBuffer.allocate(baDocs.length);
                 bufferValue.put(baDocs);
                 bufferValue.flip();
                 docChannel.write(bufferValue);
-                byte[] baFreqs = ByteBuffer.allocate(4).putInt(tf).array();
+                byte[] baFreqs = p.getTf();
                 ByteBuffer bufferFreq = ByteBuffer.allocate(baFreqs.length);
                 bufferFreq.put(baFreqs);
                 bufferFreq.flip();
                 tfChannel.write(bufferFreq);
-                stats.setCf(stats.getCf()+tf);
-                stats.setdF(stats.getdF()+1);
+                docLen+= baDocs.length;
+                tfLen+= baFreqs.length;
             }
             //take the offset of docids
             //take the offset of tfs
             //take list dim for both docids and tfs
             //write lexicon to disk
-        }*/
+            //update offsets
+            offsetDocs+=docLen;
+            offsetTfs+=tfLen;
+        }
+        lexChannel.close();
+        docChannel.close();
+        tfChannel.close();
         /*File file = new File(outPath);
         try (RandomAccessFile stream = new RandomAccessFile(file, "rw");
              FileChannel channel = stream.getChannel()) {
