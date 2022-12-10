@@ -1,5 +1,6 @@
 package invertedIndex;
 
+import org.apache.hadoop.io.Text;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
@@ -166,10 +167,40 @@ public class InvertedIndex {
                 docLen+= baDocs.length;
                 tfLen+= baFreqs.length;
             }
-            //take the offset of docids
-            //take the offset of tfs
+            //we check if the string is greater than 20 chars, in that case we truncate it
+            Text key = new Text(term);
+            byte[] lexiconBytes;
+            if(key.getLength()>=21){
+                Text truncKey = new Text(term.substring(0,20));
+                lexiconBytes = truncKey.getBytes();
+            }
+            else{ //we allocate 22 bytes for the Text object, which is a string of 20 chars
+                lexiconBytes = ByteBuffer.allocate(22).put(key.getBytes()).array();
+            }
+            //take the document frequency
+            byte[] dfBytes = ByteBuffer.allocate(4).putInt(l.getdF()).array();
+            //take the collection frequency
+            byte[] cfBytes = ByteBuffer.allocate(8).putLong(l.getCf()).array();
             //take list dim for both docids and tfs
-            //write lexicon to disk
+            byte[] docBytes = ByteBuffer.allocate(4).putInt(docLen).array();
+            byte[] tfBytes = ByteBuffer.allocate(4).putInt(tfLen).array();
+            //take the offset of docids
+            byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(offsetDocs).array();
+            //take the offset of tfs
+            byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(offsetTfs).array();
+            //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
+            lexiconBytes = addByteArray(lexiconBytes,dfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,cfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,docBytes);
+            lexiconBytes = addByteArray(lexiconBytes,tfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
+            lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
+            //write lexicon entry to disk
+            ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
+            bufferLex.put(lexiconBytes);
+            bufferLex.flip();
+            lexChannel.write(bufferLex);
+            bufferLex.clear();
             //update offsets
             offsetDocs+=docLen;
             offsetTfs+=tfLen;
@@ -177,20 +208,17 @@ public class InvertedIndex {
         lexChannel.close();
         docChannel.close();
         tfChannel.close();
-        /*File file = new File(outPath);
-        try (RandomAccessFile stream = new RandomAccessFile(file, "rw");
-             FileChannel channel = stream.getChannel()) {
-            byte[] ba;
-            System.out.println(ba.length);
-            ByteBuffer bufferValue0 = ByteBuffer.allocate(ba.length);
-            bufferValue0.put(ba);
-            bufferValue0.flip();
-            channel.write(bufferValue0);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }*/
         //db.commit();
         //db.close();
+    }
+
+
+    //method used to concatenate two byte arrays
+    public byte[] addByteArray(byte[] array1, byte[] array2){
+        byte[] concatenatedArray = new byte[array1.length + array2.length];
+        System.arraycopy(array1, 0, concatenatedArray, 0, array1.length);
+        System.arraycopy(array2, 0, concatenatedArray, array1.length, array2.length);
+        return concatenatedArray;
     }
 }
 
