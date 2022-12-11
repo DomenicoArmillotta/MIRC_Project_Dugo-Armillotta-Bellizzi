@@ -4,14 +4,11 @@ package indexing;
 import invertedIndex.InvertedIndex;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
-import org.mapdb.HTreeMap;
-import org.mapdb.Serializer;
+import org.mapdb.*;
 import preprocessing.PreprocessDoc;
 
-import java.nio.*;
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -86,36 +83,45 @@ public class SPIMI {
         docid++;
     }
 
-    /*private void mergeBlocks(int n) throws IOException {
-        TreeSet<String> treeSet = new TreeSet<>();
-        int bytesRead = 0;
-        boolean isTerm = true;
-        int[] isCompleted = new int[n];
-        //tantissimi channel
-        FileChannel[] listOfChannel = new FileChannel[n];
-        for (int i = 0; i<n; i++) {
-            Path path = Paths.get("ouptut_" + i + ".txt");
-            listOfChannel[i] = FileChannel.open(path, StandardOpenOption.READ);
-            //tantissimi buffer
-        }
+/*    private static <K, V> void inspectMap(DB map) {
 
-        long[] pos = new long[n];
-        while (isTerm == true){
-            for(int j=0;j<n;j++){
-                //è stato creato un array di dimensione n , se nella posizione c'è  = 1 il file ha finito i termini altrimenti li ha ancora
-                if(isCompleted[j]==0){
-                    //accediamo al file j
-                    listOfChannel[j].position(pos[j]);
-                    ByteBuffer buffer = ByteBuffer.allocate(1024);
-                    listOfChannel[j].read(buffer);
-                    buffer.flip();
-                    //qui stiamo leggendo i primi 1024 byte del file
-                    for (int k = 0; k<n; )
-
-                }
-            }
+        for (final Map.Entry<String, Object> entry : map.getAll().entrySet()) {
+            final K key = (K) entry.getKey();
+            final V value = (V) entry.getValue();
+            System.out.println(String.format("%s = %s ", key, value, key.getClass(), value.getClass()));
         }
     }*/
+
+
+
+    private void mergeBlocks(int n) throws IOException {
+        int termsNumber = 100;
+        FileChannel[] fileChannels = new FileChannel[n];
+        long[] pos = new long[n];
+        int[] cicleControl = new int[n];
+
+        ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
+
+        int bytesRead = 0;
+
+        for (int i = 0; i<n; i++){
+            Path path = Paths.get("path_" + i + ".txt");
+            fileChannels[i].open(path, StandardOpenOption.READ);
+            bytesRead = fileChannels[i].read(buffer);
+            buffer.flip();
+        }
+
+        for (int i = 0; i < n; i++){
+            cicleControl[i] = (int) Math.ceil(fileChannels[i].size() / (58 * termsNumber));
+
+        }
+
+
+
+
+
+
+    }
 
 
 
