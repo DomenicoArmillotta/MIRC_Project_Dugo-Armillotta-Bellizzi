@@ -144,6 +144,99 @@ public class SPIMI {
     }
 
 
+    private void mergeBlocksDom(int n) throws IOException {
+        int termsNumber = 100;
+        byte[] partOfByteBuffer = new byte[20];
+        TreeSet<String> priority = new TreeSet<>();
+        FileChannel[] fileChannels = new FileChannel[n];
+        long[] pos = new long[n];
+        int[] cicleControl = new int[n];
+
+        Arrays.fill(pos,0);
+        Arrays.fill(cicleControl,0);
+
+        ByteBuffer buffer = ByteBuffer.allocate(20);
+        ByteBuffer buff = ByteBuffer.allocate(1024);
+
+        int bytesRead = 0;
+        for (int i = 0; i<n; i++){
+            Path path = Paths.get("path_" + i + ".txt");
+            fileChannels[i].open(path, StandardOpenOption.READ);
+            bytesRead = fileChannels[i].read(buffer);
+            buffer.flip();
+            cicleControl[i] = (int) Math.ceil(fileChannels[i].size() / (58 * termsNumber));
+            int k = 0;
+            int controlSum=0;
+            controlSum += cicleControl[i];
+            //controllo se cè qualche file con qualche parola
+            while (controlSum != 0){
+                for (int j = 0; j < n; j++) {
+                    if(cicleControl[j]!=0){
+                        fileChannels[j].position(pos[j]);
+
+                        fileChannels[j].read(buffer);
+                        String term = "ciao";
+                        //--------->da fare la lettura e trasformarla in string
+                        priority.add(term);
+
+                        //scorro tutti gli n blocchi
+                        //per ogni blocco leggiamo  100 parole , ma questa volta lavoriamo sul file e non sul buffer
+                        for(int p =0;p<100;p++){
+                            //mi sposto di 38 byte alla volta , perche nella lettura mi sposto gia di 20 byte
+                            fileChannels[j].position(pos[j]+(38*p));
+                            fileChannels[j].read(buffer);
+                            //--------> da fare lettura e trasformarla in string
+                            term = "termine letto";
+                            //aggiungo termine appena letto e convertito in priority
+                            priority.add(term);
+                            //aggiorno file pos
+                            pos[j] = pos[j] + 58;
+                        }
+
+                        //qui abbiamo la priority piena delle 100 parole di ogni blocco
+                        //quindi possiamo estrapolarlo dalla priotity ed effettuare il merging
+                        //--------> fare qui sort del treeset
+                        //-------->priority = priority.stream().sorted();
+                        String term_taken = priority.pollFirst();
+                        //_______________________-DUBBIO__________________________
+                        //1. implementiamo una binary search per ritrovare il termine nel lexicon e prendere loffset della posting
+                        //2. nel treeset mettiamo un oggetto fatto da [term=string , position = long ] ma cè il problema dellording lexicografico
+
+
+
+
+                    }
+
+                }
+
+
+
+
+
+
+
+
+
+
+
+
+                controlSum += cicleControl[i];
+            }
+        }
+
+
+
+
+
+
+
+    }
+
+
+
+
+
+
 
 
     public void spimiInvert(List<String> fileBlock, int n) throws IOException {
