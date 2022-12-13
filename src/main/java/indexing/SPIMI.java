@@ -10,6 +10,7 @@ import preprocessing.PreprocessDoc;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -83,38 +84,57 @@ public class SPIMI {
         docid++;
     }
 
-/*    private static <K, V> void inspectMap(DB map) {
-
-        for (final Map.Entry<String, Object> entry : map.getAll().entrySet()) {
-            final K key = (K) entry.getKey();
-            final V value = (V) entry.getValue();
-            System.out.println(String.format("%s = %s ", key, value, key.getClass(), value.getClass()));
-        }
-    }*/
 
 
 
     private void mergeBlocks(int n) throws IOException {
         int termsNumber = 100;
+        byte[] partOfByteBuffer = new byte[20];
+        TreeSet<String> terms = new TreeSet<>();
         FileChannel[] fileChannels = new FileChannel[n];
         long[] pos = new long[n];
         int[] cicleControl = new int[n];
 
+        Arrays.fill(pos,0);
+        Arrays.fill(cicleControl,0);
+
         ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
+        ByteBuffer buff = ByteBuffer.allocate(1024);
 
         int bytesRead = 0;
-
         for (int i = 0; i<n; i++){
             Path path = Paths.get("path_" + i + ".txt");
             fileChannels[i].open(path, StandardOpenOption.READ);
             bytesRead = fileChannels[i].read(buffer);
             buffer.flip();
-        }
-
-        for (int i = 0; i < n; i++){
             cicleControl[i] = (int) Math.ceil(fileChannels[i].size() / (58 * termsNumber));
+            int k = 0;
+            int controlSum=0;
+            controlSum += cicleControl[i];
+            while (controlSum != 0){
+                for (int l = 0; l < n; l++){
+                    if (cicleControl[i] != 0){
+                        fileChannels[l].position(pos[i]);
+                        fileChannels[l].read(buffer);
+                        for (int d = 0; d < 100; d++){
+                            buffer.position(58*d);
+                            byte[] arr = new byte[buffer.remaining()];
+                            ByteBuffer term = buff.put(arr, 58 * d, 20);
+                            byte[] bytes = new byte[term.remaining()];
+                            String fTerm = new String(bytes, StandardCharsets.UTF_8);
+                            terms.add(fTerm);
+                        }
+                        /*buffer.flip();
+                        byte term = buffer.get();
+                        //inserire nella prirityqueue
+                        buffer.compact();*/
 
+                    }
+                }
+                controlSum = controlSum - cicleControl[i];
+            }
         }
+
 
 
 
