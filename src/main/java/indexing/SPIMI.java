@@ -10,6 +10,7 @@ import preprocessing.PreprocessDoc;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -83,38 +84,57 @@ public class SPIMI {
         docid++;
     }
 
-/*    private static <K, V> void inspectMap(DB map) {
-
-        for (final Map.Entry<String, Object> entry : map.getAll().entrySet()) {
-            final K key = (K) entry.getKey();
-            final V value = (V) entry.getValue();
-            System.out.println(String.format("%s = %s ", key, value, key.getClass(), value.getClass()));
-        }
-    }*/
 
 
 
     private void mergeBlocks(int n) throws IOException {
         int termsNumber = 100;
+        byte[] partOfByteBuffer = new byte[20];
+        TreeSet<String> terms = new TreeSet<>();
         FileChannel[] fileChannels = new FileChannel[n];
         long[] pos = new long[n];
         int[] cicleControl = new int[n];
 
+        Arrays.fill(pos,0);
+        Arrays.fill(cicleControl,0);
+
         ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
+        ByteBuffer buff = ByteBuffer.allocate(1024);
 
         int bytesRead = 0;
-
         for (int i = 0; i<n; i++){
             Path path = Paths.get("path_" + i + ".txt");
             fileChannels[i].open(path, StandardOpenOption.READ);
             bytesRead = fileChannels[i].read(buffer);
             buffer.flip();
-        }
-
-        for (int i = 0; i < n; i++){
             cicleControl[i] = (int) Math.ceil(fileChannels[i].size() / (58 * termsNumber));
+            int k = 0;
+            int controlSum=0;
+            controlSum += cicleControl[i];
+            while (controlSum != 0){
+                for (int l = 0; l < n; l++){
+                    if (cicleControl[i] != 0){
+                        fileChannels[l].position(pos[i]);
+                        fileChannels[l].read(buffer);
+                        for (int d = 0; d < 100; d++){
+                            buffer.position(58*d);
+                            byte[] arr = new byte[buffer.remaining()];
+                            ByteBuffer term = buff.put(arr, 58 * d, 20);
+                            byte[] bytes = new byte[term.remaining()];
+                            String fTerm = new String(bytes, StandardCharsets.UTF_8);
+                            terms.add(fTerm);
+                        }
+                        /*buffer.flip();
+                        byte term = buffer.get();
+                        //inserire nella prirityqueue
+                        buffer.compact();*/
 
+                    }
+                }
+                controlSum = controlSum - cicleControl[i];
+            }
         }
+
 
 
 
@@ -122,6 +142,99 @@ public class SPIMI {
 
 
     }
+
+
+    private void mergeBlocksDom(int n) throws IOException {
+        int termsNumber = 100;
+        byte[] partOfByteBuffer = new byte[20];
+        TreeSet<String> priority = new TreeSet<>();
+        FileChannel[] fileChannels = new FileChannel[n];
+        long[] pos = new long[n];
+        int[] cicleControl = new int[n];
+
+        Arrays.fill(pos,0);
+        Arrays.fill(cicleControl,0);
+
+        ByteBuffer buffer = ByteBuffer.allocate(20);
+        ByteBuffer buff = ByteBuffer.allocate(1024);
+
+        int bytesRead = 0;
+        for (int i = 0; i<n; i++){
+            Path path = Paths.get("path_" + i + ".txt");
+            fileChannels[i].open(path, StandardOpenOption.READ);
+            bytesRead = fileChannels[i].read(buffer);
+            buffer.flip();
+            cicleControl[i] = (int) Math.ceil(fileChannels[i].size() / (58 * termsNumber));
+            int k = 0;
+            int controlSum=0;
+            controlSum += cicleControl[i];
+            //controllo se cè qualche file con qualche parola
+            while (controlSum != 0){
+                for (int j = 0; j < n; j++) {
+                    if(cicleControl[j]!=0){
+                        fileChannels[j].position(pos[j]);
+
+                        fileChannels[j].read(buffer);
+                        String term = "ciao";
+                        //--------->da fare la lettura e trasformarla in string
+                        priority.add(term);
+
+                        //scorro tutti gli n blocchi
+                        //per ogni blocco leggiamo  100 parole , ma questa volta lavoriamo sul file e non sul buffer
+                        for(int p =0;p<100;p++){
+                            //mi sposto di 38 byte alla volta , perche nella lettura mi sposto gia di 20 byte
+                            fileChannels[j].position(pos[j]+(38*p));
+                            fileChannels[j].read(buffer);
+                            //--------> da fare lettura e trasformarla in string
+                            term = "termine letto";
+                            //aggiungo termine appena letto e convertito in priority
+                            priority.add(term);
+                            //aggiorno file pos
+                            pos[j] = pos[j] + 58;
+                        }
+
+                        //qui abbiamo la priority piena delle 100 parole di ogni blocco
+                        //quindi possiamo estrapolarlo dalla priotity ed effettuare il merging
+                        //--------> fare qui sort del treeset
+                        //-------->priority = priority.stream().sorted();
+                        String term_taken = priority.pollFirst();
+                        //_______________________-DUBBIO__________________________
+                        //1. implementiamo una binary search per ritrovare il termine nel lexicon e prendere loffset della posting
+                        //2. nel treeset mettiamo un oggetto fatto da [term=string , position = long ] ma cè il problema dellording lexicografico
+
+
+
+
+                    }
+
+                }
+
+
+
+
+
+
+
+
+
+
+
+
+                controlSum += cicleControl[i];
+            }
+        }
+
+
+
+
+
+
+
+    }
+
+
+
+
 
 
 
