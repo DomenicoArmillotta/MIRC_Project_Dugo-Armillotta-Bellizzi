@@ -11,7 +11,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
+import static utility.Utils.addByteArray;
 
 public class Compressor {
 
@@ -19,6 +23,80 @@ public class Compressor {
         //TODO: implement
         byte[] b = new byte[1024];
         return b;
+    }
+
+    //TODO: implement the following functions
+    /*
+        def VariableByteEncodeNumber(n):
+            byte_list = []
+            while True:
+                #prepend:
+                byte_list = [n%128] + byte_list
+                #byte_list.insert(0,n%128)
+                if n < 128:
+                    break
+                n = int(n/128)
+            byte_list[len(byte_list)-1] += 128
+            return byte_list
+     */
+
+    public byte[] variableByteEncodeNumber(int n){
+        byte[] b = new byte[1024];
+        while(true){
+            b = addByteArray(ByteBuffer.allocate(1).putInt(n%128).array(), b);
+            if(n<128){
+                break;
+            }
+            n = n/128;
+        }
+        b[b.length-1] += 128;
+        return b;
+    }
+
+    /*
+        def VariableByteEncode(n_list):
+            bytestream = []
+            for n in n_list:
+                byte_list = VariableByteEncodeNumber(n)
+                bytestream.extend(byte_list)
+            return bytestream
+     */
+    public byte[] variableByteEncode(int[] n_list){
+        byte[] byteStream = new byte[1024];
+        for(int n: n_list){
+            byte[] byteList = variableByteEncodeNumber(n);
+            addByteArray(byteStream, byteList);
+        }
+        return byteStream;
+    }
+    /*
+        def VariableByteDecode(bs):
+            numbers = []
+            n = 0
+            for i in range(len(bs)):
+                if bs[i] < 128:
+                    n = 128*n + bs[i]
+                else:
+                    n = 128*n + bs[i] - 128
+                    numbers.append(n)
+                    n = 0
+            return numbers
+     */
+
+    public List<Integer> variableByteDecode(byte[] bs){
+        List<Integer> numbers = new ArrayList<>();
+        int n = 0;
+        for(int i = 0; i < bs.length; i++){
+            if(bs[i] < 128){
+                n = 128*n + bs[i];
+            }
+            else{
+                n = 128*n + bs[i] - 128;
+                numbers.add(n);
+                n = 0;
+            }
+        }
+        return numbers;
     }
 
     public String variableByte(int x) {

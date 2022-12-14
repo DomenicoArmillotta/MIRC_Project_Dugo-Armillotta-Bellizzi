@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Map.Entry.comparingByKey;
 import static java.util.stream.Collectors.toMap;
+import static utility.Utils.addByteArray;
 
 public class InvertedIndex {
 
@@ -212,13 +213,5 @@ public class InvertedIndex {
         //db.close();
     }
 
-
-    //method used to concatenate two byte arrays
-    public byte[] addByteArray(byte[] array1, byte[] array2){
-        byte[] concatenatedArray = new byte[array1.length + array2.length];
-        System.arraycopy(array1, 0, concatenatedArray, 0, array1.length);
-        System.arraycopy(array2, 0, concatenatedArray, array1.length, array2.length);
-        return concatenatedArray;
-    }
 }
 
