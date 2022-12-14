@@ -201,7 +201,12 @@ public class SPIMI {
                         //_______________________-DUBBIO__________________________
                         //1. implementiamo una binary search per ritrovare il termine nel lexicon e prendere loffset della posting
                         //2. nel treeset mettiamo un oggetto fatto da [term=string , position = long ] ma cè il problema dellording lexicografico
-
+                        //RISPOSTA:
+                        //1. con la binary search cerchi il termine e ti prendi i byte delle statistiche (sono 36, i primi 22
+                        // sono il termine, che va letto in un Text e poi messo in una stringa)
+                        //2.invece di un treeset usiamo treemap con campi <String,LexiconBlockStats>, dove LexiconBlockStats
+                        //è una classe equivalente a LexiconStats ma i campi offset e len sono array di n posizioni,
+                        //dove n è il numero di blocchi
 
 
 
