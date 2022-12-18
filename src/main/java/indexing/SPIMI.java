@@ -144,30 +144,55 @@ public class SPIMI implements Comparable<String> {
         int termsNumber = 100;
         byte[] byteForTerm = new byte[22];
         //per lettura
-        FileChannel[] fileChannels = new FileChannel[n];
+        FileChannel[] lexChannels = new FileChannel[n];
+        FileChannel[] docChannels = new FileChannel[n];
+        FileChannel[] tfChannels = new FileChannel[n];
+        RandomAccessFile lexFiles[] = new RandomAccessFile[n];
+        RandomAccessFile docFiles[] = new RandomAccessFile[n];
+        RandomAccessFile tfFiles[] = new RandomAccessFile[n];
+        for(int i = 0; i < n; i++){
+            lexFiles[i] = new RandomAccessFile(new File("docs/lexicon"+i+".txt"), "rw");
+            docFiles[i] = new RandomAccessFile(new File("docs/docids"+i+".txt"), "rw");
+            tfFiles[i] = new RandomAccessFile(new File("docs/tfs"+i+".txt"), "rw");
+            lexChannels[i] = lexFiles[i].getChannel();
+            docChannels[i] = docFiles[i].getChannel();
+            tfChannels[i] = tfFiles[i].getChannel();
+        }
 
         //per scrittura
         FileOutputStream fOut;
-        FileChannel fc;
+        File lexFile = new File("docs/lexicon.txt");
+        File docFile = new File("docs/docids.txt");
+        File tfFile = new File("docs/tfs.txt");
+        RandomAccessFile streamLex = new RandomAccessFile(lexFile, "rw");
+        RandomAccessFile streamDocs = new RandomAccessFile(docFile, "rw");
+        RandomAccessFile streamTf = new RandomAccessFile(tfFile, "rw");
+        FileChannel lexChannel = streamLex.getChannel();
+        FileChannel docChannel = streamDocs.getChannel();
+        FileChannel tfChannel = streamTf.getChannel();
         ByteBuffer mBuf;
 
         //Buffer per legfere ogni termini con annesse statistiche
+        ByteBuffer readBuffers[] = new ByteBuffer[n];
         ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
 
-        int readingBuffer1 =0;
-        int readingBuffer2 =0;
+        //il codice qua sotto è sbagliato
         for (int i = 0; i<n; i+=2){
-            Path path = Paths.get("path_" + i + ".txt");
-            fileChannels[i].open(path, StandardOpenOption.READ);
-            fileChannels[i+1].open(path, StandardOpenOption.READ);
-            readingBuffer1 = fileChannels[i].read(buffer);
-            readingBuffer2 = fileChannels[i+1].read(buffer);
-            Text row1 = new Text(String.valueOf(readingBuffer1));
-            Text row2 = new Text(String.valueOf(readingBuffer2));
+            Path lexPath = Paths.get("lexicon_" + i + ".txt");
+            Path docPath = Paths.get("docids_" + i + ".txt");
+            Path tfPath = Paths.get("tfs_" + i + ".txt");
+            lexChannels[i].open(lexPath, StandardOpenOption.READ);
+            lexChannels[i+1].open(lexPath, StandardOpenOption.READ);
+            readBuffers[i] = ByteBuffer.allocate(22);
+            readBuffers[i+1] = ByteBuffer.allocate(22);
+            lexChannels[i].read(readBuffers[i]);
+            lexChannels[i+1].read(readBuffers[i+1]);
+            String row1 = Text.decode(readBuffers[i].array());
+            String row2 = Text.decode(readBuffers[i+1].array());
 
             byte[] term1;
             byte[] term2;
-            if(row1.getLength()>=21 && row2.getLength()>=21){
+            /*if(row1.getLength()>=21 && row2.getLength()>=21){
                 Text truncatedTerm1 = new Text(row1.toString().substring(0,20));
                 Text truncatedTerm2 = new Text(row2.toString().substring(0,20));
                 term1 = truncatedTerm1.getBytes();
@@ -177,6 +202,7 @@ public class SPIMI implements Comparable<String> {
 
 
             }
+             */
 
         }
 
