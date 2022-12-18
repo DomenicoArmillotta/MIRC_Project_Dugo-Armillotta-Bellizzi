@@ -175,7 +175,22 @@ public class SPIMI implements Comparable<String> {
         //Buffer per legfere ogni termini con annesse statistiche
         ByteBuffer readBuffers[] = new ByteBuffer[n];
         ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
-
+        //IDEA: tenere una variabile che conta quanti blocchi sono rimasti
+        int n_index = n;
+        while(n_index>1){
+            //inizializzare una variabile per indicizzare il numero del file intermedio, in modo tale che ad ogni
+            //for abbiamo il numero di file intermedi creat e all'inizio di una nuova iterazione del while, lo rimettiamo
+            // a zero per segnarci i nuovi indici dei nuovi file intermedi
+            for (int i = 0; i<n_index; i+=2){
+                //controlla che ci sia un altro blocco o meno e in quel caso non mergiare
+                //altrimenti:
+                    //merge dei blocchi --> è il merge di mergesort
+                //ATTENZIONE!!!!! quando i due elementi (termini) sono uguali, si scorre di una posizione entrambi i buffer
+                //scrivi il blocco mergiato in un nuovo file
+                //quindi per ogni iterazione dichiariamo un file temp in cui scrivere il file intermedio
+            }
+            n_index = n_index/2; //attenzione all'approsimazione nel caso di numero di blocchi dispari
+        }
         //il codice qua sotto è sbagliato
         for (int i = 0; i<n; i+=2){
             Path lexPath = Paths.get("lexicon_" + i + ".txt");
