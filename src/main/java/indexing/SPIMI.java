@@ -23,11 +23,10 @@ public class SPIMI implements Comparable<String> {
 
     private DB db;
     private HTreeMap<String, Integer> documentIndex;
-
     private InvertedIndex invertedIndex;
     private String outPath;
-
     private int docid = 0;
+    private final int LEXICON_ENTRY_SIZE = 58;
 
 
     //creazione dei blocchi usando il limite su ram
@@ -87,9 +86,6 @@ public class SPIMI implements Comparable<String> {
         docid++;
     }
 
-
-
-
        /* private void mergeBlocks(int n) throws IOException {
             int termsNumber = 100;
             byte[] partOfByteBuffer = new byte[20];
@@ -139,7 +135,6 @@ public class SPIMI implements Comparable<String> {
             }
         }*/
 
-
     private void mergeBlocks(int n) throws IOException {
         int termsNumber = 100;
         byte[] byteForTerm = new byte[22];
@@ -147,9 +142,9 @@ public class SPIMI implements Comparable<String> {
         FileChannel[] lexChannels = new FileChannel[n];
         FileChannel[] docChannels = new FileChannel[n];
         FileChannel[] tfChannels = new FileChannel[n];
-        RandomAccessFile lexFiles[] = new RandomAccessFile[n];
-        RandomAccessFile docFiles[] = new RandomAccessFile[n];
-        RandomAccessFile tfFiles[] = new RandomAccessFile[n];
+        RandomAccessFile[] lexFiles = new RandomAccessFile[n];
+        RandomAccessFile[] docFiles = new RandomAccessFile[n];
+        RandomAccessFile[] tfFiles = new RandomAccessFile[n];
         for(int i = 0; i < n; i++){
             lexFiles[i] = new RandomAccessFile(new File("docs/lexicon"+i+".txt"), "rw");
             docFiles[i] = new RandomAccessFile(new File("docs/docids"+i+".txt"), "rw");
@@ -172,27 +167,70 @@ public class SPIMI implements Comparable<String> {
         FileChannel tfChannel = streamTf.getChannel();
         ByteBuffer mBuf;
 
-        //Buffer per legfere ogni termini con annesse statistiche
-        ByteBuffer readBuffers[] = new ByteBuffer[n];
-        ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
+        //Buffer per leggere ogni termini con annesse statistiche
+        ByteBuffer[] readBuffers = new ByteBuffer[n];
+        //ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
         //IDEA: tenere una variabile che conta quanti blocchi sono rimasti
-        int n_index = n;
-        while(n_index>1){
+        int nIndex = n;
+        while(nIndex>1){
             //inizializzare una variabile per indicizzare il numero del file intermedio, in modo tale che ad ogni
             //for abbiamo il numero di file intermedi creat e all'inizio di una nuova iterazione del while, lo rimettiamo
             // a zero per segnarci i nuovi indici dei nuovi file intermedi
-            for (int i = 0; i<n_index; i+=2){
+            int nFile = 0;
+            long totalSize = 0; //we need to keep track of the total length of the file(s) to merge;
+            //when total_size is equal to the sum of the lengths of the files, we have finished to read
+            for (int i = 0; i<nIndex; i+=2){
                 //controlla che ci sia un altro blocco o meno e in quel caso non mergiare
+                if(i == nIndex-1) { //there are no other blocks to merge
+                    //in this case we need to copy the file
+                    while(totalSize < lexFiles[i].length()){
+                        readBuffers[i] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
+                    }
+                }
                 //altrimenti:
+                else{
+                    //for reading we use the pointers with the position method, so we need the offsets of the two files
+                    //offsets for reading the two files
+                    long offset1 = 0;
+                    long offset2 = 0;
+                    //length of the bytes read in the two files so far --> not needed with FileChannel
+                    int length1 = 0;
+                    int length2 = 0;
+                    while(totalSize < lexFiles[i].length() + lexFiles[i+1].length()){
+                        readBuffers[i] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
+                        readBuffers[i+1] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
+                        lexChannels[i].position(offset1);
+                        lexChannels[i+1].position(offset2);
+                        lexChannels[i].read(readBuffers[i]);
+                        lexChannels[i+1].read(readBuffers[i+1]);
+                        //next steps:
+                        //1)read the term in both buffers (first 22 bytes) and the lexicon statistics (remaining 36);
+                        //for simplicity we can do a method for reading the 36 bytes in a LexiconStats object
+                        //2)compare terms to see what to merge in the result
+                        //the result is a temp randomaccessfile
+                        //3)check:
+                            //if the 1st term is greater than the second
+                            //if the second is greater than the other
+                            //if they are equal: in this case we merge them
+                        //3.5) MERGE: we merge the docids, the tfs in the files; we merge the dF, cF, docidslen and tfslen
+                        //in the LexiconStats
+                        //4) in the new merged files we need to write the term and the new lexicon stats with the
+                        //updated stats (offsets etc..)
+                        //TODO: check if we have read both entries or not; if not, we increase totalSize by 58,
+                        // otherwise by 58*2
+                        totalSize+=LEXICON_ENTRY_SIZE;
+                    }
                     //merge dei blocchi --> è il merge di mergesort
+                }
                 //ATTENZIONE!!!!! quando i due elementi (termini) sono uguali, si scorre di una posizione entrambi i buffer
                 //scrivi il blocco mergiato in un nuovo file
                 //quindi per ogni iterazione dichiariamo un file temp in cui scrivere il file intermedio
+                nFile++;
             }
-            n_index = n_index/2; //attenzione all'approsimazione nel caso di numero di blocchi dispari
+            nIndex = nIndex/2; //attenzione all'approsimazione nel caso di numero di blocchi dispari
         }
         //il codice qua sotto è sbagliato
-        for (int i = 0; i<n; i+=2){
+        /*for (int i = 0; i<n; i+=2){
             Path lexPath = Paths.get("lexicon_" + i + ".txt");
             Path docPath = Paths.get("docids_" + i + ".txt");
             Path tfPath = Paths.get("tfs_" + i + ".txt");
@@ -204,28 +242,17 @@ public class SPIMI implements Comparable<String> {
             lexChannels[i+1].read(readBuffers[i+1]);
             String row1 = Text.decode(readBuffers[i].array());
             String row2 = Text.decode(readBuffers[i+1].array());
-
             byte[] term1;
             byte[] term2;
-            /*if(row1.getLength()>=21 && row2.getLength()>=21){
+            if(row1.getLength()>=21 && row2.getLength()>=21){
                 Text truncatedTerm1 = new Text(row1.toString().substring(0,20));
                 Text truncatedTerm2 = new Text(row2.toString().substring(0,20));
                 term1 = truncatedTerm1.getBytes();
                 term2 = truncatedTerm2.getBytes();
                 String stringTerm1 = new String(term1, StandardCharsets.UTF_8);
                 String stringTerm2 = new String(term2, StandardCharsets.UTF_8);
-
-
             }
-             */
-
-        }
-
-
-
-
-
-
+        }*/
 
     }
 
