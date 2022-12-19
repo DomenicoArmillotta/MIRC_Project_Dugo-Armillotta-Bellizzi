@@ -199,15 +199,23 @@ public class SPIMI implements Comparable<String> {
                     while(totalSize < lexFiles[i].length() + lexFiles[i+1].length()){
                         readBuffers[i] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
                         readBuffers[i+1] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
+                        //we set the position in the files using the offsets
                         lexChannels[i].position(offset1);
                         lexChannels[i+1].position(offset2);
                         lexChannels[i].read(readBuffers[i]);
                         lexChannels[i+1].read(readBuffers[i+1]);
                         //next steps:
                         //1)read the term in both buffers (first 22 bytes) and the lexicon statistics (remaining 36);
+                        //read first 22 bytes for the term
+                        byte[] term1 = readBuffers[i].get(readBuffers[i].array(), 0, 22).array();
+                        byte[] term2 = readBuffers[i+1].get(readBuffers[i+1].array(), 0, 22).array();
+                        //read remaining bytes for the lexicon stats
+                        byte[] val1 = readBuffers[i].get(readBuffers[i].array(), 22, LEXICON_ENTRY_SIZE-22).array();
+                        byte[] val2 = readBuffers[i+1].get(readBuffers[i+1].array(), 22, LEXICON_ENTRY_SIZE-22).array();
                         //for simplicity we can do a method for reading the 36 bytes in a LexiconStats object
+                        //TODO: implement and call a method which instantiates a LexiconStats object given a byte array!!!
                         //2)compare terms to see what to merge in the result
-                        //the result is a temp randomaccessfile
+                        //the result is a temp randomaccessfile, which has to be declared at the beginning
                         //3)check:
                             //if the 1st term is greater than the second
                             //if the second is greater than the other
