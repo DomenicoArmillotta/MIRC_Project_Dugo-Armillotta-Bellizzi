@@ -13,17 +13,74 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 
 import static utility.Utils.addByteArray;
 
 public class Compressor {
 
-    public byte[] unary(int x) {
+    public BitSet unaryEncode(int x) {
         //TODO: implement
-        byte[] b = new byte[1024];
+        BitSet b = new BitSet(x);
+        b.set(0,x-1);
         return b;
     }
+
+    public int unaryDecodeNumber(BitSet b){
+        return b.length();
+    }
+
+    public List<Integer> unaryDecode(BitSet b){
+        List<Integer> numbers = new ArrayList<>();
+        int n = 0;
+        for(int i = 0; i < b.length(); i++) {
+            n++; //increase by 1 each time we find a bit
+            if (!b.get(i)) { //if the bit is not set then we have the end of a number
+                numbers.add(n);
+                n = 0;
+            }
+            //if the bit is set we go on
+        }
+        return numbers;
+    }
+
+    //TODO: we need methods to convert byte arrays to Bitset!! Here are some examples found online:
+    //FIRST EXAMPLE:
+    public BitSet byteToBits(byte[] bytearray){
+        BitSet returnValue = new BitSet(bytearray.length*8);
+        ByteBuffer  byteBuffer = ByteBuffer.wrap(bytearray);
+        //System.out.println(byteBuffer.asIntBuffer().get(1));
+        //Hexadecimal values used are Big-Endian, because Java is Big-Endian
+        for (int i = 0; i < bytearray.length; i++) {
+            byte thebyte = byteBuffer.get(i);
+            for (int j = 0; j <8 ; j++) {
+                returnValue.set(i*8+j,isBitSet(thebyte,j));
+            }
+        }
+        return returnValue;
+    }
+
+    private static Boolean isBitSet(byte b, int bit)
+    {
+        return (b & (1 << bit)) != 0;
+    }
+
+    //SECOND EXAMPLE:
+
+    // Returns a bitset containing the values in bytes.
+    public static BitSet fromByteArray(byte[] bytes) {
+        BitSet bits = new BitSet();
+        for (int i = 0; i < bytes.length * 8; i++) {
+            if ((bytes[bytes.length - i / 8 - 1] & (1 << (i % 8))) > 0) {
+                bits.set(i);
+            }
+        }
+        return bits;
+    }
+
+    //TODO: decidere se per compressione e decompressione unaria ci serve una lista di numeri da (de)codificare
+    // o se lavoriamo solo su singoli numeri
 
     //TODO: implement the following functions
     /*

@@ -47,7 +47,7 @@ public class SPIMI implements Comparable<String> {
                 //instantiate a new Inverted Index and Lexicon per block
                 invertedIndex = new InvertedIndex(index_block);
                 outPath = "index"+index_block+".txt";
-                while (it.hasNext() && Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) {
+                while (it.hasNext() && Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()) {
                     //--> its the ram of jvm
                     String line = it.nextLine();
                     spimiInvertMapped(line);
@@ -227,6 +227,7 @@ public class SPIMI implements Comparable<String> {
                         //TODO: check if we have read both entries or not; if not, we increase totalSize by 58,
                         // otherwise by 58*2
                         totalSize+=LEXICON_ENTRY_SIZE;
+                        //TODO: update offsets
                     }
                     //merge dei blocchi --> è il merge di mergesort
                 }
