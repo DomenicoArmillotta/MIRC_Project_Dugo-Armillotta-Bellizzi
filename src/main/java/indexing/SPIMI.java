@@ -210,10 +210,11 @@ public class SPIMI implements Comparable<String> {
                         byte[] term1 = readBuffers[i].get(readBuffers[i].array(), 0, 22).array();
                         byte[] term2 = readBuffers[i+1].get(readBuffers[i+1].array(), 0, 22).array();
                         //read remaining bytes for the lexicon stats
-                        byte[] val1 = readBuffers[i].get(readBuffers[i].array(), 22, LEXICON_ENTRY_SIZE-22).array();
-                        byte[] val2 = readBuffers[i+1].get(readBuffers[i+1].array(), 22, LEXICON_ENTRY_SIZE-22).array();
-                        //for simplicity we can do a method for reading the 36 bytes in a LexiconStats object
-                        //TODO: implement and call a method which instantiates a LexiconStats object given a byte array!!!
+                        ByteBuffer val1 = readBuffers[i].get(readBuffers[i].array(), 22, LEXICON_ENTRY_SIZE-22);
+                        ByteBuffer val2 = readBuffers[i+1].get(readBuffers[i+1].array(), 22, LEXICON_ENTRY_SIZE-22);
+                        //we use a method for reading the 36 bytes in a LexiconStats object
+                        LexiconStats l1 = new LexiconStats(val1);
+                        LexiconStats l2 = new LexiconStats(val2);
                         //2)compare terms to see what to merge in the result
                         //the result is a temp randomaccessfile, which has to be declared at the beginning
                         //3)check:

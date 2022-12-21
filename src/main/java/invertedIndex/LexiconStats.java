@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 
 public class LexiconStats implements Serializable {
@@ -28,6 +30,16 @@ public class LexiconStats implements Serializable {
         this.offsetDocid = 0;
         this.offsetTf = 0;
         this.curdoc = 0;
+    }
+
+    public LexiconStats(ByteBuffer b){
+        //use the getInt/getLong method of ByteBuffer to read the value at the correct position
+        this.dF = b.getInt(); //read first int
+        this.cf = b.getLong(4); //read second value, a long
+        this.docidsLen = b.getInt(12); //read third value, an int
+        this.tfLen = b.getInt(16); //read fourth value, an int
+        this.offsetDocid = b.getLong(20); //read fifth value, a long
+        this.offsetTf = b.getLong(28); //read sixth value, a long
     }
 
     public int getdF() {
