@@ -21,7 +21,7 @@ import java.util.*;
 
 import static utility.Utils.addByteArray;
 
-public class SPIMI implements Comparable<String> {
+public class SPIMI {
 
     private DB db;
     private HTreeMap<String, Integer> documentIndex;
@@ -41,14 +41,14 @@ public class SPIMI implements Comparable<String> {
                 .createOrOpen();
         File inputFile = new File(readPath);
         LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
-        int index_block = 0;
+        int indexBlock = 0;
         //int cont = 0;
         try {
             //create chunk of data , splitting in n different block
             while (it.hasNext()){
                 //instantiate a new Inverted Index and Lexicon per block
-                invertedIndex = new InvertedIndex(index_block);
-                outPath = "index"+index_block+".txt";
+                invertedIndex = new InvertedIndex(indexBlock);
+                outPath = "index"+indexBlock+".txt";
                 while (it.hasNext() && Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()) {
                     //--> its the ram of jvm
                     String line = it.nextLine();
@@ -59,7 +59,7 @@ public class SPIMI implements Comparable<String> {
                 //System.out.println(cont);
                 invertedIndex.sortTerms();
                 invertedIndex.writePostings();
-                index_block++;
+                indexBlock++;
                 System.gc();
             }
         } finally {
@@ -68,6 +68,7 @@ public class SPIMI implements Comparable<String> {
         db.commit();
         db.close();
         //FARE MERGE dei VARI BLOCCHI qui
+        mergeBlocks(indexBlock);
     }
 
     public void spimiInvertMapped(String doc) throws IOException {
@@ -138,9 +139,15 @@ public class SPIMI implements Comparable<String> {
         }*/
 
     private void mergeBlocks(int n) throws IOException {
-        int termsNumber = 100;
-        byte[] byteForTerm = new byte[22];
         //per lettura
+        List<String> lexPaths = new ArrayList<>();
+        List<String> docPaths = new ArrayList<>();
+        List<String> tfPaths = new ArrayList<>();
+        for(int i = 0; i < n; i++){
+            lexPaths.add("docs/lexicon"+i+".txt");
+            docPaths.add("docs/docids"+i+".txt");
+            tfPaths.add("docs/tfs"+i+".txt");
+        }
         /*FileChannel[] lexChannels = new FileChannel[n];
         FileChannel[] docChannels = new FileChannel[n];
         FileChannel[] tfChannels = new FileChannel[n];
@@ -156,7 +163,7 @@ public class SPIMI implements Comparable<String> {
             docChannels[i] = docFiles[i].getChannel();
             tfChannels[i] = tfFiles[i].getChannel();
         }*/
-        List<FileChannel> lexChannels = new ArrayList<>();
+        /*List<FileChannel> lexChannels = new ArrayList<>();
         List<FileChannel> docChannels = new ArrayList<>();
         List<FileChannel> tfChannels = new ArrayList<>();
         List<RandomAccessFile> lexFiles = new ArrayList<>();
@@ -175,9 +182,8 @@ public class SPIMI implements Comparable<String> {
             lexChannels.add(lexFiles.get(i).getChannel());
             docChannels.add(docFiles.get(i).getChannel());
             tfChannels.add(tfFiles.get(i).getChannel());
-        }
+        }*/
         //per scrittura
-        FileOutputStream fOut;
         File lexFile = new File("docs/lexicon.txt");
         File docFile = new File("docs/docids.txt");
         File tfFile = new File("docs/tfs.txt");
@@ -189,48 +195,73 @@ public class SPIMI implements Comparable<String> {
         FileChannel tfChannel = streamTf.getChannel();
         ByteBuffer mBuf;
 
-        //Buffer per leggere ogni termini con annesse statistiche
+        //Buffer per leggere ogni termine con annesse statistiche
         ByteBuffer[] readBuffers = new ByteBuffer[n];
         //ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
         //IDEA: tenere una variabile che conta quanti blocchi sono rimasti
+        List<String> currLex = lexPaths;
+        List<String> currDocs = docPaths;
+        List<String > currTfs = tfPaths;
         int nIndex = n;
+        //System.out.println("HERE " + nIndex);
         while(nIndex>1){
+            System.out.println("HERE " + nIndex);
             //inizializzare una variabile per indicizzare il numero del file intermedio, in modo tale che ad ogni
             //for abbiamo il numero di file intermedi creat e all'inizio di una nuova iterazione del while, lo rimettiamo
             // a zero per segnarci i nuovi indici dei nuovi file intermedi
+            List<String> tempLex = new ArrayList<>();
+            List<String> tempDocs = new ArrayList<>();
+            List<String> tempTfs = new ArrayList<>();
             int nFile = 0;
             long totalSize = 0; //we need to keep track of the total length of the file(s) to merge;
             //when total_size is equal to the sum of the lengths of the files, we have finished to read
             for (int i = 0; i<nIndex; i+=2){
-                RandomAccessFile outDocsFile = new RandomAccessFile(new File("docs/tempD"+nFile+".txt"),"rw");
+                //output files
+                String docPath = "docs/tempD"+nFile+".txt";
+                String tfPath = "docs/tempT"+nFile+".txt";
+                String lexPath = "docs/tempL"+nFile+".txt";
+                RandomAccessFile outDocsFile = new RandomAccessFile(new File(docPath),"rw");
                 FileChannel tempDocChannel = outDocsFile.getChannel();
-                RandomAccessFile outTfFile = new RandomAccessFile(new File("docs/tempT"+nFile+".txt"),"rw");
+                RandomAccessFile outTfFile = new RandomAccessFile(new File(tfPath),"rw");
                 FileChannel tempTfChannel = outTfFile.getChannel();
-                RandomAccessFile outFile = new RandomAccessFile(new File("docs/tempL"+nFile+".txt"),"rw");
+                RandomAccessFile outFile = new RandomAccessFile(new File(lexPath),"rw");
                 FileChannel tempChannel = outFile.getChannel();
-                //controlla che ci sia un altro blocco o meno e in quel caso non mergiare
                 if(i == nIndex-1) { //there are no other blocks to merge
                     //in this case we need to copy the filename in the new list of paths
+                    tempLex.add(currLex.get(i));
+                    tempDocs.add(currDocs.get(i));
+                    tempTfs.add(currTfs.get(i));
                 }
+                //controlla che ci sia un altro blocco o meno e in quel caso non mergiare
                 //altrimenti:
                 else{
+                    //declare input files
+                    RandomAccessFile doc1File = new RandomAccessFile(new File(currDocs.get(i)),"rw");
+                    FileChannel doc1Channel = doc1File.getChannel();
+                    RandomAccessFile tf1File = new RandomAccessFile(new File(currTfs.get(i)),"rw");
+                    FileChannel tf1Channel = tf1File.getChannel();
+                    RandomAccessFile lex1File = new RandomAccessFile(new File(currLex.get(i)),"rw");
+                    FileChannel lex1Channel = lex1File.getChannel();
+                    RandomAccessFile doc2File = new RandomAccessFile(new File(currDocs.get(i+1)),"rw");
+                    FileChannel doc2Channel = doc2File.getChannel();
+                    RandomAccessFile tf2File = new RandomAccessFile(new File(currTfs.get(i+1)),"rw");
+                    FileChannel tf2Channel = tf2File.getChannel();
+                    RandomAccessFile lex2File = new RandomAccessFile(new File(currLex.get(i+1)),"rw");
+                    FileChannel lex2Channel = lex2File.getChannel();
                     //for reading we use the pointers with the position method, so we need the offsets of the two files
                     //offsets for reading the two files
                     long offset1 = 0;
                     long offset2 = 0;
                     long docOffset = 0; //offset of the docids list in the docids output file
                     long tfOffset = 0; //offset of the tfs list in the tfs output file
-                    //length of the bytes read in the two files so far --> not needed with FileChannel
-                    int length1 = 0;
-                    int length2 = 0;
-                    while(totalSize < lexFiles.get(i).length() + lexFiles.get(i+1).length()){
+                    while(totalSize < lex1File.length() + lex2File.length()){
                         readBuffers[i] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
                         readBuffers[i+1] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
                         //we set the position in the files using the offsets
-                        lexChannels.get(i).position(offset1);
-                        lexChannels.get(i+1).position(offset2);
-                        lexChannels.get(i).read(readBuffers[i]);
-                        lexChannels.get(i+1).read(readBuffers[i+1]);
+                        lex1Channel.position(offset1);
+                        lex2Channel.position(offset2);
+                        lex1Channel.read(readBuffers[i]);
+                        lex2Channel.read(readBuffers[i+1]);
                         //next steps:
                         //1)read the term in both buffers (first 22 bytes) and the lexicon statistics (remaining 36);
                         //read first 22 bytes for the term
@@ -254,10 +285,10 @@ public class SPIMI implements Comparable<String> {
                         if(word1.compareTo(word2) > 0){
                             ByteBuffer docids = ByteBuffer.allocate(l1.getDocidsLen());
                             ByteBuffer tfs = ByteBuffer.allocate(l1.getTfLen());
-                            docChannels.get(i).position(l1.getOffsetDocid());
-                            tfChannels.get(i).position(l1.getOffsetTf());
-                            docChannels.get(i).read(docids);
-                            tfChannels.get(i).read(tfs);
+                            doc1Channel.position(l1.getOffsetDocid());
+                            tf1Channel.position(l1.getOffsetTf());
+                            doc1Channel.read(docids);
+                            tf1Channel.read(tfs);
                             docids.flip();
                             tempDocChannel.write(docids);
                             tfs.flip();
@@ -296,10 +327,10 @@ public class SPIMI implements Comparable<String> {
                         else if(word2.compareTo(word1) > 0){
                             ByteBuffer docids = ByteBuffer.allocate(l2.getDocidsLen());
                             ByteBuffer tfs = ByteBuffer.allocate(l2.getTfLen());
-                            docChannels.get(i+1).position(l2.getOffsetDocid());
-                            tfChannels.get(i+1).position(l2.getOffsetTf());
-                            docChannels.get(i+1).read(docids);
-                            tfChannels.get(i+1).read(tfs);
+                            doc2Channel.position(l2.getOffsetDocid());
+                            tf2Channel.position(l2.getOffsetTf());
+                            doc2Channel.read(docids);
+                            tf2Channel.read(tfs);
                             docids.flip();
                             tempDocChannel.write(docids);
                             tfs.flip();
@@ -341,20 +372,20 @@ public class SPIMI implements Comparable<String> {
                             //updated stats (offsets etc..)
                             ByteBuffer docids1 = ByteBuffer.allocate(l1.getDocidsLen());
                             ByteBuffer tfs1 = ByteBuffer.allocate(l1.getTfLen());
-                            docChannels.get(i).position(l1.getOffsetDocid());
-                            tfChannels.get(i).position(l1.getOffsetTf());
-                            docChannels.get(i).read(docids1);
-                            tfChannels.get(i).read(tfs1);
+                            doc1Channel.position(l1.getOffsetDocid());
+                            tf1Channel.position(l1.getOffsetTf());
+                            doc1Channel.read(docids1);
+                            tf1Channel.read(tfs1);
                             docids1.flip();
                             tempDocChannel.write(docids1);
                             tfs1.flip();
                             tempTfChannel.write(tfs1);
                             ByteBuffer docids2 = ByteBuffer.allocate(l2.getDocidsLen());
                             ByteBuffer tfs2 = ByteBuffer.allocate(l2.getTfLen());
-                            docChannels.get(i+1).position(l2.getOffsetDocid());
-                            tfChannels.get(i+1).position(l2.getOffsetTf());
-                            docChannels.get(i+1).read(docids2);
-                            tfChannels.get(i+1).read(tfs2);
+                            doc2Channel.position(l2.getOffsetDocid());
+                            tf2Channel.position(l2.getOffsetTf());
+                            doc2Channel.read(docids2);
+                            tf2Channel.read(tfs2);
                             docids2.flip();
                             tempDocChannel.write(docids2);
                             tfs2.flip();
@@ -393,48 +424,25 @@ public class SPIMI implements Comparable<String> {
                             offset2 += LEXICON_ENTRY_SIZE;
                             totalSize+=LEXICON_ENTRY_SIZE*2; //we read two entries in total
                         }
+                        //add output files to paths
+                        tempLex.add(lexPath);
+                        tempDocs.add(docPath);
+                        tempTfs.add(tfPath);
                     }
                 }
                 nFile++;
             }
-            nIndex = nIndex/2; //attenzione all'approsimazione nel caso di numero di blocchi dispari
+            //update file paths: first clear old paths, then update with new paths
+            currDocs.clear();
+            currTfs.clear();
+            currLex.clear();
+            currDocs = tempDocs;
+            currTfs = tempTfs;
+            currLex = tempLex;
+            nIndex = (int) Math.ceil((double)nIndex/2); //attenzione all'approssimazione nel caso di numero di blocchi dispari
         }
-        //il codice qua sotto è sbagliato
-        /*for (int i = 0; i<n; i+=2){
-            Path lexPath = Paths.get("lexicon_" + i + ".txt");
-            Path docPath = Paths.get("docids_" + i + ".txt");
-            Path tfPath = Paths.get("tfs_" + i + ".txt");
-            lexChannels[i].open(lexPath, StandardOpenOption.READ);
-            lexChannels[i+1].open(lexPath, StandardOpenOption.READ);
-            readBuffers[i] = ByteBuffer.allocate(22);
-            readBuffers[i+1] = ByteBuffer.allocate(22);
-            lexChannels[i].read(readBuffers[i]);
-            lexChannels[i+1].read(readBuffers[i+1]);
-            String row1 = Text.decode(readBuffers[i].array());
-            String row2 = Text.decode(readBuffers[i+1].array());
-            byte[] term1;
-            byte[] term2;
-            if(row1.getLength()>=21 && row2.getLength()>=21){
-                Text truncatedTerm1 = new Text(row1.toString().substring(0,20));
-                Text truncatedTerm2 = new Text(row2.toString().substring(0,20));
-                term1 = truncatedTerm1.getBytes();
-                term2 = truncatedTerm2.getBytes();
-                String stringTerm1 = new String(term1, StandardCharsets.UTF_8);
-                String stringTerm2 = new String(term2, StandardCharsets.UTF_8);
-            }
-        }*/
-
+        //TODO: write the output files
     }
-
-
-    @Override
-    public int compareTo(@NotNull String term) {
-        return 0;
-    }
-
-
-
-
 
 
 
