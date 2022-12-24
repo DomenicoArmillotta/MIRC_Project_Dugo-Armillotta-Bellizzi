@@ -450,7 +450,18 @@ public class SPIMI {
             currLex = tempLex;
             nIndex = (int) Math.ceil((double)nIndex/2); //attenzione all'approssimazione nel caso di numero di blocchi dispari
         }
-        //TODO: write the output files
+        //TODO: write the output files; check if this is correct
+        //declare the input channels
+        RandomAccessFile inputDocFile = new RandomAccessFile(new File(currDocs.get(0)),"rw");
+        FileChannel inputDocChannel = inputDocFile.getChannel();
+        RandomAccessFile inputTfFile = new RandomAccessFile(new File(currTfs.get(0)),"rw");
+        FileChannel inputTfChannel = inputTfFile.getChannel();
+        RandomAccessFile inputLexFile = new RandomAccessFile(new File(currLex.get(0)),"rw");
+        FileChannel inputLexChannel = inputLexFile.getChannel();
+        //we use the method transferTo to copy the file from a channel to another
+        inputDocChannel.transferTo(0, inputDocChannel.size(), docChannel);
+        inputTfChannel.transferTo(0, inputTfChannel.size(), tfChannel);
+        inputLexChannel.transferTo(0, inputLexChannel.size(), lexChannel);
     }
 
 
