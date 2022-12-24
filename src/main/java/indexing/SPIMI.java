@@ -49,14 +49,23 @@ public class SPIMI {
                 //instantiate a new Inverted Index and Lexicon per block
                 invertedIndex = new InvertedIndex(indexBlock);
                 outPath = "index"+indexBlock+".txt";
-                while (it.hasNext() && Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()) {
+                while (it.hasNext()){
+                    String line = it.nextLine();
+                    spimiInvertMapped(line);
+                    if(Runtime.getRuntime().totalMemory()*0.80 >
+                            Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()){
+                        //--> its the ram of jvm
+                        break;
+                    }
+                }
+                //vecchio controllo
+                /*while (it.hasNext() && Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()) {
                     //--> its the ram of jvm
                     String line = it.nextLine();
                     spimiInvertMapped(line);
                     //System.out.println(cont);
                     //cont++;
-                }
-                //System.out.println(cont);
+                }*/
                 invertedIndex.sortTerms();
                 invertedIndex.writePostings();
                 indexBlock++;
