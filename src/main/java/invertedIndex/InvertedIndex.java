@@ -1,5 +1,6 @@
 package invertedIndex;
 
+import fileManager.ConfigurationParameters;
 import org.apache.hadoop.io.Text;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
@@ -23,9 +24,6 @@ public class InvertedIndex {
     private List<String> sortedTerms; //map for the lexicon: the entry are the term + the statistics for each term
     private List<List<Posting>> invIndex; //pointers of the inverted list, one for each term
     private int nList = 0; //pointer of the list for a term in the lexicon
-    private int idf =0; //inizialize the variable
-    private final int N = 8000000; //number of documents in the data set.
-
     public InvertedIndex(int n){
         outPath = "_"+n;
         lexicon = new HashMap<>();
@@ -144,7 +142,8 @@ public class InvertedIndex {
         FileChannel lexChannel = streamLex.getChannel();
         FileChannel docChannel = streamDocs.getChannel();
         FileChannel tfChannel = streamTf.getChannel();
-
+        ConfigurationParameters cp = new ConfigurationParameters();
+        double N = cp.getNumberOfDocuments();
         int offsetDocs = 0;
         int offsetTfs = 0;
         for(String term : sortedTerms){
@@ -153,6 +152,7 @@ public class InvertedIndex {
             List<Posting> pl = invIndex.get(index);
             int docLen = 0;
             int tfLen = 0;
+            double idf =0; //inizialize the variable
             for(Posting p: pl){
                 //take the posting list
                 //write posting list
@@ -192,9 +192,9 @@ public class InvertedIndex {
             //take the offset of tfs
             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(offsetTfs).array();
             //idf value
-            long nn = l.getCf(); // number of documents that contain the term t among the data set
-            idf = (int) Math.log((N/nn));
-            byte[] idfBytes = ByteBuffer.allocate(4).putInt(idf).array();
+            long nn = l.getdF(); // number of documents that contain the term t among the data set
+            idf = Math.log((N/nn));
+            byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
             lexiconBytes = addByteArray(lexiconBytes,cfBytes);

@@ -46,10 +46,9 @@ public class CollectionParser {
         }
         //compute the average document length
         double averageDocLen = totalLength/numDocs;
-        //TODO: scrivere su file l'average document length, la total length e i numDocs
         RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
         FileChannel outChannel = outFile.getChannel();
-        System.out.println(averageDocLen + " " + totalLength + " " + numDocs);
+        //System.out.println(averageDocLen + " " + totalLength + " " + numDocs);
         byte[] avgLenBytes = ByteBuffer.allocate(8).putDouble(averageDocLen).array();
         //take the offset of docids
         byte[] totLenBytes = ByteBuffer.allocate(8).putDouble(totalLength).array();

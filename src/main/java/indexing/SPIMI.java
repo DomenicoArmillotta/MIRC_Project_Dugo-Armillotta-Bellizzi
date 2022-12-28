@@ -1,11 +1,13 @@
 package indexing;
 
 
+import fileManager.ConfigurationParameters;
 import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.thirdparty.org.checkerframework.checker.units.qual.C;
 import org.jetbrains.annotations.NotNull;
 import org.mapdb.*;
 import preprocessing.PreprocessDoc;
@@ -29,9 +31,6 @@ public class SPIMI {
     private InvertedIndex invertedIndex;
     private String outPath;
     private int docid = 0;
-    private int idf =0;
-    //TODO : vedere il numero preciso di doc nella collezione
-    private final int N = 8000000; //number of documents in the data set.
     private final int LEXICON_ENTRY_SIZE = 66; //+ altri 8 per il term upper bound (?)
     private double totalLength = 0;
     private double numDocs = 0;
@@ -128,6 +127,8 @@ public class SPIMI {
         List<String> currDocs = docPaths;
         List<String> currTfs = tfPaths;
         int nIndex = n;
+        ConfigurationParameters cp = new ConfigurationParameters();
+        double N = cp.getNumberOfDocuments(); //take the total number of documents in the collection
         //System.out.println("HERE " + nIndex);
         //in the case of multiple block to merge
         while(nIndex>1){
@@ -232,9 +233,9 @@ public class SPIMI {
                             //take the offset of tfs
                             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(tfOffset).array();
                             //idf value
-                            long nn = l1.getCf(); // number of documents that contain the term t among the data set
-                            idf = (int) Math.log((N/nn));
-                            byte[] idfBytes = ByteBuffer.allocate(4).putInt(idf).array();
+                            long nn = l1.getdF(); // number of documents that contain the term t among the data set
+                            double idf = Math.log((N/nn));
+                            byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
                             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
                             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -279,9 +280,9 @@ public class SPIMI {
                             //take the offset of tfs
                             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(tfOffset).array();
                             //idf value
-                            long nn = l2.getCf(); // number of documents that contain the term t among the data set
-                            idf = (int) Math.log((N/nn));
-                            byte[] idfBytes = ByteBuffer.allocate(4).putInt(idf).array();
+                            long nn = l2.getdF(); // number of documents that contain the term t among the data set
+                            double idf = Math.log((N/nn));
+                            byte[] idfBytes = ByteBuffer.allocate(4).putDouble(idf).array();
                             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
                             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -341,9 +342,9 @@ public class SPIMI {
                             //take the offset of tfs
                             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(tfOffset).array();
                             //idf value
-                            long nn = l1.getCf()+l2.getCf(); // number of documents that contain the term t among the data set
-                            idf = (int) Math.log((N/nn));
-                            byte[] idfBytes = ByteBuffer.allocate(4).putInt(idf).array();
+                            long nn = l1.getdF()+l2.getdF(); // number of documents that contain the term t among the data set
+                            double idf = Math.log((N/nn));
+                            byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
                             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
                             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -403,12 +404,6 @@ public class SPIMI {
         inputTfChannel.transferTo(0, inputTfChannel.size(), tfChannel);
         inputLexChannel.transferTo(0, inputLexChannel.size(), lexChannel);
     }
-
-    public void spimiInvert(List<String> fileBlock, int n) throws IOException {
-
-    }
-
-
 
 }
 
