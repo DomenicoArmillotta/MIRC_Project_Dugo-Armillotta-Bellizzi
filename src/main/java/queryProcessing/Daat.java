@@ -40,6 +40,66 @@ public class Daat {
 
     }
 
+    /*
+    Questo è solo uno spunto:
+    public List<Document> search(String query, int maxResults) {
+      // Set the maximum score to a low initial value
+      double maxScore = Double.MIN_VALUE;
+
+      // Create a list to store the results
+      List<Document> results = new ArrayList<>();
+
+      // Split the query into individual terms
+      String[] terms = query.split(" ");
+
+      // Create a map to store the term upper bounds for each term in the query
+      Map<String, Double> termUpperBounds = calculateTermUpperBounds(terms);
+
+      // Set the threshold to a high initial value
+      double threshold = Double.MAX_VALUE;
+
+      // Iterate over all documents in the search space
+      for (Document doc : searchSpace) {
+        // Calculate the score for the current document
+        double score = 0.0;
+
+        // Iterate over all terms in the query
+        for (String term : terms) {
+          // Calculate the contribution of the current term to the score
+          double termScore = score(doc, term);
+
+          // If the term score is greater than the term upper bound, set the term score to the upper bound
+          if (termScore > termUpperBounds.get(term)) {
+            termScore = termUpperBounds.get(term);
+          }
+
+          // Add the term score to the overall score
+          score += termScore;
+        }
+
+        // If the score is higher than the maximum, update the maximum and add the document to the results
+        if (score > maxScore) {
+          maxScore = score;
+          results.add(doc);
+        }
+        // If the score is lower than the maximum, skip the document
+        else {
+          continue;
+        }
+
+        // If the number of results exceeds the maximum allowed, update the threshold and break the loop if necessary
+        if (results.size() >= maxResults) {
+          threshold = maxScore;
+          if (score < threshold) {
+            break;
+          }
+        }
+      }
+
+      return results;
+    }
+     */
+
 
 
     public ArrayList<Posting> openList(String queryTerm) throws IOException {
