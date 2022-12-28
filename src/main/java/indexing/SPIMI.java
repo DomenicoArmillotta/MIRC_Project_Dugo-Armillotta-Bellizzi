@@ -30,7 +30,8 @@ public class SPIMI {
     private String outPath;
     private int docid = 0;
     private int idf =0;
-    private int N = 8000000; //number of documents in the data set.
+    //TODO : vedere il numero preciso di doc nella collezione
+    private final int N = 8000000; //number of documents in the data set.
     private final int LEXICON_ENTRY_SIZE = 66; //+ altri 8 per il term upper bound (?)
     private double totalLength = 0;
     private double numDocs = 0;
@@ -128,6 +129,7 @@ public class SPIMI {
         List<String> currTfs = tfPaths;
         int nIndex = n;
         //System.out.println("HERE " + nIndex);
+        //in the case of multiple block to merge
         while(nIndex>1){
             //inizializzare una variabile per indicizzare il numero del file intermedio, in modo tale che ad ogni
             //for abbiamo il numero di file intermedi creat e all'inizio di una nuova iterazione del while, lo rimettiamo

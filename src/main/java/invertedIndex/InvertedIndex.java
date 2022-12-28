@@ -23,6 +23,8 @@ public class InvertedIndex {
     private List<String> sortedTerms; //map for the lexicon: the entry are the term + the statistics for each term
     private List<List<Posting>> invIndex; //pointers of the inverted list, one for each term
     private int nList = 0; //pointer of the list for a term in the lexicon
+    private int idf =0; //inizialize the variable
+    private final int N = 8000000; //number of documents in the data set.
 
     public InvertedIndex(int n){
         outPath = "_"+n;
@@ -154,7 +156,6 @@ public class InvertedIndex {
             for(Posting p: pl){
                 //take the posting list
                 //write posting list
-                //TODO: calcola l'idf: Math.log(numDocs/docFreq); numDocs la prendi dal file parameters, docFreq = l.getdF()
                 //TODO: calcola la term upper bound
                 byte[] baDocs = p.getDocid();
                 ByteBuffer bufferValue = ByteBuffer.allocate(baDocs.length);
@@ -179,7 +180,6 @@ public class InvertedIndex {
             else{ //we allocate 22 bytes for the Text object, which is a string of 20 chars
                 lexiconBytes = ByteBuffer.allocate(22).put(key.getBytes()).array();
             }
-            //TODO: scrivi anche l'idf: leggi la total length dal file parameters
             //take the document frequency
             byte[] dfBytes = ByteBuffer.allocate(4).putInt(l.getdF()).array();
             //take the collection frequency
@@ -191,6 +191,10 @@ public class InvertedIndex {
             byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(offsetDocs).array();
             //take the offset of tfs
             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(offsetTfs).array();
+            //idf value
+            long nn = l.getCf(); // number of documents that contain the term t among the data set
+            idf = (int) Math.log((N/nn));
+            byte[] idfBytes = ByteBuffer.allocate(4).putInt(idf).array();
             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -198,6 +202,7 @@ public class InvertedIndex {
             lexiconBytes = addByteArray(lexiconBytes,tfBytes);
             lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
             lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,idfBytes);
             //write lexicon entry to disk
             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
             bufferLex.put(lexiconBytes);
