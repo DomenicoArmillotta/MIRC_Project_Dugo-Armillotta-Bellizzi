@@ -133,7 +133,6 @@ public class InvertedIndex {
         System.out.println(list);
         System.out.println(lexicon.get("american").getCf() + " " + lexicon.get("american").getdF());
         System.out.println(list2);
-        //TODO: scrivi su file le posting e il lexicon ordinato
         File lexFile = new File("docs/lexicon"+outPath+".txt");
         File docFile = new File("docs/docids"+outPath+".txt");
         File tfFile = new File("docs/tfs"+outPath+".txt");
@@ -155,6 +154,7 @@ public class InvertedIndex {
             for(Posting p: pl){
                 //take the posting list
                 //write posting list
+                //TODO: calcola l'idf
                 byte[] baDocs = p.getDocid();
                 ByteBuffer bufferValue = ByteBuffer.allocate(baDocs.length);
                 bufferValue.put(baDocs);
@@ -178,6 +178,7 @@ public class InvertedIndex {
             else{ //we allocate 22 bytes for the Text object, which is a string of 20 chars
                 lexiconBytes = ByteBuffer.allocate(22).put(key.getBytes()).array();
             }
+            //TODO: scrivi anche l'idf: leggi la total length dal file parameters
             //take the document frequency
             byte[] dfBytes = ByteBuffer.allocate(4).putInt(l.getdF()).array();
             //take the collection frequency

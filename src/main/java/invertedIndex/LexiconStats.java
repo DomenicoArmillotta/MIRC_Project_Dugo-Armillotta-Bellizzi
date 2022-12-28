@@ -19,6 +19,7 @@ public class LexiconStats implements Serializable {
     private int index;
     private int curdoc;
     private int curTf;
+    private double idf;
 
     //public List<Posting> pointer;
 
@@ -41,6 +42,17 @@ public class LexiconStats implements Serializable {
         this.offsetDocid = b.getLong(20); //read fifth value, a long
         this.offsetTf = b.getLong(28); //read sixth value, a long
     }
+
+    /*public LexiconStats(ByteBuffer b){
+        //use the getInt/getLong method of ByteBuffer to read the value at the correct position
+        this.dF = b.getInt(); //read first int
+        this.cf = b.getLong(4); //read second value, a long
+        this.docidsLen = b.getInt(12); //read third value, an int
+        this.tfLen = b.getInt(16); //read fourth value, an int
+        this.offsetDocid = b.getLong(20); //read fifth value, a long
+        this.offsetTf = b.getLong(28); //read sixth value, a long
+        this.idf = b.getDouble(36); //read seventh value, a double
+    }*/
 
     public int getdF() {
         return dF;
@@ -114,6 +126,14 @@ public class LexiconStats implements Serializable {
 
     public void setCurTf(int curTf) {
         this.curTf = curTf;
+    }
+
+    public double getIdf() {
+        return idf;
+    }
+
+    public void setIdf(double idf) {
+        this.idf = idf;
     }
 
 

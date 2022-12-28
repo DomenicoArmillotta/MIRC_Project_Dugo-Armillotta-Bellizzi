@@ -30,6 +30,10 @@ public class SPIMI {
     private String outPath;
     private int docid = 0;
     private final int LEXICON_ENTRY_SIZE = 58;
+    //TODO: decommenta quando si aggiunge idf
+    //private final int LEXICON_ENTRY_SIZE = 66;
+    private double totalLength = 0;
+    private double numDocs = 0;
 
 
     //creazione dei blocchi usando il limite su ram
@@ -77,6 +81,10 @@ public class SPIMI {
         }
         db.commit();
         db.close();
+        //TODO: scrivere su file l'average document length
+        //compute the average document length
+        double averageDocLen = totalLength/numDocs;
+        System.out.println(averageDocLen);
         //FARE MERGE dei VARI BLOCCHI qui
         mergeBlocks(indexBlock);
     }
@@ -97,6 +105,8 @@ public class SPIMI {
         }
         documentIndex.put(docno, cont);
         docid++;
+        totalLength+=cont;
+        numDocs++;
     }
 
     private void mergeBlocks(int n) throws IOException {
@@ -147,6 +157,7 @@ public class SPIMI {
                 }
                 //controlla che ci sia un altro blocco o meno e in quel caso non mergiare
                 //altrimenti:
+                //TODO: calcola l'idf (con logaritmo) per ogni termine!!!! e aggiungila nel lexicon
                 else{
                     //declare input files
                     RandomAccessFile doc1File = new RandomAccessFile(new File(currDocs.get(i)),"rw");
@@ -176,7 +187,7 @@ public class SPIMI {
                         lex1Channel.read(readBuffers[i]);
                         lex2Channel.read(readBuffers[i+1]);
                         //next steps:
-                        //1)read the term in both buffers (first 22 bytes) and the lexicon statistics (remaining 36);
+                        //1)read the term in both buffers (first 22 bytes) and the lexicon statistics (remaining 44);
                         //read first 22 bytes for the term
                         byte[] term1 = readBuffers[i].get(readBuffers[i].array(), 0, 22).array();
                         byte[] term2 = readBuffers[i+1].get(readBuffers[i+1].array(), 0, 22).array();

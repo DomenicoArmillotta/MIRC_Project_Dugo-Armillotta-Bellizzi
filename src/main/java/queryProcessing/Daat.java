@@ -1,5 +1,6 @@
 package queryProcessing;
 
+import invertedIndex.LexiconStats;
 import invertedIndex.Posting;
 import preprocessing.PreprocessDoc;
 
@@ -13,6 +14,9 @@ public class Daat {
     private final double b = 0.75;
 
     private int maxDocID;
+
+    private HashMap<String, LexiconStats> lexicon;
+    private HashMap<String, Integer> docIndex;
 
 
     public Daat(){
