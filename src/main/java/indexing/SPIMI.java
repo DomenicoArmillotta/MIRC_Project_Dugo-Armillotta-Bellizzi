@@ -29,6 +29,8 @@ public class SPIMI {
     private InvertedIndex invertedIndex;
     private String outPath;
     private int docid = 0;
+    private int idf =0;
+    private int N = 8000000; //number of documents in the data set.
     private final int LEXICON_ENTRY_SIZE = 58;
     //TODO: decommenta quando si aggiunge idf e term upper bound
     //private final int LEXICON_ENTRY_SIZE = 66; //+ altri 8 per il term upper bound (?)
@@ -157,7 +159,7 @@ public class SPIMI {
                 }
                 //controlla che ci sia un altro blocco o meno e in quel caso non mergiare
                 //altrimenti:
-                //TODO: calcola l'idf (con logaritmo) per ogni termine!!!! e aggiungila nel lexicon
+                //TODO: calcola l'idf (con logaritmo) per ogni termine!!!! (aggiunto valore nel lexicon))
                 else{
                     //declare input files
                     RandomAccessFile doc1File = new RandomAccessFile(new File(currDocs.get(i)),"rw");
@@ -230,6 +232,10 @@ public class SPIMI {
                             byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(docOffset).array();
                             //take the offset of tfs
                             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(tfOffset).array();
+                            //idf value
+                            long nn = l1.getCf(); // number of documents that contain the term t among the data set
+                            idf = (int) Math.log((N/nn));
+                            byte[] idfBytes = ByteBuffer.allocate(4).putInt(idf).array();
                             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
                             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -237,11 +243,12 @@ public class SPIMI {
                             lexiconBytes = addByteArray(lexiconBytes,tfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
                             lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
+                            lexiconBytes = addByteArray(lexiconBytes,idfBytes);
                             //write lexicon entry to disk
                             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
                             bufferLex.put(lexiconBytes);
                             bufferLex.flip();
-                            tempChannel.write(bufferLex);
+                            tempChannel.write(bufferLex); //write in lexicon file
                             //update offsets
                             docOffset+=l1.getDocidsLen();
                             tfOffset+=l1.getTfLen();
@@ -272,6 +279,10 @@ public class SPIMI {
                             byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(docOffset).array();
                             //take the offset of tfs
                             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(tfOffset).array();
+                            //idf value
+                            long nn = l2.getCf(); // number of documents that contain the term t among the data set
+                            idf = (int) Math.log((N/nn));
+                            byte[] idfBytes = ByteBuffer.allocate(4).putInt(idf).array();
                             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
                             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -279,6 +290,7 @@ public class SPIMI {
                             lexiconBytes = addByteArray(lexiconBytes,tfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
                             lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
+                            lexiconBytes = addByteArray(lexiconBytes,idfBytes);
                             //write lexicon entry to disk
                             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
                             bufferLex.put(lexiconBytes);
@@ -329,6 +341,10 @@ public class SPIMI {
                             byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(docOffset).array();
                             //take the offset of tfs
                             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(tfOffset).array();
+                            //idf value
+                            long nn = l1.getCf()+l2.getCf(); // number of documents that contain the term t among the data set
+                            idf = (int) Math.log((N/nn));
+                            byte[] idfBytes = ByteBuffer.allocate(4).putInt(idf).array();
                             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
                             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -336,6 +352,7 @@ public class SPIMI {
                             lexiconBytes = addByteArray(lexiconBytes,tfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
                             lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
+                            lexiconBytes = addByteArray(lexiconBytes,idfBytes);
                             //write lexicon entry to disk
                             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
                             bufferLex.put(lexiconBytes);
