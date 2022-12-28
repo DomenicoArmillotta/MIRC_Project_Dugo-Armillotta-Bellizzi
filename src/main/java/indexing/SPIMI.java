@@ -282,7 +282,7 @@ public class SPIMI {
                             //idf value
                             long nn = l2.getdF(); // number of documents that contain the term t among the data set
                             double idf = Math.log((N/nn));
-                            byte[] idfBytes = ByteBuffer.allocate(4).putDouble(idf).array();
+                            byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
                             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
                             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
