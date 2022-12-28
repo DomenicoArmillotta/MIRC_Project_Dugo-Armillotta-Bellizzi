@@ -13,6 +13,7 @@ import preprocessing.PreprocessDoc;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -98,123 +99,26 @@ public class SPIMI {
         docid++;
     }
 
-       /* private void mergeBlocks(int n) throws IOException {
-            int termsNumber = 100;
-            byte[] partOfByteBuffer = new byte[20];
-            TreeSet<String> terms = new TreeSet<>();
-            FileChannel[] fileChannels = new FileChannel[n];
-            long[] pos = new long[n];
-            int[] cicleControl = new int[n];
-
-            Arrays.fill(pos,0);
-            Arrays.fill(cicleControl,0);
-
-            ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
-            ByteBuffer buff = ByteBuffer.allocate(1024);
-
-            int bytesRead = 0;
-            for (int i = 0; i<n; i++){
-                Path path = Paths.get("path_" + i + ".txt");
-                fileChannels[i].open(path, StandardOpenOption.READ);
-                bytesRead = fileChannels[i].read(buffer);
-                buffer.flip();
-                cicleControl[i] = (int) Math.ceil(fileChannels[i].size() / (58 * termsNumber));
-                int k = 0;
-                int controlSum=0;
-                controlSum += cicleControl[i];
-                while (controlSum != 0){
-                    for (int l = 0; l < n; l++){
-                        if (cicleControl[i] != 0){
-                            fileChannels[l].position(pos[i]);
-                            fileChannels[l].read(buffer);
-                            for (int d = 0; d < 100; d++){
-                                buffer.position(58*d);
-                                byte[] arr = new byte[buffer.remaining()];
-                                ByteBuffer term = buff.put(arr, 58 * d, 20);
-                                byte[] bytes = new byte[term.remaining()];
-                                String fTerm = new String(bytes, StandardCharsets.UTF_8);
-                                terms.add(fTerm);
-                            }
-                        /*buffer.flip();
-                        byte term = buffer.get();
-                        //inserire nella prirityqueue
-                        buffer.compact();
-
-                        }
-                    }
-                    controlSum = controlSum - cicleControl[i];
-                }
-            }
-        }*/
-
     private void mergeBlocks(int n) throws IOException {
         //per lettura
         List<String> lexPaths = new ArrayList<>();
         List<String> docPaths = new ArrayList<>();
         List<String> tfPaths = new ArrayList<>();
-        for(int i = 0; i < n; i++){
-            lexPaths.add("docs/lexicon"+i+".txt");
-            docPaths.add("docs/docids"+i+".txt");
-            tfPaths.add("docs/tfs"+i+".txt");
+        for(int i = 0; i <= n; i++){
+            lexPaths.add("docs/lexicon_"+i+".txt");
+            docPaths.add("docs/docids_"+i+".txt");
+            tfPaths.add("docs/tfs_"+i+".txt");
         }
-        /*FileChannel[] lexChannels = new FileChannel[n];
-        FileChannel[] docChannels = new FileChannel[n];
-        FileChannel[] tfChannels = new FileChannel[n];
-        RandomAccessFile[] lexFiles = new RandomAccessFile[n];
-        RandomAccessFile[] docFiles = new RandomAccessFile[n];
-        RandomAccessFile[] tfFiles = new RandomAccessFile[n];
-
-        for(int i = 0; i < n; i++){
-            lexFiles[i] = new RandomAccessFile(new File("docs/lexicon"+i+".txt"), "rw");
-            docFiles[i] = new RandomAccessFile(new File("docs/docids"+i+".txt"), "rw");
-            tfFiles[i] = new RandomAccessFile(new File("docs/tfs"+i+".txt"), "rw");
-            lexChannels[i] = lexFiles[i].getChannel();
-            docChannels[i] = docFiles[i].getChannel();
-            tfChannels[i] = tfFiles[i].getChannel();
-        }*/
-        /*List<FileChannel> lexChannels = new ArrayList<>();
-        List<FileChannel> docChannels = new ArrayList<>();
-        List<FileChannel> tfChannels = new ArrayList<>();
-        List<RandomAccessFile> lexFiles = new ArrayList<>();
-        List<RandomAccessFile> docFiles = new ArrayList<>();
-        List<RandomAccessFile> tfFiles = new ArrayList<>();
-        List<String> lexPaths = new ArrayList<>();
-        List<String> docPaths = new ArrayList<>();
-        List<String> tfPaths = new ArrayList<>();
-        for(int i = 0; i < n; i++){
-            lexPaths.add("docs/lexicon"+i+".txt");
-            docPaths.add("docs/docids"+i+".txt");
-            tfPaths.add("docs/tfs"+i+".txt");
-            lexFiles.add(new RandomAccessFile(new File("docs/lexicon"+i+".txt"), "rw"));
-            docFiles.add(new RandomAccessFile(new File("docs/docids"+i+".txt"), "rw"));
-            tfFiles.add(new RandomAccessFile(new File("docs/tfs"+i+".txt"), "rw"));
-            lexChannels.add(lexFiles.get(i).getChannel());
-            docChannels.add(docFiles.get(i).getChannel());
-            tfChannels.add(tfFiles.get(i).getChannel());
-        }*/
-        //per scrittura
-        File lexFile = new File("docs/lexicon.txt");
-        File docFile = new File("docs/docids.txt");
-        File tfFile = new File("docs/tfs.txt");
-        RandomAccessFile streamLex = new RandomAccessFile(lexFile, "rw");
-        RandomAccessFile streamDocs = new RandomAccessFile(docFile, "rw");
-        RandomAccessFile streamTf = new RandomAccessFile(tfFile, "rw");
-        FileChannel lexChannel = streamLex.getChannel();
-        FileChannel docChannel = streamDocs.getChannel();
-        FileChannel tfChannel = streamTf.getChannel();
-        ByteBuffer mBuf;
-
         //Buffer per leggere ogni termine con annesse statistiche
         ByteBuffer[] readBuffers = new ByteBuffer[n];
         //ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
         //IDEA: tenere una variabile che conta quanti blocchi sono rimasti
         List<String> currLex = lexPaths;
         List<String> currDocs = docPaths;
-        List<String > currTfs = tfPaths;
+        List<String> currTfs = tfPaths;
         int nIndex = n;
         //System.out.println("HERE " + nIndex);
         while(nIndex>1){
-            System.out.println("HERE " + nIndex);
             //inizializzare una variabile per indicizzare il numero del file intermedio, in modo tale che ad ogni
             //for abbiamo il numero di file intermedi creat e all'inizio di una nuova iterazione del while, lo rimettiamo
             // a zero per segnarci i nuovi indici dei nuovi file intermedi
@@ -450,21 +354,28 @@ public class SPIMI {
             currLex = tempLex;
             nIndex = (int) Math.ceil((double)nIndex/2); //attenzione all'approssimazione nel caso di numero di blocchi dispari
         }
-        //TODO: write the output files; check if this is correct
+        //Writing the output files
+        File lexFile = new File("docs/lexicon.txt");
+        File docFile = new File("docs/docids.txt");
+        File tfFile = new File("docs/tfs.txt");
+        FileOutputStream streamLex = new FileOutputStream(lexFile);
+        FileOutputStream streamDocs = new FileOutputStream(docFile);
+        FileOutputStream streamTf = new FileOutputStream(tfFile);
+        WritableByteChannel lexChannel = streamLex.getChannel();
+        WritableByteChannel docChannel = streamDocs.getChannel();
+        WritableByteChannel tfChannel = streamTf.getChannel();
         //declare the input channels
-        RandomAccessFile inputDocFile = new RandomAccessFile(new File(currDocs.get(0)),"rw");
+        FileInputStream inputDocFile = new FileInputStream(new File(currDocs.get(0)));
         FileChannel inputDocChannel = inputDocFile.getChannel();
-        RandomAccessFile inputTfFile = new RandomAccessFile(new File(currTfs.get(0)),"rw");
+        FileInputStream inputTfFile = new FileInputStream(new File(currTfs.get(0)));
         FileChannel inputTfChannel = inputTfFile.getChannel();
-        RandomAccessFile inputLexFile = new RandomAccessFile(new File(currLex.get(0)),"rw");
+        FileInputStream inputLexFile = new FileInputStream(new File(currLex.get(0)));
         FileChannel inputLexChannel = inputLexFile.getChannel();
         //we use the method transferTo to copy the file from a channel to another
         inputDocChannel.transferTo(0, inputDocChannel.size(), docChannel);
         inputTfChannel.transferTo(0, inputTfChannel.size(), tfChannel);
         inputLexChannel.transferTo(0, inputLexChannel.size(), lexChannel);
     }
-
-
 
     public void spimiInvert(List<String> fileBlock, int n) throws IOException {
 

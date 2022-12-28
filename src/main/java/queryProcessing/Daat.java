@@ -45,6 +45,10 @@ public class Daat {
     }
 
     //iterate over the posting list ot get the desired term frequency, return 0 otherwise
+    private int getFreq(ArrayList<Posting> postingList, int docid){
+        //TODO: implement
+        return 0;
+    }
     /*private int getFreq(ArrayList<Posting> postingList, int docid){
         for(Posting p: postingList){
             if(p.getDocumentId() == docid) return p.getTermFrequency();
