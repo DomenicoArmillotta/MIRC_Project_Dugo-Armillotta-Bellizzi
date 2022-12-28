@@ -30,8 +30,8 @@ public class SPIMI {
     private String outPath;
     private int docid = 0;
     private final int LEXICON_ENTRY_SIZE = 58;
-    //TODO: decommenta quando si aggiunge idf
-    //private final int LEXICON_ENTRY_SIZE = 66;
+    //TODO: decommenta quando si aggiunge idf e term upper bound
+    //private final int LEXICON_ENTRY_SIZE = 66; //+ altri 8 per il term upper bound (?)
     private double totalLength = 0;
     private double numDocs = 0;
 
