@@ -31,9 +31,7 @@ public class SPIMI {
     private int docid = 0;
     private int idf =0;
     private int N = 8000000; //number of documents in the data set.
-    private final int LEXICON_ENTRY_SIZE = 58;
-    //TODO: decommenta quando si aggiunge idf e term upper bound
-    //private final int LEXICON_ENTRY_SIZE = 66; //+ altri 8 per il term upper bound (?)
+    private final int LEXICON_ENTRY_SIZE = 66; //+ altri 8 per il term upper bound (?)
     private double totalLength = 0;
     private double numDocs = 0;
 
@@ -159,7 +157,6 @@ public class SPIMI {
                 }
                 //controlla che ci sia un altro blocco o meno e in quel caso non mergiare
                 //altrimenti:
-                //TODO: calcola l'idf (con logaritmo) per ogni termine!!!! (aggiunto valore nel lexicon))
                 else{
                     //declare input files
                     RandomAccessFile doc1File = new RandomAccessFile(new File(currDocs.get(i)),"rw");
