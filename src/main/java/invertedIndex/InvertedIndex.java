@@ -154,7 +154,8 @@ public class InvertedIndex {
             for(Posting p: pl){
                 //take the posting list
                 //write posting list
-                //TODO: calcola l'idf
+                //TODO: calcola l'idf: Math.log(numDocs/docFreq); numDocs la prendi dal file parameters, docFreq = l.getdF()
+                //TODO: calcola la term upper bound
                 byte[] baDocs = p.getDocid();
                 ByteBuffer bufferValue = ByteBuffer.allocate(baDocs.length);
                 bufferValue.put(baDocs);
