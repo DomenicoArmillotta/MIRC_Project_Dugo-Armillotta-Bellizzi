@@ -23,7 +23,6 @@ public class Daat {
     public Daat(){
     }
 
-
     /*
     The time complexity of this function is O(n * log(n)), where n is the total number of postings in the heap.
     This is because the time complexity of inserting an element into a heap is O(log(n)), and we insert n elements into the heap.
@@ -42,7 +41,7 @@ public class Daat {
         // Initialize the result list
         List<Integer> result = new ArrayList<>();
         // Create a heap to store the postings of the terms in the query
-        PriorityQueue<Posting> heap = new PriorityQueue<>();
+        /*PriorityQueue<Posting> heap = new PriorityQueue<>();
         for (String term : proQuery) {
             // Check if the term is in the lexicon
             if (lexicon.containsKey(term)) {
@@ -91,7 +90,7 @@ public class Daat {
                 // If all the terms in the query are found and the term frequency is at least k, add the docid to the result list
                 result.add(docid);
             }
-        }
+        }*/
         // Return the result list
         return result;
     }

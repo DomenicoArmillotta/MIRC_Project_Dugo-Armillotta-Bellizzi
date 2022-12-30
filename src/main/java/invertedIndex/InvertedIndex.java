@@ -172,7 +172,7 @@ public class InvertedIndex {
     }
 
 
-
+/*
     public byte[] get(int docid, String term) {
         // Check if the term is in the lexicon
         LexiconStats lexiconStats = lexicon.get(term);
@@ -207,5 +207,7 @@ public class InvertedIndex {
         // Return the posting list
         return pl;
     }
+
+ */
 }
 
