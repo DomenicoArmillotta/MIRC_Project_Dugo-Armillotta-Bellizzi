@@ -3,8 +3,7 @@ package invertedIndex;
 import fileManager.ConfigurationParameters;
 import org.apache.hadoop.io.Text;
 import org.mapdb.DB;
-import org.mapdb.DBMaker;
-import org.mapdb.Serializer;
+import preprocessing.PreprocessDoc;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -38,6 +37,7 @@ public class InvertedIndex {
     }
 
     //TODO: add compression
+
 
     public void addPosting(String term, int docid, int freq) throws IOException {
         List<Posting> pl = new ArrayList<>();
@@ -220,5 +220,41 @@ public class InvertedIndex {
         //db.close();
     }
 
+
+
+    public byte[] get(int docid, String term) {
+        // Check if the term is in the lexicon
+        LexiconStats lexiconStats = lexicon.get(term);
+        if (lexiconStats != null) {
+            // Get the posting list for the term
+            List<Posting> pl = invIndex.get(lexiconStats.getIndex());
+            // Get the size of the posting list
+            int size = pl.size();
+            // Use binary search to find the posting with the given docid
+            int start = 0;
+            int end = size - 1;
+            while (start <= end) {
+                int mid = (start + end) / 2;
+                int midDocid = ByteBuffer.wrap(pl.get(mid).getDoc()).getInt();
+                if (midDocid == docid) {
+                    // Return the term frequency if the docid is found
+                    return pl.get(mid).getTf();
+                } else if (midDocid < docid) {
+                    start = mid + 1;
+                } else {
+                    end = mid - 1;
+                }
+            }
+        }
+        // Return null if the docid is not found or the term is not in the lexicon
+        return null;
+    }
+
+    public List<Posting> get(int index) {
+        // Get the posting list at the given index
+        List<Posting> pl = invIndex.get(index);
+        // Return the posting list
+        return pl;
+    }
 }
 

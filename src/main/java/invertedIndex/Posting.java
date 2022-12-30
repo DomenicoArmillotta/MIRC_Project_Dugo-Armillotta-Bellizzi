@@ -22,6 +22,8 @@ public class Posting implements Comparable<Posting>, Serializable {
         return tf;
     }
 
+
+
     public void setTf(byte[] tf) {
         this.tf = tf;
     }
@@ -34,6 +36,16 @@ public class Posting implements Comparable<Posting>, Serializable {
     public int compareTo(Posting o) {
         return ByteBuffer.wrap(this.docid).getInt() - ByteBuffer.wrap(o.getDocid()).getInt();
     }
+
+    public byte[] getDoc() {
+        // Allocate a byte buffer with 4 bytes and put the docid into it
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.put(this.docid);
+        // Return the array of bytes
+        return buffer.array();
+    }
+
+
 
     /*private void writeObject(ObjectOutputStream oos)
             throws IOException {
