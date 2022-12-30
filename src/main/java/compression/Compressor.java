@@ -1,5 +1,7 @@
 package compression;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -21,7 +23,6 @@ import static utility.Utils.addByteArray;
 public class Compressor {
 
     public BitSet unaryEncode(int x) {
-        //TODO: implement
         BitSet b = new BitSet(x);
         b.set(0,x-1);
         return b;
@@ -79,100 +80,46 @@ public class Compressor {
         return bits;
     }
 
-    //TODO: decidere se per compressione e decompressione unaria ci serve una lista di numeri da (de)codificare
-    // o se lavoriamo solo su singoli numeri
-
-    //TODO: implement the following functions
-    /*
-        def VariableByteEncodeNumber(n):
-            byte_list = []
-            while True:
-                #prepend:
-                byte_list = [n%128] + byte_list
-                #byte_list.insert(0,n%128)
-                if n < 128:
-                    break
-                n = int(n/128)
-            byte_list[len(byte_list)-1] += 128
-            return byte_list
-     */
-
     public byte[] variableByteEncodeNumber(int n){
-        byte[] b = new byte[1024];
+        byte[] b = new byte[0];
         while(true){
-            b = addByteArray(ByteBuffer.allocate(1).putInt(n%128).array(), b);
+            b = addByteArray(b, ByteBuffer.allocate(1).put((byte) (n % 128)).array());
             if(n<128){
                 break;
             }
             n = n/128;
         }
-        b[b.length-1] += 128;
+        b[0] += 128;
+        ArrayUtils.reverse(b);
         return b;
     }
 
-    /*
-        def VariableByteEncode(n_list):
-            bytestream = []
-            for n in n_list:
-                byte_list = VariableByteEncodeNumber(n)
-                bytestream.extend(byte_list)
-            return bytestream
-     */
     public byte[] variableByteEncode(int[] n_list){
-        byte[] byteStream = new byte[1024];
+        byte[] byteStream = new byte[0];
         for(int n: n_list){
-            byte[] byteList = variableByteEncodeNumber(n);
-            addByteArray(byteStream, byteList);
+            byteStream = addByteArray(byteStream, variableByteEncodeNumber(n));
         }
         return byteStream;
     }
-    /*
-        def VariableByteDecode(bs):
-            numbers = []
-            n = 0
-            for i in range(len(bs)):
-                if bs[i] < 128:
-                    n = 128*n + bs[i]
-                else:
-                    n = 128*n + bs[i] - 128
-                    numbers.append(n)
-                    n = 0
-            return numbers
-     */
 
     public List<Integer> variableByteDecode(byte[] bs){
         List<Integer> numbers = new ArrayList<>();
         int n = 0;
         for(int i = 0; i < bs.length; i++){
-            if(bs[i] < 128){
+            if((bs[i] & 0x80) < 128){ //we check if the leftmost bit is not set
                 n = 128*n + bs[i];
             }
             else{
-                n = 128*n + bs[i] - 128;
+                n = 128*n + (256+bs[i]) - 128; //shift because the value is negative
                 numbers.add(n);
                 n = 0;
             }
+
         }
         return numbers;
     }
 
-    public String variableByte(int x) {
-        //TODO: implement
-       return "";
-    }
-
-    public byte[] variableByteB(int x) {
-        //TODO: implement
-        byte[] b = new byte[1024];
-        return b;
-    }
-
-    public int decodeVariableByte(String bitString){
-       //TODO: implement:
-        return 0;
-    }
-
-    public byte[] stringCompressionWithVariableByte(int doc){
+    /*public byte[] stringCompressionWithVariableByte(int doc){
         String bitString = variableByte(doc);
         //System.out.println(bitString);
         byte[] ba = new BigInteger(bitString, 2).toByteArray();
@@ -181,7 +128,7 @@ public class Compressor {
         }
         return ba;
 
-    }
+    }*/
 
     //TODO: define the return value(s)
     public void decompressVariableByte(int offset, int end, String path) throws IOException {

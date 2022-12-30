@@ -36,7 +36,7 @@ public class Posting implements Comparable<Posting>, Serializable {
     public int compareTo(Posting o) {
         return ByteBuffer.wrap(this.docid).getInt() - ByteBuffer.wrap(o.getDocid()).getInt();
     }
-    
+
     //non serve a niente abbiamo già la get
     /*public byte[] getDoc() {
         // Allocate a byte buffer with 4 bytes and put the docid into it
