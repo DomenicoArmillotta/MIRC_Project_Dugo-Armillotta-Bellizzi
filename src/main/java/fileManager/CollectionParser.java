@@ -2,6 +2,10 @@ package fileManager;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
+import org.mapdb.HTreeMap;
+import org.mapdb.Serializer;
 import preprocessing.PreprocessDoc;
 
 import java.io.File;
@@ -18,9 +22,17 @@ public class CollectionParser {
 
     private static double totalLength = 0;
     private static double numDocs = 0;
+    private DB db;
+    private HTreeMap<String, Integer> documentIndex;
 
     //TODO: scegliere se fare document index qui
-    public static void parseFile(String readPath) throws IOException {
+    public void parseFile(String readPath) throws IOException {
+        db = DBMaker.fileDB("docs/docIndex.db").make();
+        documentIndex = db
+                .hashMap("documentIndex")
+                .keySerializer(Serializer.STRING)
+                .valueSerializer(Serializer.INTEGER)
+                .createOrOpen();
         File inputFile = new File(readPath);
         LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
         int indexBlock = 0;
@@ -33,17 +45,19 @@ public class CollectionParser {
                 String docno = parts[0];
                 String doc_corpus = parts[1];
                 List<String> pro_doc = preprocessDoc.preprocess_doc_optimized(doc_corpus);
-                //read the terms and generate postings
-                //write postings
+                //read the terms and count the length of the document
                 for (String term : pro_doc) {
                     cont++;
                 }
                 totalLength+=cont;
                 numDocs++;
+                documentIndex.put(docno, cont);
             }
         }finally {
             LineIterator.closeQuietly(it);
         }
+        db.commit();
+        db.close();
         //compute the average document length
         double averageDocLen = totalLength/numDocs;
         RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");

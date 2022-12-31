@@ -3,11 +3,18 @@ package queryProcessing;
 import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
 import invertedIndex.Posting;
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
+import org.mapdb.HTreeMap;
+import org.mapdb.Serializer;
 import preprocessing.PreprocessDoc;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.*;
 
 
@@ -16,11 +23,22 @@ public class Daat {
     private int maxDocID;
 
     private HashMap<String, LexiconStats> lexicon;
-    private HashMap<String, Integer> docIndex;
+    private DB db;
+    private HTreeMap<String, Integer> docIndex;
     private InvertedIndex index;
+    private String lexiconPath = "docs/lexicon.txt";
+    private String docidsPath = "docs/docids.txt";
+    private String tfsPath = "docs/tfs.txt";
 
 
     public Daat(){
+        //open document index
+        db = DBMaker.fileDB("docs/docIndex.db").make();
+        docIndex = db
+                .hashMap("documentIndex")
+                .keySerializer(Serializer.STRING)
+                .valueSerializer(Serializer.INTEGER)
+                .createOrOpen();
     }
 
     /*
@@ -40,6 +58,9 @@ public class Daat {
         int queryLen = proQuery.size();
         // Initialize the result list
         List<Integer> result = new ArrayList<>();
+        RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
+        FileChannel lexChannel = lexFile.getChannel();
+        MappedByteBuffer lexBuf = lexChannel.map(FileChannel.MapMode.READ_WRITE,0, lexChannel.size());
         // Create a heap to store the postings of the terms in the query
         /*PriorityQueue<Posting> heap = new PriorityQueue<>();
         for (String term : proQuery) {

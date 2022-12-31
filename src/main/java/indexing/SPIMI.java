@@ -25,25 +25,13 @@ import java.util.*;
 import static utility.Utils.addByteArray;
 
 public class SPIMI {
-
-    private DB db;
-    private HTreeMap<String, Integer> documentIndex;
     private InvertedIndex invertedIndex;
     private String outPath;
     private int docid = 0;
-    private final int LEXICON_ENTRY_SIZE = 66; //+ altri 8 per il term upper bound (?)
-    private double totalLength = 0;
-    private double numDocs = 0;
 
 
     //creazione dei blocchi usando il limite su ram
     public void spimiInvertBlockMapped(String readPath) throws IOException {
-        db = DBMaker.fileDB("docs/docIndex.db").make();
-        documentIndex = db
-                .hashMap("documentIndex")
-                .keySerializer(Serializer.STRING)
-                .valueSerializer(Serializer.INTEGER)
-                .createOrOpen();
         File inputFile = new File(readPath);
         LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
         int indexBlock = 0;
@@ -79,34 +67,20 @@ public class SPIMI {
         } finally {
             LineIterator.closeQuietly(it);
         }
-        db.commit();
-        db.close();
-        //TODO: scrivere su file l'average document length
-        //compute the average document length
-        double averageDocLen = totalLength/numDocs;
-        System.out.println(averageDocLen);
-        //FARE MERGE dei VARI BLOCCHI qui
         mergeBlocks(indexBlock);
     }
 
     public void spimiInvertMapped(String doc) throws IOException {
         //initialize a new InvertedIndex
         PreprocessDoc preprocessDoc = new PreprocessDoc();
-        int cont = 0;
         String[] parts = doc.split("\t");
-        String docno = parts[0];
         String doc_corpus = parts[1];
         List<String> pro_doc = preprocessDoc.preprocess_doc_optimized(doc_corpus);
         //read the terms and generate postings
-        //write postings
         for (String term : pro_doc) {
             invertedIndex.addPosting(term, docid, 1);
-            cont++;
         }
-        documentIndex.put(docno, cont);
         docid++;
-        totalLength+=cont;
-        numDocs++;
     }
 
     private void mergeBlocks(int n) throws IOException {
@@ -119,6 +93,8 @@ public class SPIMI {
             docPaths.add("docs/docids_"+i+".txt");
             tfPaths.add("docs/tfs_"+i+".txt");
         }
+        //take the entry size of the lexicon from the configuration parameters
+        int LEXICON_ENTRY_SIZE = ConfigurationParameters.LEXICON_ENTRY_SIZE;
         //Buffer per leggere ogni termine con annesse statistiche
         ByteBuffer[] readBuffers = new ByteBuffer[n];
         //ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
