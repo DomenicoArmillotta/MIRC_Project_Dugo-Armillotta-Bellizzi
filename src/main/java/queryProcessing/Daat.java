@@ -3,6 +3,7 @@ package queryProcessing;
 import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
 import invertedIndex.Posting;
+import org.apache.hadoop.io.Text;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
@@ -279,5 +280,55 @@ public class Daat {
         }
         return avg/ htDocindex.keySet().size();
     }*/
+
+    //TODO: serve un metodo per cercare un termine nel file del lexicon (binary search)
+    /*
+    Map the file into memory using the FileChannel.map method. This will return a MappedByteBuffer that you can use to access
+    the contents of the file.
+
+    Define a data structure that represents an entry in the file,
+    such as a simple Java class with fields for the key and value.
+
+    Implement a comparator for your data structure that can be used to compare two entries based on their keys.
+
+    Begin the binary search by setting the lower bound to 0 and the upper bound to the size of the file, in bytes.
+
+    Iterate until the lower bound is greater than the upper bound. In each iteration, calculate the midpoint
+    between the lower and upper bounds and use it to determine the location of the entry in the file.
+
+    Use the MappedByteBuffer.get method to read the entry at the calculated location and construct an instance of
+    your data structure from it.
+
+    Use the comparator to compare the key of the entry you just read with the key you're searching for. If they are equal,
+    you have found the key and can return the corresponding value. If the key you're searching for is less than the key of the
+    entry you just read, set the upper bound to the midpoint - 1. If the key you're searching for is greater than the key of the
+    entry you just read, set the lower bound to the midpoint + 1.
+
+    Repeat the process until you have found the key or the lower bound is greater than the upper bound, indicating that the key is
+    not present in the file.
+     */
+    public LexiconStats getPointer(FileChannel channel, String key) throws IOException {
+        LexiconStats l = new LexiconStats();
+        MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, channel.size());
+        int lowerBound = 0;
+        int upperBound = (int) channel.size() - 4;
+        while (lowerBound <= upperBound) {
+            int midpoint = (lowerBound + upperBound) / 2;
+            buffer.position(midpoint);
+            byte[] term = buffer.get(buffer.array(), 0, 22).array();
+            String value = Text.decode(term).toString();
+            if (value == key) {
+                System.out.println("Found key " + key + " at position " + midpoint);
+                //TODO: read the value in a bytebuffer
+                break;
+            } else if (key.compareTo(value) < 0) {
+                upperBound = midpoint - 4;
+            } else {
+                lowerBound = midpoint + 4;
+            }
+        }
+        //TODO: set the value in the lexiconstats object
+        return l;
+    }
 
 }

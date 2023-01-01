@@ -176,8 +176,10 @@ public class SPIMI {
                         LexiconStats l1 = new LexiconStats(val1);
                         LexiconStats l2 = new LexiconStats(val2);
                         //convert the bytes to the String
-                        String word1 = Text.decode(readBuffers[i].array());
-                        String word2 = Text.decode(readBuffers[i+1].array());
+                        /*String word1 = Text.decode(readBuffers[i].array());
+                        String word2 = Text.decode(readBuffers[i+1].array());*/
+                        String word1 = Text.decode(term1).toString();
+                        String word2 = Text.decode(term2).toString();
                         //2)compare terms to see what to merge in the result
                         //3)check:
                         //if the 1st term is greater than the second
