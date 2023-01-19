@@ -107,6 +107,8 @@ public class SPIMI {
         double N = cp.getNumberOfDocuments(); //take the total number of documents in the collection
         //System.out.println("HERE " + nIndex);
         //in the case of multiple block to merge
+        //TODO: URGENTISSIMO, SISTEMARE IL MERGING: la lettura dei byte così non torna, con calma si aggiusta (testato
+        // già dov'è l'errore e come si sistema)
         while(nIndex>1){
             //inizializzare una variabile per indicizzare il numero del file intermedio, in modo tale che ad ogni
             //for abbiamo il numero di file intermedi creat e all'inizio di una nuova iterazione del while, lo rimettiamo

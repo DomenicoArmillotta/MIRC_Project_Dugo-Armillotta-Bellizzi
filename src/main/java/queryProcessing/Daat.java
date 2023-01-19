@@ -329,23 +329,33 @@ public class Daat {
         LexiconStats l = new LexiconStats();
         MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, channel.size());
         int lowerBound = 0;
-        int upperBound = (int) channel.size() - 4;
+        int upperBound = (int) channel.size() - 66;
         while (lowerBound <= upperBound) {
             int midpoint = (lowerBound + upperBound) / 2;
+            if(midpoint%66!=0){
+                midpoint += midpoint%66;
+            }
             buffer.position(midpoint);
-            byte[] term = buffer.get(buffer.array(), 0, 22).array();
+            byte[] term = new byte[22];
+            ByteBuffer ba = ByteBuffer.allocate(22);
+            buffer.get(ba.array(), 0, 22);
+            term = ba.array();
             String value = Text.decode(term).toString();
-            if (value == key) {
+            value = value.replaceAll("\0", "");
+            System.out.println(value + " " + lowerBound + " " + upperBound);
+            if (value.equals(key)) {
                 System.out.println("Found key " + key + " at position " + midpoint);
-                //TODO: read the value in a bytebuffer
+                ByteBuffer bf1 = ByteBuffer.allocate(66-22);
+                buffer.get(bf1.array(), 0, 66-22);
+                l = new LexiconStats(bf1);
+                System.out.println(l.getCf() + " " + l.getdF() + " " + l.getOffsetDocid() + " " + l.getDocidsLen());
                 break;
             } else if (key.compareTo(value) < 0) {
-                upperBound = midpoint - 4;
+                upperBound = midpoint - 66;
             } else {
-                lowerBound = midpoint + 4;
+                lowerBound = midpoint + 66;
             }
         }
-        //TODO: set the value in the lexiconstats object
         return l;
     }
 
