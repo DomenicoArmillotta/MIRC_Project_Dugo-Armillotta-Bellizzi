@@ -22,8 +22,6 @@ import static utility.Utils.addByteArray;
 
 public class Compressor {
 
-    //TODO: aggiungere metodi che fanno la decompressione per un numero prefissato di elementi (stesse che abbiamo ma con un parametro
-    // in più da controllare passato come argomento
     public byte[] unaryEncode(int x) {
         BitSet b = new BitSet(x);
         b.set(1,x);
@@ -42,6 +40,25 @@ public class Compressor {
                 BitSet bs = BitSet.valueOf(new byte[]{b[i]});
                 numbers.add(bs.length()+n);
                 n=0;
+            }
+            else{
+                n+= 8;
+            }
+        }
+        return numbers;
+    }
+
+    public List<Integer> unaryDecodeBlock(byte[] b, int num){
+        List<Integer> numbers = new ArrayList<>();
+        int n = 0;
+        int cont = 0;
+        for(int i = 0; i < b.length; i++) {
+            if(cont == num) break;
+            if(b[i]!= 0xFF && b[i]!=0x00){
+                BitSet bs = BitSet.valueOf(new byte[]{b[i]});
+                numbers.add(bs.length()+n);
+                n=0;
+                cont++;
             }
             else{
                 n+= 8;
@@ -117,6 +134,26 @@ public class Compressor {
                 n = 128*n + (256+bs[i]) - 128; //shift because the value is negative
                 numbers.add(n);
                 n = 0;
+            }
+
+        }
+        return numbers;
+    }
+
+    public List<Integer> variableByteDecodeBlock(byte[] bs, int num){
+        List<Integer> numbers = new ArrayList<>();
+        int n = 0;
+        int cont = 0;
+        for(int i = 0; i < bs.length; i++){
+            if(cont == num) break;
+            if((bs[i] & 0x80) < 128){ //we check if the leftmost bit is not set
+                n = 128*n + bs[i];
+            }
+            else{
+                n = 128*n + (256+bs[i]) - 128; //shift because the value is negative
+                numbers.add(n);
+                n = 0;
+                cont++;
             }
 
         }
