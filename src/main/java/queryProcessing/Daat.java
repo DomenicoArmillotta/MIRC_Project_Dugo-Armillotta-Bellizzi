@@ -1,5 +1,6 @@
 package queryProcessing;
 
+import fileManager.ConfigurationParameters;
 import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
 import invertedIndex.Posting;
@@ -326,34 +327,32 @@ public class Daat {
     not present in the file.
      */
     public LexiconStats getPointer(FileChannel channel, String key) throws IOException {
-        LexiconStats l = new LexiconStats();
-        MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, channel.size());
-        int lowerBound = 0;
-        int upperBound = (int) channel.size() - 66;
+        LexiconStats l = new LexiconStats(); //initialize lexicon stats object
+        int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE; //take entry size
+        MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, channel.size()); //map file to memory
+        int lowerBound = 0; //initialize lower bound to the start of the file
+        int upperBound = (int) channel.size() - entrySize; //initialize upperbound to the offset of the last entry
         while (lowerBound <= upperBound) {
-            int midpoint = (lowerBound + upperBound) / 2;
-            if(midpoint%66!=0){
-                midpoint += midpoint%66;
+            int midpoint = (lowerBound + upperBound) / 2; //start from the center
+            if(midpoint%entrySize!=0){
+                midpoint += midpoint%entrySize; //add the reminder if it's not null
             }
             buffer.position(midpoint);
-            byte[] term = new byte[22];
             ByteBuffer ba = ByteBuffer.allocate(22);
-            buffer.get(ba.array(), 0, 22);
-            term = ba.array();
-            String value = Text.decode(term).toString();
-            value = value.replaceAll("\0", "");
+            buffer.get(ba.array(), 0, 22); //take the term bytes
+            String value = Text.decode(ba.array());
+            value = value.replaceAll("\0", ""); //replace null characters
             System.out.println(value + " " + lowerBound + " " + upperBound);
-            if (value.equals(key)) {
+            if (value.equals(key)) { //if they are equal we are done
                 System.out.println("Found key " + key + " at position " + midpoint);
-                ByteBuffer bf1 = ByteBuffer.allocate(66-22);
-                buffer.get(bf1.array(), 0, 66-22);
+                ByteBuffer bf1 = ByteBuffer.allocate(entrySize-22);
+                buffer.get(bf1.array(), 0, entrySize-22); //take the bytes with the information we are searching
                 l = new LexiconStats(bf1);
-                System.out.println(l.getCf() + " " + l.getdF() + " " + l.getOffsetDocid() + " " + l.getDocidsLen());
                 break;
             } else if (key.compareTo(value) < 0) {
-                upperBound = midpoint - 66;
+                upperBound = midpoint - entrySize; //we move up if the word comes before
             } else {
-                lowerBound = midpoint + 66;
+                lowerBound = midpoint + entrySize; //we move down if the word comes after
             }
         }
         return l;

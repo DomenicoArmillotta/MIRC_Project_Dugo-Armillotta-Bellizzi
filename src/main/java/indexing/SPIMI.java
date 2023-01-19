@@ -107,8 +107,6 @@ public class SPIMI {
         double N = cp.getNumberOfDocuments(); //take the total number of documents in the collection
         //System.out.println("HERE " + nIndex);
         //in the case of multiple block to merge
-        //TODO: URGENTISSIMO, SISTEMARE IL MERGING: la lettura dei byte così non torna, con calma si aggiusta (testato
-        // già dov'è l'errore e come si sistema)
         while(nIndex>1){
             //inizializzare una variabile per indicizzare il numero del file intermedio, in modo tale che ad ogni
             //for abbiamo il numero di file intermedi creat e all'inizio di una nuova iterazione del while, lo rimettiamo
@@ -169,19 +167,24 @@ public class SPIMI {
                         //next steps:
                         //1)read the term in both buffers (first 22 bytes) and the lexicon statistics (remaining 44);
                         //read first 22 bytes for the term
-                        byte[] term1 = readBuffers[i].get(readBuffers[i].array(), 0, 22).array();
-                        byte[] term2 = readBuffers[i+1].get(readBuffers[i+1].array(), 0, 22).array();
+                        byte[] term1 = new byte[22];
+                        byte[] term2 = new byte[22];
+                        readBuffers[i].get(term1, 0, 22).array();
+                        readBuffers[i+1].get(term2, 0, 22).array();
                         //read remaining bytes for the lexicon stats
-                        ByteBuffer val1 = readBuffers[i].get(readBuffers[i].array(), 22, LEXICON_ENTRY_SIZE-22);
-                        ByteBuffer val2 = readBuffers[i+1].get(readBuffers[i+1].array(), 22, LEXICON_ENTRY_SIZE-22);
+                        ByteBuffer val1 = ByteBuffer.allocate(LEXICON_ENTRY_SIZE-22);
+                        ByteBuffer val2 = ByteBuffer.allocate(LEXICON_ENTRY_SIZE-22);
+                        readBuffers[i].get(val1.array(), 0, LEXICON_ENTRY_SIZE-22);
+                        readBuffers[i+1].get(val2.array(), 0, LEXICON_ENTRY_SIZE-22);
                         //we use a method for reading the 36 bytes in a LexiconStats object
                         LexiconStats l1 = new LexiconStats(val1);
                         LexiconStats l2 = new LexiconStats(val2);
                         //convert the bytes to the String
-                        /*String word1 = Text.decode(readBuffers[i].array());
-                        String word2 = Text.decode(readBuffers[i+1].array());*/
-                        String word1 = Text.decode(term1).toString();
-                        String word2 = Text.decode(term2).toString();
+                        String word1 = Text.decode(term1);
+                        String word2 = Text.decode(term2);
+                        //replace null characters
+                        word1 = word1.replaceAll("\0", "");
+                        word2 = word2.replaceAll("\0", "");
                         //2)compare terms to see what to merge in the result
                         //3)check:
                         //if the 1st term is greater than the second
