@@ -22,31 +22,35 @@ import static utility.Utils.addByteArray;
 
 public class Compressor {
 
-    public BitSet unaryEncode(int x) {
+    //TODO: aggiungere metodi che fanno la decompressione per un numero prefissato di elementi (stesse che abbiamo ma con un parametro
+    // in più da controllare passato come argomento
+    public byte[] unaryEncode(int x) {
         BitSet b = new BitSet(x);
-        b.set(0,x-1);
-        return b;
+        b.set(1,x);
+        return b.toByteArray();
     }
 
     public int unaryDecodeNumber(BitSet b){
         return b.length();
     }
 
-    public List<Integer> unaryDecode(BitSet b){
+    public List<Integer> unaryDecode(byte[] b){
         List<Integer> numbers = new ArrayList<>();
         int n = 0;
-        for(int i = 0; i < b.length(); i++) {
-            n++; //increase by 1 each time we find a bit
-            if (!b.get(i)) { //if the bit is not set then we have the end of a number
-                numbers.add(n);
-                n = 0;
+        for(int i = 0; i < b.length; i++) {
+            if(b[i]!= 0xFF && b[i]!=0x00){
+                BitSet bs = BitSet.valueOf(new byte[]{b[i]});
+                numbers.add(bs.length()+n);
+                n=0;
             }
-            //if the bit is set we go on
+            else{
+                n+= 8;
+            }
         }
         return numbers;
     }
 
-    //TODO: we need methods to convert byte arrays to Bitset!! Here are some examples found online:
+    //TODO: we need methods to convert byte arrays to Bitset!! Here are some examples found online: --> non servono più
     //FIRST EXAMPLE:
     public BitSet byteToBits(byte[] bytearray){
         BitSet returnValue = new BitSet(bytearray.length*8);

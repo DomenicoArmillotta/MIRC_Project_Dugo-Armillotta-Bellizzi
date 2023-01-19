@@ -1,9 +1,10 @@
 package invertedIndex;
 
+import compression.Compressor;
 import fileManager.ConfigurationParameters;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.thirdparty.org.checkerframework.checker.units.qual.C;
 import org.mapdb.DB;
-import preprocessing.PreprocessDoc;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -29,11 +30,48 @@ public class InvertedIndex {
         invIndex = new ArrayList<>();
     }
 
-    //TODO: add compression
-
-
     public void addPosting(String term, int docid, int freq) throws IOException {
         List<Posting> pl = new ArrayList<>();
+        //check if the posting list for this term has already been created
+        if(lexicon.get(term) != null){
+            LexiconStats l = lexicon.get(term); //get the pointer of the list
+            l.setCf(l.getCf()+1); //update collection frequency
+            pl = invIndex.get(lexicon.get(term).getIndex()); //get the list
+            if(l.getCurdoc() == docid){
+                int oldTf = l.getCurTf(); //get the current term frequency value of the term
+                oldTf++; //increase term frequency by one
+                //update data structures
+                l.setCurTf(oldTf);
+                invIndex.get(lexicon.get(term).getIndex()).get(pl.size()-1).setTf(oldTf);
+                lexicon.put(term, l);
+                return; //we already had the given docID so we exit after updating the term and collection frequency
+            }
+            l.setdF(l.getdF()+1); //update document frequency, since this docID was not present before in the list
+            l.setCurdoc(docid);
+            l.setCurTf(freq);
+            //update data structures
+            invIndex.get(lexicon.get(term).getIndex()).add(new Posting(docid, 1));
+            lexicon.put(term, l);
+        }
+        else{ //create new posting list
+            LexiconStats l = new LexiconStats();
+            //initialize the lexicon statistics for the term and add it to the lexicon
+            l.setIndex(nList);
+            l.setCf(1); //initialize collection frequency to 1
+            l.setdF(1); //initialize document frequency by 1
+            l.setCurdoc(docid); //set the current document id
+            l.setCurTf(freq); //set the current term frequency
+            lexicon.put(term, l);
+            nList++; //increase the pointer for the next list
+            pl.add(new Posting(docid, 1)); //add posting to the new list
+            invIndex.add(pl); //insert the new list in the inverted index
+        }
+    }
+
+
+    /*public void addPosting(String term, int docid, int freq) throws IOException {
+        List<Posting> pl = new ArrayList<>();
+        Compressor compressor = new Compressor();
         byte[] doc = ByteBuffer.allocate(4).putInt(docid).array(); //convert the docID to bytes
         byte[] tf = ByteBuffer.allocate(4).putInt(freq).array(); //convert the term frequency to bytes
         //check if the posting list for this term has already been created
@@ -57,7 +95,8 @@ public class InvertedIndex {
             l.setCurTf(freq);
             //pl.add(new Posting(doc, tf)); //add the posting to the list
             //update data structures
-            invIndex.get(lexicon.get(term).getIndex()).add(new Posting(doc, tf));
+            byte[] compressedDoc = compressor.variableByteEncodeNumber(docid);
+            invIndex.get(lexicon.get(term).getIndex()).add(new Posting(compressedDoc, tf));
             lexicon.put(term, l);
         }
         else{ //create new posting list
@@ -70,10 +109,11 @@ public class InvertedIndex {
             l.setCurTf(freq); //set the current term frequency
             lexicon.put(term, l);
             nList++; //increase the pointer for the next list
-            pl.add(new Posting(doc, tf)); //add posting to the new list
+            byte[] compressedDoc = compressor.variableByteEncodeNumber(docid);
+            pl.add(new Posting(compressedDoc, tf)); //add posting to the new list
             invIndex.add(pl); //insert the new list in the inverted index
         }
-    }
+    }*/
 
     public void sortTerms() {
         //sort the lexicon by key putting it in the sortedTerms list
@@ -97,6 +137,7 @@ public class InvertedIndex {
         FileChannel docChannel = streamDocs.getChannel();
         FileChannel tfChannel = streamTf.getChannel();
         ConfigurationParameters cp = new ConfigurationParameters();
+        Compressor compressor = new Compressor();
         double N = cp.getNumberOfDocuments();
         int offsetDocs = 0;
         int offsetTfs = 0;
@@ -106,16 +147,15 @@ public class InvertedIndex {
             List<Posting> pl = invIndex.get(index);
             int docLen = 0;
             int tfLen = 0;
-            for(Posting p: pl){
-                //take the posting list
-                //write posting list
+            for(Posting p: pl){ //take the posting list
+                //write posting list to file
                 //TODO: calcola la term upper bound
-                byte[] baDocs = p.getDocid();
+                byte[] baDocs = compressor.variableByteEncodeNumber(p.getDocid()); //compress the docid with variable byte
                 ByteBuffer bufferValue = ByteBuffer.allocate(baDocs.length);
                 bufferValue.put(baDocs);
                 bufferValue.flip();
                 docChannel.write(bufferValue);
-                byte[] baFreqs = p.getTf();
+                byte[] baFreqs = compressor.unaryEncode(p.getTf()); //compress the term frequency with unary
                 ByteBuffer bufferFreq = ByteBuffer.allocate(baFreqs.length);
                 bufferFreq.put(baFreqs);
                 bufferFreq.flip();
@@ -171,7 +211,6 @@ public class InvertedIndex {
         tfChannel.close();
     }
 
-
 /*
     public byte[] get(int docid, String term) {
         // Check if the term is in the lexicon
@@ -207,7 +246,6 @@ public class InvertedIndex {
         // Return the posting list
         return pl;
     }
-
  */
 }
 

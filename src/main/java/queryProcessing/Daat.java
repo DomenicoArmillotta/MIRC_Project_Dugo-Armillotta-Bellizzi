@@ -63,7 +63,25 @@ public class Daat {
         FileChannel lexChannel = lexFile.getChannel();
         MappedByteBuffer lexBuf = lexChannel.map(FileChannel.MapMode.READ_WRITE,0, lexChannel.size());
         // Create a heap to store the postings of the terms in the query
-        /*PriorityQueue<Posting> heap = new PriorityQueue<>();
+        //PriorityQueue<Posting> heap = new PriorityQueue<>();
+        /*
+        for (i = 0; i < num; i++) lp[i] = openList(q[i]);
+        did = 0;
+        while (did <= maxdocID){
+            did = nextGEQ(lp[0], did);
+            for (i=1; (i<num) && ((d=nextGEQ(lp[i], did)) == did); i++);
+            if (d > did) did = d; // not in intersection
+            else
+            {
+                //docID is in intersection; now get all frequencies
+                for (i=0; i<num; i++) f[i] = getFreq(lp[i], did);
+                //compute BM25 score from frequencies and other data
+                did++; //and increase did to search for next post
+            }
+        }
+        for (i = 0; i < num; i++) closeList(lp[i]);
+         */
+        /*
         for (String term : proQuery) {
             // Check if the term is in the lexicon
             if (lexicon.containsKey(term)) {
@@ -199,15 +217,15 @@ public class Daat {
 
     //iterate over the posting list ot get the desired term frequency, return 0 otherwise
     private int getFreq(ArrayList<Posting> postingList, int docid){
-        int pointer = 0;
+        /*int pointer = 0;
         while(pointer < postingList.size()){
             Posting p = postingList.get(pointer);
-            if(ByteBuffer.wrap(p.getDocid()).getInt() == docid){
-                return ByteBuffer.wrap(p.getTf()).getInt();
+            if(ByteBuffer.wrap(p.getDocidb()).getInt() == docid){
+                return ByteBuffer.wrap(p.getTfb()).getInt();
             }
             pointer++;
         }
-        return 0;
+        */return 0;
     }
 
 
