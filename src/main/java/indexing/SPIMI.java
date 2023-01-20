@@ -392,6 +392,17 @@ public class SPIMI {
         //questo metodo legge il lexicon un termine alla volta; per ogni termine calcola la term upper bound leggendo la lista;
         //serve anche aprire il doc index per la document length; si chiama bm25 per ogni doc della lista e si prende il massimo
         //punteggio e si scrive sul file del lexicon
+        //SKIP BLOCKS:
+        //aggiungere nel lexicon la lunghezza dell'header (int)
+        //per sapere quante coppie (b,endocid) sono basta fare la radice di docfreq
+        //conviene fare in un altro file e aggiungere offset e lunghezza del blocco (long, int)
+        //File da dichiarare per leggere:
+        //docindex
+        //docids
+        //tf
+        //File da dichiarare per leggere e scrivere:
+        //lexicon
+        //skipinfo
     }
 
 }

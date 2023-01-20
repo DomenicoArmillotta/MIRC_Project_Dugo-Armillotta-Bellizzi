@@ -2,10 +2,13 @@ package indexing;
 
 import compression.Compressor;
 import fileManager.CollectionParser;
+import fileManager.ConfigurationParameters;
+import invertedIndex.LexiconStats;
 import invertedIndex.Posting;
 import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.hadoop.io.Text;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
@@ -15,6 +18,7 @@ import preprocessing.PreprocessDoc;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
 
@@ -25,10 +29,44 @@ public class SPIMI_InvertTest extends TestCase {
         SPIMI s = new SPIMI();
         s.spimiInvertBlockMapped("docs/collection_test2.tsv");
     }
+
+    public int getDocLen(FileChannel channel, String key) throws IOException {
+        int docLen = 0;
+        int entrySize = ConfigurationParameters.DOC_INDEX_ENTRY_SIZE;
+        MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, channel.size());
+        int lowerBound = 0;
+        int upperBound = (int) channel.size()-entrySize;
+        while (lowerBound <= upperBound) {
+            int midpoint = (lowerBound + upperBound) / 2;
+            if(midpoint%entrySize!=0){
+                midpoint += midpoint%entrySize;
+            }
+            buffer.position(midpoint);
+            ByteBuffer ba = ByteBuffer.allocate(10);
+            buffer.get(ba.array(), 0, 10);
+            String value = Text.decode(ba.array());
+            value = value.replaceAll("\0", "");
+            System.out.println(value + " " + lowerBound + " " + upperBound);
+            if (value.equals(key)) {
+                System.out.println("Found key " + key + " at position " + midpoint);
+                ByteBuffer bf1 = ByteBuffer.allocate(4);
+                buffer.get(bf1.array(), 0, 4);
+                docLen = bf1.getInt();
+                break;
+            } else if (key.compareTo(value) < 0) {
+                upperBound = midpoint - entrySize;
+            } else {
+                lowerBound = midpoint + entrySize;
+            }
+        }
+        return docLen;
+    }
     public void testParser() throws IOException {
         CollectionParser cp = new CollectionParser();
         cp.parseFile("docs/collection_test2.tsv");
         RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
+        FileChannel docIndexChannel = docIndexFile.getChannel();
         FileChannel outChannel = outFile.getChannel();
         int pos = 0;
         outChannel.position(0);
@@ -48,6 +86,7 @@ public class SPIMI_InvertTest extends TestCase {
         outChannel.position(pos);
         numDocs.flip();
         System.out.println(avgLen.getDouble() + " " + totLen.getDouble() + " " + numDocs.getDouble());
+        System.out.println(getDocLen(docIndexChannel, "65"));
     }
     public void testMapDbList(){
         //use DBMaker to create a DB object stored on disk
