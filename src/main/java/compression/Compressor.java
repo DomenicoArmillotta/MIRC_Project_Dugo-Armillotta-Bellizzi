@@ -34,15 +34,20 @@ public class Compressor {
 
     public List<Integer> unaryDecode(byte[] b){
         List<Integer> numbers = new ArrayList<>();
+        ArrayUtils.reverse(b); //forse non serve
         int n = 0;
         for(int i = 0; i < b.length; i++) {
-            if(b[i]!= 0xFF && b[i]!=0x00){
+            if(b[i]!= 0xFF && ((b[i] & 0x01) == 0)){
                 BitSet bs = BitSet.valueOf(new byte[]{b[i]});
                 numbers.add(bs.length()+n);
                 n=0;
             }
-            else{
+            else if(b[i] == 0xFF){
                 n+= 8;
+            }
+            else{
+                BitSet bs = BitSet.valueOf(new byte[]{b[i]});
+                n+=bs.length();
             }
         }
         return numbers;
@@ -50,18 +55,22 @@ public class Compressor {
 
     public List<Integer> unaryDecodeBlock(byte[] b, int num){
         List<Integer> numbers = new ArrayList<>();
+        ArrayUtils.reverse(b); //forse non serve
         int n = 0;
         int cont = 0;
         for(int i = 0; i < b.length; i++) {
             if(cont == num) break;
-            if(b[i]!= 0xFF && b[i]!=0x00){
+            if(b[i]!= 0xFF && ((b[i] & 0x01) == 0)){
                 BitSet bs = BitSet.valueOf(new byte[]{b[i]});
                 numbers.add(bs.length()+n);
                 n=0;
-                cont++;
+            }
+            else if(b[i] == 0xFF){
+                n+= 8;
             }
             else{
-                n+= 8;
+                BitSet bs = BitSet.valueOf(new byte[]{b[i]});
+                n+=bs.length();
             }
         }
         return numbers;

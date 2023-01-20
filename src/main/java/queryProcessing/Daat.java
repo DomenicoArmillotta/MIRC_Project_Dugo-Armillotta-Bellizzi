@@ -1,5 +1,6 @@
 package queryProcessing;
 
+import compression.Compressor;
 import fileManager.ConfigurationParameters;
 import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
@@ -268,17 +269,30 @@ public class Daat {
 
     //nextGEQ(lp, k) find the next posting in list lp with docID >= k and
     //return its docID. Return value > MAXDID if none exists.
-    private int nextGEQ(RandomAccessFile file, String term, int value) throws IOException {
+    private int nextGEQ(FileChannel docChannel, String term, int value) throws IOException {
         //TODO: implement
+        Compressor c = new Compressor();
         //Seek to the position in the file where the posting list for the term is stored
-        file.seek(lexicon.get(term).getOffsetDocid());
+        docChannel.position(lexicon.get(term).getOffsetDocid());
 
         // Read the compressed posting list data from the file
         byte[] data = new byte[lexicon.get(term).getDocidsLen()];
-        file.read(data);
+        docChannel.read(ByteBuffer.wrap(data));
 
         // Decompress the data using the appropriate decompression algorithm
-        //List<Integer> posting_list = decompress(data);
+        int n = (int) Math.ceil(Math.sqrt(lexicon.get(term).getdF()));
+        int i = 0;
+        while(i< n) {
+            List<Integer> posting_list = c.variableByteDecodeBlock(data, n);
+            //TODO: due scelte qui, o shifti l'array o modifichi prendendo un sotto array ad un certo offset
+            //data la lista si può fare il controllo
+            for (int doc_id : posting_list) {
+                if (doc_id >= value) {
+                    return doc_id;
+                }
+
+            }
+        }
 
         // Iterate through the posting list and return the first entry that is greater than or equal to the search value
         /*for (int doc_id : posting_list) {
@@ -342,7 +356,6 @@ public class Daat {
             buffer.get(ba.array(), 0, 22); //take the term bytes
             String value = Text.decode(ba.array());
             value = value.replaceAll("\0", ""); //replace null characters
-            System.out.println(value + " " + lowerBound + " " + upperBound);
             if (value.equals(key)) { //if they are equal we are done
                 System.out.println("Found key " + key + " at position " + midpoint);
                 ByteBuffer bf1 = ByteBuffer.allocate(entrySize-22);
