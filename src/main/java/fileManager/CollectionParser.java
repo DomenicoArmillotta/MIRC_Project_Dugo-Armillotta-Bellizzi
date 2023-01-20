@@ -1,7 +1,10 @@
 package fileManager;
 
+import invertedIndex.LexiconStats;
+import invertedIndex.Posting;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.hadoop.io.Text;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
@@ -13,6 +16,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.HashMap;
 import java.util.List;
 
 import static utility.Utils.addByteArray;
@@ -22,17 +26,11 @@ public class CollectionParser {
 
     private static double totalLength = 0;
     private static double numDocs = 0;
-    private DB db;
-    private HTreeMap<String, Integer> documentIndex;
+    private HashMap<String, Integer> documentIndex;
 
     //TODO: fare document index su file e non con map db!
     public void parseFile(String readPath) throws IOException {
-        db = DBMaker.fileDB("docs/docIndex.db").make();
-        documentIndex = db
-                .hashMap("documentIndex")
-                .keySerializer(Serializer.STRING)
-                .valueSerializer(Serializer.INTEGER)
-                .createOrOpen();
+        documentIndex = new HashMap<>();
         File inputFile = new File(readPath);
         LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
         int indexBlock = 0;
@@ -56,8 +54,29 @@ public class CollectionParser {
         }finally {
             LineIterator.closeQuietly(it);
         }
-        db.commit();
-        db.close();
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
+        FileChannel docIndexChannel = docIndexFile.getChannel();
+        for(String term:documentIndex.keySet()) {
+            //we check if the string is greater than 20 chars, in that case we truncate it
+            Text key = new Text(term);
+            byte[] docIndexBytes;
+            if (key.getLength() >= 9) {
+                Text truncKey = new Text(term.substring(0, 8));
+                docIndexBytes = truncKey.getBytes();
+            } else { //we allocate 10 bytes for the Text object, which is a string of 20 chars
+                docIndexBytes = ByteBuffer.allocate(10).put(key.getBytes()).array();
+            }
+            //take the document frequency
+            byte[] dfBytes = ByteBuffer.allocate(4).putInt(documentIndex.get(term)).array();
+            //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
+            docIndexBytes = addByteArray(docIndexBytes, dfBytes);
+            //write lexicon entry to disk
+            ByteBuffer bufferDoc = ByteBuffer.allocate(docIndexBytes.length);
+            bufferDoc.put(docIndexBytes);
+            bufferDoc.flip();
+            docIndexChannel.write(bufferDoc);
+            bufferDoc.clear();
+        }
         //compute the average document length
         double averageDocLen = totalLength/numDocs;
         RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
