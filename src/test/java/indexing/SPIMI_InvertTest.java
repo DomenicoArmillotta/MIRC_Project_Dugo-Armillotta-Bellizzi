@@ -100,6 +100,17 @@ public class SPIMI_InvertTest extends TestCase {
         System.out.println(avgLen.getDouble() + " " + totLen.getDouble() + " " + numDocs.getDouble());
         System.out.println(getDocLen(docIndexChannel, "65"));
     }
+
+    public void testDocSearch() throws IOException {
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
+        FileChannel docIndexChannel = docIndexFile.getChannel();
+        System.out.println(getDocLen(docIndexChannel, "65"));
+        System.out.println(getDocLen(docIndexChannel, "234"));
+        System.out.println(getDocLen(docIndexChannel, "876"));
+        System.out.println(getDocLen(docIndexChannel, "4092"));
+
+    }
+
     public void testMapDbList(){
         //use DBMaker to create a DB object stored on disk
         //provide output location of list
