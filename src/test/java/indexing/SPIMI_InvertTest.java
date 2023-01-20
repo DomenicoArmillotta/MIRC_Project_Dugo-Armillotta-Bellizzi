@@ -36,6 +36,19 @@ public class SPIMI_InvertTest extends TestCase {
         MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, channel.size());
         int lowerBound = 0;
         int upperBound = (int) channel.size()-entrySize;
+        /*while(lowerBound!=channel.size()){
+            buffer.position(lowerBound);
+            ByteBuffer ba = ByteBuffer.allocate(10);
+            buffer.get(ba.array(), 0, 10);
+            if(ba.hasArray()) {
+                byte[] term = new byte[22];
+                term = ba.array();
+                String value = Text.decode(term);
+                value = value.replaceAll("\0", "");
+                System.out.println(value + " " + lowerBound);
+            }
+            lowerBound+=14;
+        }*/
         while (lowerBound <= upperBound) {
             int midpoint = (lowerBound + upperBound) / 2;
             if(midpoint%entrySize!=0){
@@ -46,14 +59,13 @@ public class SPIMI_InvertTest extends TestCase {
             buffer.get(ba.array(), 0, 10);
             String value = Text.decode(ba.array());
             value = value.replaceAll("\0", "");
-            System.out.println(value + " " + lowerBound + " " + upperBound);
             if (value.equals(key)) {
                 System.out.println("Found key " + key + " at position " + midpoint);
                 ByteBuffer bf1 = ByteBuffer.allocate(4);
                 buffer.get(bf1.array(), 0, 4);
                 docLen = bf1.getInt();
                 break;
-            } else if (key.compareTo(value) < 0) {
+            } else if (Integer.parseInt(key) - Integer.parseInt(value) < 0) {
                 upperBound = midpoint - entrySize;
             } else {
                 lowerBound = midpoint + entrySize;

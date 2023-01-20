@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static utility.Utils.addByteArray;
 
@@ -30,6 +31,8 @@ public class CollectionParser {
 
     //TODO: fare document index su file e non con map db!
     public void parseFile(String readPath) throws IOException {
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
+        FileChannel docIndexChannel = docIndexFile.getChannel();
         documentIndex = new HashMap<>();
         File inputFile = new File(readPath);
         LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
@@ -49,33 +52,27 @@ public class CollectionParser {
                 }
                 totalLength+=cont;
                 numDocs++;
-                documentIndex.put(docno, cont);
+                Text key = new Text(docno);
+                byte[] docIndexBytes;
+                if (key.getLength() >= 9) {
+                    Text truncKey = new Text(docno.substring(0, 8));
+                    docIndexBytes = truncKey.getBytes();
+                } else { //we allocate 10 bytes for the Text object, which is a string of 20 chars
+                    docIndexBytes = ByteBuffer.allocate(10).put(key.getBytes()).array();
+                }
+                //take the document frequency
+                byte[] dfBytes = ByteBuffer.allocate(4).putInt(cont).array();
+                //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
+                docIndexBytes = addByteArray(docIndexBytes, dfBytes);
+                //write lexicon entry to disk
+                ByteBuffer bufferDoc = ByteBuffer.allocate(docIndexBytes.length);
+                bufferDoc.put(docIndexBytes);
+                bufferDoc.flip();
+                docIndexChannel.write(bufferDoc);
+                bufferDoc.clear();
             }
         }finally {
             LineIterator.closeQuietly(it);
-        }
-        RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
-        FileChannel docIndexChannel = docIndexFile.getChannel();
-        for(String term:documentIndex.keySet()) {
-            //we check if the string is greater than 20 chars, in that case we truncate it
-            Text key = new Text(term);
-            byte[] docIndexBytes;
-            if (key.getLength() >= 9) {
-                Text truncKey = new Text(term.substring(0, 8));
-                docIndexBytes = truncKey.getBytes();
-            } else { //we allocate 10 bytes for the Text object, which is a string of 20 chars
-                docIndexBytes = ByteBuffer.allocate(10).put(key.getBytes()).array();
-            }
-            //take the document frequency
-            byte[] dfBytes = ByteBuffer.allocate(4).putInt(documentIndex.get(term)).array();
-            //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
-            docIndexBytes = addByteArray(docIndexBytes, dfBytes);
-            //write lexicon entry to disk
-            ByteBuffer bufferDoc = ByteBuffer.allocate(docIndexBytes.length);
-            bufferDoc.put(docIndexBytes);
-            bufferDoc.flip();
-            docIndexChannel.write(bufferDoc);
-            bufferDoc.clear();
         }
         //compute the average document length
         double averageDocLen = totalLength/numDocs;
