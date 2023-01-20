@@ -14,6 +14,8 @@ import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import preprocessing.PreprocessDoc;
+import queryProcessing.Scorer;
+import utility.Utils;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -97,8 +99,20 @@ public class SPIMI_InvertTest extends TestCase {
             ByteBuffer tfs = ByteBuffer.allocate(tfLen);
             tfChannel.read(tfs);
             List<Integer> decompressedTfs = c.unaryDecode(tfs.array());
-            System.out.println("Docids: "  + decompressedDocids);
-            System.out.println("Tfs: " + decompressedTfs);
+            //System.out.println("Docids: "  + decompressedDocids);
+            //System.out.println("Tfs: " + decompressedTfs);
+            //System.out.println(word + " " + l.getdF() + " " + l.getCf() + " " + l.getDocidsLen() + " " + l.getTfLen() + " " + l.getIdf());
+            double maxscore = 0.0;
+            for(int i = 0; i < decompressedDocids.size(); i++){
+                int tf = decompressedTfs.get(i);
+                double idf = l.getIdf();
+                int documentLength = Utils.getDocLen(docIndexChannel, decompressedDocids.get(i).toString());
+                double score = Scorer.bm25Weight(tf, documentLength, idf);
+                if(score>maxscore){
+                    maxscore = score;
+                }
+            }
+            System.out.println(word + ": " + maxscore);
             lexOffset+=entrySize;
             totLen+=entrySize;
         }

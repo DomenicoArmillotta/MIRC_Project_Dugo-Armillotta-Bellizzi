@@ -193,6 +193,7 @@ public class InvertedIndex {
             byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(offsetDocs).array();
             //take the offset of tfs
             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(offsetTfs).array();
+            //take the idf
             byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
             lexiconBytes = addByteArray(lexiconBytes,dfBytes);

@@ -12,6 +12,8 @@ import org.apache.hadoop.thirdparty.org.checkerframework.checker.units.qual.C;
 import org.jetbrains.annotations.NotNull;
 import org.mapdb.*;
 import preprocessing.PreprocessDoc;
+import queryProcessing.Scorer;
+import utility.Utils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -457,12 +459,16 @@ public class SPIMI {
             tfChannel.read(tfs);
             List<Integer> decompressedTfs = c.unaryDecode(tfs.array());
             //TODO: calcolare term upper bound e metterlo nel nuovo lexicon
-            // steps:
-            // prendi il docid per prendere la doclen dal docindex
-            // prendi la tf
-            // prendi l'avg doc len
-            // applica bm25
-            // prendi il max della lista
+            double maxscore = 0.0;
+            for(int i = 0; i < decompressedDocids.size(); i++){
+                int tf = decompressedTfs.get(i);
+                double idf = l.getIdf();
+                int documentLength = Utils.getDocLen(docIndexChannel, decompressedDocids.get(i).toString());
+                double score = Scorer.bm25Weight(tf, documentLength, idf);
+                if(score>maxscore){
+                    maxscore = score;
+                }
+            }
             //TODO: calcolare skip blocks
             lexOffset+=entrySize;
             totLen+=entrySize;

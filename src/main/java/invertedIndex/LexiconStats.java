@@ -41,6 +41,8 @@ public class LexiconStats implements Serializable {
         this.tfLen = b.getInt(16); //read fourth value, an int
         this.offsetDocid = b.getLong(20); //read fifth value, a long
         this.offsetTf = b.getLong(28); //read sixth value, a long
+        this.idf = b.getDouble(36); //read seventh value, a double
+        //TODO: add to the class a field for the term upper bound, the offset of the skip info file and the length of the skip entry
     }
 
     /*public LexiconStats(ByteBuffer b){
