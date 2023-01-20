@@ -25,7 +25,7 @@ public class CollectionParser {
     private DB db;
     private HTreeMap<String, Integer> documentIndex;
 
-    //TODO: scegliere se fare document index qui
+    //TODO: fare document index su file e non con map db!
     public void parseFile(String readPath) throws IOException {
         db = DBMaker.fileDB("docs/docIndex.db").make();
         documentIndex = db

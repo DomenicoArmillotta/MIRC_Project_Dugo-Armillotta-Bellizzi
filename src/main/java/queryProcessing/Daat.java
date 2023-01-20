@@ -212,6 +212,8 @@ public class Daat {
 
 
 
+    //TODO: scegliere come gestire le liste; se usare openlist su ogni termine e salvarle in memoria;
+    // oppure usare i puntatori su file, prendi la lista e applichi l'algoritmo
     public ArrayList<Posting> openList(String queryTerm) throws IOException {
         //TODO: implement
         return null;

@@ -388,6 +388,12 @@ public class SPIMI {
         inputLexChannel.transferTo(0, inputLexChannel.size(), lexChannel);
     }
 
+    public void computeMaxScores(){
+        //questo metodo legge il lexicon un termine alla volta; per ogni termine calcola la term upper bound leggendo la lista;
+        //serve anche aprire il doc index per la document length; si chiama bm25 per ogni doc della lista e si prende il massimo
+        //punteggio e si scrive sul file del lexicon
+    }
+
 }
 
 

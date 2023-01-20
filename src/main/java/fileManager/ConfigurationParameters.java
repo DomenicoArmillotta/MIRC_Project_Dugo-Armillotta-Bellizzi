@@ -9,7 +9,7 @@ import java.nio.channels.FileChannel;
 public class ConfigurationParameters {
 
     public static final int LEXICON_ENTRY_SIZE = 66; //size of the entry of the lexicon
-    public double getAverageDocumentLength() throws IOException {
+    public static double getAverageDocumentLength() throws IOException {
         RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
         FileChannel outChannel = outFile.getChannel();
         int pos = 0;

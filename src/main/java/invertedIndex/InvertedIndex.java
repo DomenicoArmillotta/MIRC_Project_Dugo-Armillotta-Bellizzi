@@ -5,6 +5,10 @@ import fileManager.ConfigurationParameters;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.thirdparty.org.checkerframework.checker.units.qual.C;
 import org.mapdb.DB;
+import org.mapdb.DBMaker;
+import org.mapdb.HTreeMap;
+import org.mapdb.Serializer;
+import queryProcessing.Scorer;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -17,8 +21,6 @@ import static java.util.stream.Collectors.toMap;
 import static utility.Utils.addByteArray;
 
 public class InvertedIndex {
-
-    private DB db;
     private String outPath;
     private Map<String, LexiconStats> lexicon; //map for the lexicon: the entry are the term + the statistics for each term
     private List<String> sortedTerms; //map for the lexicon: the entry are the term + the statistics for each term
@@ -150,9 +152,13 @@ public class InvertedIndex {
             List<Posting> pl = invIndex.get(index);
             int docLen = 0;
             int tfLen = 0;
+            //idf value
+            long nn = l.getdF(); // number of documents that contain the term t
+            double idf = Math.log((N/nn));
             for(Posting p: pl){ //take the posting list
                 //write posting list to file
                 //TODO: calcola la term upper bound
+                //double maxscore = Scorer.bm25Weight(p.getTf(), docIndex.get(key), idf);
                 byte[] baDocs = compressor.variableByteEncodeNumber(p.getDocid()); //compress the docid with variable byte
                 ByteBuffer bufferValue = ByteBuffer.allocate(baDocs.length);
                 bufferValue.put(baDocs);
@@ -187,9 +193,6 @@ public class InvertedIndex {
             byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(offsetDocs).array();
             //take the offset of tfs
             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(offsetTfs).array();
-            //idf value
-            long nn = l.getdF(); // number of documents that contain the term t
-            double idf = Math.log((N/nn));
             byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
