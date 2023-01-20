@@ -148,6 +148,14 @@ public class Daat {
 
     }
 
+    //TODO: come gestire il query processing con maxscore:
+    // tenere una priority queue con le threshold (che sono i top k score parziali ottenuti finora); se non ci sono ancora k scores,
+    // la threshold è uguale a 0
+    // tenere in ordine crescente i term upper bound della query (presi dal lexicon): la prima con cui superiamo la threshold indica
+    // l'inizio delle posting list essenziali (non skippabili!!!!)
+    // calcolare la document upper bound per vedere se supera la threshold (valore più piccolo della priority queue);
+    // se il document upper bound (term upper bound attualmente considerate + partial scores se ci sono) è inferiore alla thershold ci
+    // fermiamo
 
 
     /*
@@ -210,6 +218,7 @@ public class Daat {
     }
      */
 
+    //TODO: fare trec eval!!!!!
 
 
     //TODO: scegliere come gestire le liste; se usare openlist su ogni termine e salvarle in memoria;
@@ -287,6 +296,7 @@ public class Daat {
         while(i< n) {
             List<Integer> posting_list = c.variableByteDecodeBlock(data, n);
             //TODO: due scelte qui, o shifti l'array o modifichi prendendo un sotto array ad un certo offset
+            // ---> usare skip blocks
             //data la lista si può fare il controllo
             for (int doc_id : posting_list) {
                 if (doc_id >= value) {
@@ -307,16 +317,6 @@ public class Daat {
         return -1;
     }
 
-    //computes the average document length over the whole collection
-    /*private double averageDocumentLength(){
-        double avg = 0;
-        for(int len: htDocindex.values()){
-            avg+= len;
-        }
-        return avg/ htDocindex.keySet().size();
-    }*/
-
-    //TODO: serve un metodo per cercare un termine nel file del lexicon (binary search)
     /*
     Map the file into memory using the FileChannel.map method. This will return a MappedByteBuffer that you can use to access
     the contents of the file.
