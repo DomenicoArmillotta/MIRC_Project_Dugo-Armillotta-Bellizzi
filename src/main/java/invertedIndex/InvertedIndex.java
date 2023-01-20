@@ -195,6 +195,10 @@ public class InvertedIndex {
             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(offsetTfs).array();
             //take the idf
             byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
+            //initialize the bytes for other info (not available now)
+            byte[] tupBytes = ByteBuffer.allocate(8).putDouble(0.0).array();
+            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(0).array();
+            byte[] skipBytes = ByteBuffer.allocate(4).putInt(0).array();
             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -203,6 +207,9 @@ public class InvertedIndex {
             lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
             lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
             lexiconBytes = addByteArray(lexiconBytes,idfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,tupBytes);
+            lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
+            lexiconBytes = addByteArray(lexiconBytes,skipBytes);
             //write lexicon entry to disk
             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
             bufferLex.put(lexiconBytes);

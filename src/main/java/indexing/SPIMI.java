@@ -167,6 +167,9 @@ public class SPIMI {
                         lex2Channel.position(offset2);
                         lex1Channel.read(readBuffers[i]);
                         lex2Channel.read(readBuffers[i+1]);
+                        //place the pointers in the buffers at the beginning
+                        readBuffers[i].position(0);
+                        readBuffers[i+1].position(0);
                         //next steps:
                         //1)read the term in both buffers (first 22 bytes) and the lexicon statistics (remaining 44);
                         //read first 22 bytes for the term
@@ -222,6 +225,9 @@ public class SPIMI {
                             long nn = l1.getdF(); // number of documents that contain the term t among the data set
                             double idf = Math.log((N/nn));
                             byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
+                            byte[] tupBytes = ByteBuffer.allocate(8).putDouble(0.0).array();
+                            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(0).array();
+                            byte[] skipBytes = ByteBuffer.allocate(4).putInt(0).array();
                             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
                             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -230,6 +236,9 @@ public class SPIMI {
                             lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
                             lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,idfBytes);
+                            lexiconBytes = addByteArray(lexiconBytes,tupBytes);
+                            lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
+                            lexiconBytes = addByteArray(lexiconBytes,skipBytes);
                             //write lexicon entry to disk
                             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
                             bufferLex.put(lexiconBytes);
@@ -269,6 +278,9 @@ public class SPIMI {
                             long nn = l2.getdF(); // number of documents that contain the term t among the data set
                             double idf = Math.log((N/nn));
                             byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
+                            byte[] tupBytes = ByteBuffer.allocate(8).putDouble(0.0).array();
+                            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(0).array();
+                            byte[] skipBytes = ByteBuffer.allocate(4).putInt(0).array();
                             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
                             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -277,6 +289,9 @@ public class SPIMI {
                             lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
                             lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,idfBytes);
+                            lexiconBytes = addByteArray(lexiconBytes,tupBytes);
+                            lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
+                            lexiconBytes = addByteArray(lexiconBytes,skipBytes);
                             //write lexicon entry to disk
                             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
                             bufferLex.put(lexiconBytes);
@@ -331,6 +346,9 @@ public class SPIMI {
                             long nn = l1.getdF()+l2.getdF(); // number of documents that contain the term t among the data set
                             double idf = Math.log((N/nn));
                             byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
+                            byte[] tupBytes = ByteBuffer.allocate(8).putDouble(0.0).array();
+                            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(0).array();
+                            byte[] skipBytes = ByteBuffer.allocate(4).putInt(0).array();
                             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
                             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -339,6 +357,9 @@ public class SPIMI {
                             lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
                             lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
                             lexiconBytes = addByteArray(lexiconBytes,idfBytes);
+                            lexiconBytes = addByteArray(lexiconBytes,tupBytes);
+                            lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
+                            lexiconBytes = addByteArray(lexiconBytes,skipBytes);
                             //write lexicon entry to disk
                             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
                             bufferLex.put(lexiconBytes);
@@ -458,7 +479,6 @@ public class SPIMI {
             ByteBuffer tfs = ByteBuffer.allocate(tfLen);
             tfChannel.read(tfs);
             List<Integer> decompressedTfs = c.unaryDecode(tfs.array());
-            //TODO: calcolare term upper bound e metterlo nel nuovo lexicon
             double maxscore = 0.0;
             for(int i = 0; i < decompressedDocids.size(); i++){
                 int tf = decompressedTfs.get(i);
@@ -470,6 +490,43 @@ public class SPIMI {
                 }
             }
             //TODO: calcolare skip blocks
+            // implement here...
+
+            //write the new lexicon entry
+            byte[] lexiconBytes;
+            lexiconBytes = ByteBuffer.allocate(22).put(term).array();
+            //take the document frequency
+            byte[] dfBytes = ByteBuffer.allocate(4).putInt(l.getdF()).array();
+            //take the collection frequency
+            byte[] cfBytes = ByteBuffer.allocate(8).putLong(l.getCf()).array();
+            //take list dim for both docids and tfs
+            byte[] docBytes = ByteBuffer.allocate(4).putInt(docLen).array();
+            byte[] tfBytes = ByteBuffer.allocate(4).putInt(tfLen).array();
+            //take the offset of docids
+            byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(docOffset).array();
+            //take the offset of tfs
+            byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(tfOffset).array();
+            byte[] idfBytes = ByteBuffer.allocate(8).putDouble(l.getIdf()).array();
+            byte[] tupBytes = ByteBuffer.allocate(8).putDouble(maxscore).array();
+            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(0).array();
+            byte[] skipBytes = ByteBuffer.allocate(4).putInt(0).array();
+            //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
+            lexiconBytes = addByteArray(lexiconBytes,dfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,cfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,docBytes);
+            lexiconBytes = addByteArray(lexiconBytes,tfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
+            lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,idfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,tupBytes);
+            lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
+            lexiconBytes = addByteArray(lexiconBytes,skipBytes);
+            //write lexicon entry to disk
+            ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
+            bufferLex.put(lexiconBytes);
+            bufferLex.flip();
+            outLexChannel.write(bufferLex);
+
             lexOffset+=entrySize;
             totLen+=entrySize;
         }

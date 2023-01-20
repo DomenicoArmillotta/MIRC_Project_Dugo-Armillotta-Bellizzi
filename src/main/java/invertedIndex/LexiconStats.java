@@ -20,8 +20,9 @@ public class LexiconStats implements Serializable {
     private int curdoc;
     private int curTf;
     private double idf;
-
-    //public List<Posting> pointer;
+    private double termUpperBound;
+    private long offsetSkip;
+    private int skipLen;
 
     //TODO: decidere se metter qua l'indice e creare le statistiche man mano in spimi
 
@@ -42,6 +43,9 @@ public class LexiconStats implements Serializable {
         this.offsetDocid = b.getLong(20); //read fifth value, a long
         this.offsetTf = b.getLong(28); //read sixth value, a long
         this.idf = b.getDouble(36); //read seventh value, a double
+        this.termUpperBound = b.getDouble(44);
+        this.offsetSkip = b.getLong(52);
+        this.skipLen = b.getInt(60);
         //TODO: add to the class a field for the term upper bound, the offset of the skip info file and the length of the skip entry
     }
 
@@ -136,6 +140,29 @@ public class LexiconStats implements Serializable {
 
     public void setIdf(double idf) {
         this.idf = idf;
+    }
+    public double getTermUpperBound() {
+        return termUpperBound;
+    }
+
+    public void setTermUpperBound(double termUpperBound) {
+        this.termUpperBound = termUpperBound;
+    }
+
+    public long getOffsetSkip() {
+        return offsetSkip;
+    }
+
+    public void setOffsetSkip(long offsetSkip) {
+        this.offsetSkip = offsetSkip;
+    }
+
+    public int getSkipLen() {
+        return skipLen;
+    }
+
+    public void setSkipLen(int skipLen) {
+        this.skipLen = skipLen;
     }
 
 
