@@ -1,6 +1,7 @@
 package indexing;
 
 
+import compression.Compressor;
 import fileManager.ConfigurationParameters;
 import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
@@ -388,7 +389,7 @@ public class SPIMI {
         inputLexChannel.transferTo(0, inputLexChannel.size(), lexChannel);
     }
 
-    public void computeMaxScores(){
+    public void computeMaxScores() throws IOException {
         //questo metodo legge il lexicon un termine alla volta; per ogni termine calcola la term upper bound leggendo la lista;
         //serve anche aprire il doc index per la document length; si chiama bm25 per ogni doc della lista e si prende il massimo
         //punteggio e si scrive sul file del lexicon
@@ -397,12 +398,76 @@ public class SPIMI {
         //per sapere quante coppie (b,endocid) sono basta fare la radice di docfreq
         //conviene fare in un altro file e aggiungere offset e lunghezza del blocco (long, int)
         //File da dichiarare per leggere:
-        //docindex
-        //docids
-        //tf
+        //docindex -> ok
+        //docids -> ok
+        //tf -> ok
         //File da dichiarare per leggere e scrivere:
-        //lexicon
-        //skipinfo
+        //lexicon -> lettura ok
+        //skipinfo ->ok
+        RandomAccessFile inDocsFile = new RandomAccessFile(new File("docs/docids.txt"),"rw");
+        FileChannel docChannel = inDocsFile.getChannel();
+        RandomAccessFile inTfFile = new RandomAccessFile(new File("docs/tfs.txt"),"rw");
+        FileChannel tfChannel = inTfFile.getChannel();
+        RandomAccessFile inLexFile = new RandomAccessFile(new File("docs/lexicon.txt"),"rw");
+        FileChannel lexChannel = inLexFile.getChannel();
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"),"rw");
+        FileChannel docIndexChannel = docIndexFile.getChannel();
+        RandomAccessFile skipInfoFile = new RandomAccessFile(new File("docs/skipInfo.txt"),"rw");
+        FileChannel skipInfoChannel = skipInfoFile.getChannel();
+        //output file for the updated lexicon with the skip info pointers and term upper bound
+        RandomAccessFile outLexFile = new RandomAccessFile(new File("docs/lexiconTot.txt"),"rw");
+        FileChannel outLexChannel = outLexFile.getChannel();
+        Compressor c = new Compressor();
+        //for each term we read the posting list, decompress it and compute the max score
+        int totLen = 0;
+        int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
+        long lexOffset = 0;
+        long skipOffset = 0;
+        long docOffset = 0; //offset of the docids list in the docids output file
+        long tfOffset = 0; //offset of the tfs list in the tfs output file
+        while(totLen<inLexFile.length()){
+            ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);
+            //we set the position in the files using the offsets
+            lexChannel.position(lexOffset);
+            lexChannel.read(readBuffer);
+            readBuffer.position(0); //aggiungere anche nel merging!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //read first 22 bytes for the term
+            ByteBuffer term = ByteBuffer.allocate(entrySize);
+            readBuffer.get(term.array(), 0, 22);
+            //read remaining bytes for the lexicon stats
+            ByteBuffer val = ByteBuffer.allocate(entrySize-22);
+            readBuffer.get(val.array(), 0, entrySize-22);
+            //we use a method for reading the 36 bytes in a LexiconStats object
+            LexiconStats l = new LexiconStats(val);
+            //convert the bytes to the String
+            String word = Text.decode(term.array());
+            //replace null characters
+            word = word.replaceAll("\0", "");
+            //now we read the inverted files and compute the scores
+            long offsetDoc = l.getOffsetDocid();
+            long offsetTf = l.getOffsetTf();
+            int docLen = l.getDocidsLen();
+            int tfLen = l.getTfLen();
+            docChannel.position(offsetDoc);
+            ByteBuffer docids = ByteBuffer.allocate(docLen);
+            docChannel.read(docids);
+            List<Integer> decompressedDocids = c.variableByteDecode(docids.array());
+            tfChannel.position(offsetTf);
+            ByteBuffer tfs = ByteBuffer.allocate(tfLen);
+            tfChannel.read(tfs);
+            List<Integer> decompressedTfs = c.unaryDecode(tfs.array());
+            //TODO: calcolare term upper bound e metterlo nel nuovo lexicon
+            // steps:
+            // prendi il docid per prendere la doclen dal docindex
+            // prendi la tf
+            // prendi l'avg doc len
+            // applica bm25
+            // prendi il max della lista
+            //TODO: calcolare skip blocks
+            lexOffset+=entrySize;
+            totLen+=entrySize;
+        }
+
     }
 
 }

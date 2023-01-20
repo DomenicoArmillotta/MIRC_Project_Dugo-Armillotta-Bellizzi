@@ -13,12 +13,17 @@ import java.util.List;
 import static utility.Utils.addByteArray;
 
 public class CompressorTest extends TestCase {
-    public BitSet unaryEncodeNumber(int x) {
+    public byte[] unaryEncodeNumber(int x) {
         BitSet b = new BitSet(x);
+        System.out.println(b);
+        if(x==1){
+            byte[] res = new byte[1];
+            return res;
+        }
         /*b.set(x-1);
         b.flip(0,x);*/
         b.set(1,x);
-        return b;
+        return b.toByteArray();
     }
 
     public BitSet unaryEncode(int[] values) {
@@ -39,7 +44,11 @@ public class CompressorTest extends TestCase {
         ArrayUtils.reverse(b); //forse non serve
         int n = 0;
         for(int i = 0; i < b.length; i++) {
-            if(b[i]!= 0xFF && ((b[i] & 0x01) == 0)){
+            if(b[i] == 0x00){
+                numbers.add(1);
+                n=0;
+            }
+            else if(b[i]!= 0xFF && ((b[i] & 0x01) == 0)){
                 BitSet bs = BitSet.valueOf(new byte[]{b[i]});
                 numbers.add(bs.length()+n);
                 n=0;
@@ -56,10 +65,8 @@ public class CompressorTest extends TestCase {
     }
 
     public void testUnaryEncode() {
-        BitSet b = unaryEncodeNumber(34);
-        byte[] ba = b.toByteArray();
-        System.out.println(b);
-        ByteBuffer bf = ByteBuffer.allocate(b.length());
+        byte[] ba = unaryEncodeNumber(1);
+        ByteBuffer bf = ByteBuffer.allocate(ba.length);
         bf.put(ba);
         bf.flip();
         //byte[] res = new byte[b.length()];
@@ -246,14 +253,6 @@ public class CompressorTest extends TestCase {
     }
 
     public void testUnaryDecodeNumber() {
-    }
-
-    public void testUnaryDecode() {
-        BitSet b1 = unaryEncodeNumber(4);
-        BitSet b2 = unaryEncodeNumber(2);
-        for(int i = 0; i < b1.length(); i++){
-            System.out.println(b1.get(i));
-        }
     }
 
     public void testVariableByteEncodeNumber() {

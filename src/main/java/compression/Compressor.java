@@ -23,6 +23,10 @@ import static utility.Utils.addByteArray;
 public class Compressor {
 
     public byte[] unaryEncode(int x) {
+        if(x==1){
+            byte[] res = new byte[1];
+            return res;
+        }
         BitSet b = new BitSet(x);
         b.set(1,x);
         return b.toByteArray();
@@ -37,7 +41,11 @@ public class Compressor {
         ArrayUtils.reverse(b); //forse non serve
         int n = 0;
         for(int i = 0; i < b.length; i++) {
-            if(b[i]!= 0xFF && ((b[i] & 0x01) == 0)){
+            if(b[i] == 0x00){
+                numbers.add(1);
+                n=0;
+            }
+            else if(b[i]!= 0xFF && ((b[i] & 0x01) == 0)){
                 BitSet bs = BitSet.valueOf(new byte[]{b[i]});
                 numbers.add(bs.length()+n);
                 n=0;
