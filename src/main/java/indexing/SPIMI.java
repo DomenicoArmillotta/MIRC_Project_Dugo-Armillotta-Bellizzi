@@ -208,8 +208,7 @@ public class SPIMI {
                             tempDocChannel.write(docids);
                             tfs.flip();
                             tempTfChannel.write(tfs);
-                            byte[] lexiconBytes;
-                            lexiconBytes = ByteBuffer.allocate(22).put(term1).array();
+                            byte[] lexiconBytes = Utils.getBytesFromString(word1);
                             //take the document frequency
                             byte[] dfBytes = ByteBuffer.allocate(4).putInt(l1.getdF()).array();
                             //take the collection frequency
@@ -261,8 +260,7 @@ public class SPIMI {
                             tempDocChannel.write(docids);
                             tfs.flip();
                             tempTfChannel.write(tfs);
-                            byte[] lexiconBytes;
-                            lexiconBytes = ByteBuffer.allocate(22).put(term2).array();
+                            byte[] lexiconBytes = Utils.getBytesFromString(word2);
                             //take the document frequency
                             byte[] dfBytes = ByteBuffer.allocate(4).putInt(l2.getdF()).array();
                             //take the collection frequency
@@ -329,8 +327,7 @@ public class SPIMI {
                             tempTfChannel.write(tfs2);
                             int docLen = l1.getDocidsLen()+l2.getDocidsLen();
                             int tfLen = l1.getTfLen()+l2.getTfLen();
-                            byte[] lexiconBytes;
-                            lexiconBytes = ByteBuffer.allocate(22).put(term1).array();
+                            byte[] lexiconBytes = Utils.getBytesFromString(word1);
                             //take the document frequency
                             byte[] dfBytes = ByteBuffer.allocate(4).putInt(l1.getdF()+l2.getdF()).array();
                             //take the collection frequency
@@ -493,8 +490,7 @@ public class SPIMI {
             // implement here...
 
             //write the new lexicon entry
-            byte[] lexiconBytes;
-            lexiconBytes = ByteBuffer.allocate(22).put(term).array();
+            byte[] lexiconBytes = Utils.getBytesFromString(word);
             //take the document frequency
             byte[] dfBytes = ByteBuffer.allocate(4).putInt(l.getdF()).array();
             //take the collection frequency
@@ -503,9 +499,9 @@ public class SPIMI {
             byte[] docBytes = ByteBuffer.allocate(4).putInt(docLen).array();
             byte[] tfBytes = ByteBuffer.allocate(4).putInt(tfLen).array();
             //take the offset of docids
-            byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(docOffset).array();
+            byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(l.getOffsetDocid()).array();
             //take the offset of tfs
-            byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(tfOffset).array();
+            byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(l.getOffsetDocid()).array();
             byte[] idfBytes = ByteBuffer.allocate(8).putDouble(l.getIdf()).array();
             byte[] tupBytes = ByteBuffer.allocate(8).putDouble(maxscore).array();
             byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(0).array();

@@ -48,7 +48,7 @@ public class DaatTest extends TestCase {
                 ByteBuffer bf1 = ByteBuffer.allocate(entrySize-22);
                 buffer.get(bf1.array(), 0, entrySize-22);
                 l = new LexiconStats(bf1);
-                System.out.println(l.getCf() + " " + l.getdF() + " " + l.getOffsetDocid() + " " + l.getDocidsLen() + " " + l.getIdf());
+                System.out.println(l.getCf() + " " + l.getdF() + " " + l.getOffsetDocid() + " " + l.getDocidsLen() + " " + l.getTermUpperBound());
                 break;
             } else if (key.compareTo(value) < 0) {
                 upperBound = midpoint - entrySize;
@@ -60,7 +60,8 @@ public class DaatTest extends TestCase {
     }
 
     public void testLexiconRead() throws IOException {
-        String lexiconPath = "docs/lexicon.txt";
+        //String lexiconPath = "docs/lexicon.txt";
+        String lexiconPath = "docs/lexiconTot.txt";
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
         FileChannel lexChannel = lexFile.getChannel();
         LexiconStats l = getPointer(lexChannel, "bile");

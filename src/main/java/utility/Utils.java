@@ -17,6 +17,19 @@ public class Utils {
         return concatenatedArray;
     }
 
+    public static byte[] getBytesFromString(String term){
+        Text key = new Text(term);
+        byte[] lexiconBytes;
+        if(key.getLength()>=21){
+            Text truncKey = new Text(term.substring(0,20));
+            lexiconBytes = truncKey.getBytes();
+        }
+        else{ //we allocate 22 bytes for the Text object, which is a string of 20 chars
+            lexiconBytes = ByteBuffer.allocate(22).put(key.getBytes()).array();
+        }
+        return lexiconBytes;
+    }
+
     public static int getDocLen(FileChannel channel, String key) throws IOException {
         int docLen = 0;
         int entrySize = ConfigurationParameters.DOC_INDEX_ENTRY_SIZE;

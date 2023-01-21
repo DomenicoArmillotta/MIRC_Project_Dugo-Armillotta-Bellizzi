@@ -29,7 +29,8 @@ public class Scorer {
     public static double bm25Weight(int tf_d, int d_len, double idf) throws IOException {
         double avg_len = ConfigurationParameters.getAverageDocumentLength();
         //return (((double)tf_d/((k1*((1-b) + b * (d_len/avg_len)))+tf_d)))*Math.log(htDocindex.keySet().size()/doc_freq);
-        return (((double)tf_d/((k1*((1-b) + b * (d_len/avg_len)))+tf_d)))*Math.log(idf);
+        //we already computed the logarithm for the computation of idf, so we don't apply it here!!!
+        return (((double)tf_d/((k1*((1-b) + b * (d_len/avg_len)))+tf_d)))*idf;
     }
 
     //method for normalizing the scores obtained with bm25

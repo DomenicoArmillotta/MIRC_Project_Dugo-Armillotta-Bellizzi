@@ -24,6 +24,8 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
 
+import static utility.Utils.addByteArray;
+
 public class SPIMI_InvertTest extends TestCase {
 
 
@@ -113,10 +115,43 @@ public class SPIMI_InvertTest extends TestCase {
                 }
             }
             System.out.println(word + ": " + maxscore);
+            //write the new lexicon entry
+            byte[] lexiconBytes = Utils.getBytesFromString(word);
+            //take the document frequency
+            byte[] dfBytes = ByteBuffer.allocate(4).putInt(l.getdF()).array();
+            //take the collection frequency
+            byte[] cfBytes = ByteBuffer.allocate(8).putLong(l.getCf()).array();
+            //take list dim for both docids and tfs
+            byte[] docBytes = ByteBuffer.allocate(4).putInt(docLen).array();
+            byte[] tfBytes = ByteBuffer.allocate(4).putInt(tfLen).array();
+            //take the offset of docids
+            byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(l.getOffsetDocid()).array();
+            //take the offset of tfs
+            byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(l.getOffsetDocid()).array();
+            byte[] idfBytes = ByteBuffer.allocate(8).putDouble(l.getIdf()).array();
+            byte[] tupBytes = ByteBuffer.allocate(8).putDouble(maxscore).array();
+            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(0).array();
+            byte[] skipBytes = ByteBuffer.allocate(4).putInt(0).array();
+            //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
+            lexiconBytes = addByteArray(lexiconBytes,dfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,cfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,docBytes);
+            lexiconBytes = addByteArray(lexiconBytes,tfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
+            lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,idfBytes);
+            lexiconBytes = addByteArray(lexiconBytes,tupBytes);
+            lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
+            lexiconBytes = addByteArray(lexiconBytes,skipBytes);
+            //write lexicon entry to disk
+            ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
+            bufferLex.put(lexiconBytes);
+            bufferLex.flip();
+            outLexChannel.write(bufferLex);
+
             lexOffset+=entrySize;
             totLen+=entrySize;
         }
-
     }
 
     public int getDocLen(FileChannel channel, String key) throws IOException {
