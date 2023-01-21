@@ -6,6 +6,7 @@ import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
 import invertedIndex.Posting;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.thirdparty.org.checkerframework.checker.units.qual.C;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
@@ -35,6 +36,7 @@ public class Daat {
 
 
     public Daat(){
+        //TODO: non usiamo questo, abbiamo un file per il document index!!
         //open document index
         db = DBMaker.fileDB("docs/docIndex.db").make();
         docIndex = db
@@ -228,26 +230,22 @@ public class Daat {
         return null;
     }
 
-    //iterate over the posting list ot get the desired term frequency, return 0 otherwise
-    private int getFreq(ArrayList<Posting> postingList, int docid){
-        /*int pointer = 0;
-        while(pointer < postingList.size()){
-            Posting p = postingList.get(pointer);
-            if(ByteBuffer.wrap(p.getDocidb()).getInt() == docid){
-                return ByteBuffer.wrap(p.getTfb()).getInt();
-            }
-            pointer++;
-        }
-        */return 0;
+
+    //TODO: questiìo metodo deve prendere in ingresso l'indice del docid nella lista e chiamare una funzione che decomprime
+    // esclusivamente l'elemento desiderato; nella funzione usiamo un contatore, quando abbiamo un elemento, se il contatore
+    // non ha raggiunto l'indice, allora andiamo avanti, fino a quando non otteniamo l'elemento per cui il contatore
+    // ha raggiunto l'indice corretto
+    //iterate over the posting list to get the desired term frequency, return 0 otherwise
+    private int getFreq(FileChannel tfChannel, String term, int index) throws IOException {
+        tfChannel.position(lexicon.get(term).getOffsetTf());
+        // Read the compressed posting list data from the file
+        ByteBuffer data = ByteBuffer.allocate(lexicon.get(term).getTfLen());
+        tfChannel.read(data);
+        byte[] tfs = data.array();
+        Compressor c = new Compressor();
+        int tf = c.unaryDecodeBlock(tfs, index).get(0); //TODO: da modificare il metodo di decompressione
+        return tf;
     }
-
-
-    /*private int getFreq(ArrayList<Posting> postingList, int docid){
-        for(Posting p: postingList){
-            if(p.getDocumentId() == docid) return p.getTermFrequency();
-        }
-        return 0;
-    }*/
 
     //Aggiungere decompressione
     private int next(RandomAccessFile file, String term, int value) throws IOException {
@@ -280,39 +278,45 @@ public class Daat {
 
     //nextGEQ(lp, k) find the next posting in list lp with docID >= k and
     //return its docID. Return value > MAXDID if none exists.
-    private int nextGEQ(FileChannel docChannel, String term, int value) throws IOException {
-        //TODO: implement
+    private int nextGEQ(FileChannel docChannel, FileChannel skips, String term, int value) throws IOException {
         Compressor c = new Compressor();
         //Seek to the position in the file where the posting list for the term is stored
         docChannel.position(lexicon.get(term).getOffsetDocid());
 
         // Read the compressed posting list data from the file
-        byte[] data = new byte[lexicon.get(term).getDocidsLen()];
-        docChannel.read(ByteBuffer.wrap(data));
+        ByteBuffer data = ByteBuffer.allocate(lexicon.get(term).getDocidsLen());
+        docChannel.read(data);
+        byte[] docids = data.array();
 
         // Decompress the data using the appropriate decompression algorithm
-        int n = (int) Math.ceil(Math.sqrt(lexicon.get(term).getdF()));
+        int n = (int) Math.floor(Math.sqrt(lexicon.get(term).getdF()));
         int i = 0;
-        while(i< n) {
-            List<Integer> posting_list = c.variableByteDecodeBlock(data, n);
-            //TODO: due scelte qui, o shifti l'array o modifichi prendendo un sotto array ad un certo offset
-            // ---> usare skip blocks
-            //data la lista si può fare il controllo
-            for (int doc_id : posting_list) {
-                if (doc_id >= value) {
-                    return doc_id;
+        int nPostings = lexicon.get(term).getdF();
+        skips.position(lexicon.get(term).getOffsetSkip());
+        while(i<= nPostings) {
+            ByteBuffer readBuffer = ByteBuffer.allocate(lexicon.get(term).getSkipLen());
+            skips.read(readBuffer);
+            readBuffer.position(0);
+            int endocid = readBuffer.getInt();
+            int skiplen = readBuffer.getInt();
+            if(endocid >= value) {
+                List<Integer> posting_list = c.variableByteDecodeBlock(docids, n);
+                for (int docId : posting_list) {
+                    if (docId >= value) {
+                        return docId;
+                    }
                 }
+            }
+            //TODO: if the docid is not in this block we need to shift the byte array and read the next block
 
+            //we need to update the index; check if we are in the last block
+            if(i+n > nPostings){
+                i = nPostings;
+            }
+            else{
+                i+=n;
             }
         }
-
-        // Iterate through the posting list and return the first entry that is greater than or equal to the search value
-        /*for (int doc_id : posting_list) {
-            if (doc_id >= value) {
-                return doc_id;
-            }
-        }*/
-
         // If no such value was found, return a special value indicating that the search failed
         return -1;
     }
