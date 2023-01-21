@@ -1,7 +1,6 @@
 package queryProcessing;
 
 import fileManager.ConfigurationParameters;
-import org.apache.kerby.config.Config;
 
 import java.io.IOException;
 import java.util.HashMap;

@@ -1,9 +1,12 @@
 package queryProcessing;
 
 import fileManager.ConfigurationParameters;
+import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.Text;
+import preprocessing.PreprocessDoc;
+import utility.Utils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -12,6 +15,11 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 public class DaatTest extends TestCase {
     public LexiconStats getPointer(FileChannel channel, String key) throws IOException {
@@ -63,19 +71,44 @@ public class DaatTest extends TestCase {
     public void testLexiconRead() throws IOException {
         //String lexiconPath = "docs/lexicon.txt";
         String lexiconPath = "docs/lexiconTot.txt";
+        HashMap<String, LexiconStats> lexicon = new HashMap<>();
+        PreprocessDoc preprocessing = new PreprocessDoc();
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
         FileChannel lexChannel = lexFile.getChannel();
-        LexiconStats l = getPointer(lexChannel, "bile");
+        String query = "how often do american people eat";
+        List<String> proQuery = preprocessing.preprocess_doc_optimized(query);
+        for(String term: proQuery){
+            LexiconStats l = getPointer(lexChannel, term);
+            lexicon.put(term, l);
+        }
+        RandomAccessFile skipFile = new RandomAccessFile(new File("docs/skipInfo.txt"), "rw");
+        FileChannel skipChannel = skipFile.getChannel();
+        for(LexiconStats l: lexicon.values()) {
+            skipChannel.position(l.getOffsetSkip());
+            ByteBuffer readBuffer = ByteBuffer.allocate(l.getSkipLen());
+            skipChannel.read(readBuffer);
+            readBuffer.position(0);
+            int endocid1 = readBuffer.getInt();
+            int skiplen1 = readBuffer.getInt();
+            System.out.println(endocid1 + " " + skiplen1);
+        }
+        /*LexiconStats l = getPointer(lexChannel, "bile");
         LexiconStats l1 = getPointer(lexChannel, "american");
         LexiconStats l2 = getPointer(lexChannel, "medi");
         LexiconStats l3 = getPointer(lexChannel, "hello");
-        LexiconStats l4 = getPointer(lexChannel, "peopl");
+        LexiconStats l4 = getPointer(lexChannel, "peopl");*/
         /*LexiconStats l5 = getPointer(lexChannel, "build");
         LexiconStats l6 = getPointer(lexChannel, "face");
         LexiconStats l7 = getPointer(lexChannel, "abdomin");
         LexiconStats l8 = getPointer(lexChannel, "legal");
         LexiconStats l9 = getPointer(lexChannel, "dog");
         LexiconStats l10 = getPointer(lexChannel, "medic");*/
+    }
+
+    public void testConjunctiveDaat() throws IOException {
+        Daat d = new Daat();
+        String query = "stomach bile";
+        System.out.println(d.conjunctiveDaat(query,10));
     }
 
     public void testSkipInfo() throws IOException {

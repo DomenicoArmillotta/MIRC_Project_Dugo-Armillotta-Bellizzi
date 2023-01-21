@@ -35,7 +35,7 @@ public class ConfigurationParameters {
         return totLen.getDouble();
     }
 
-    public double getNumberOfDocuments() throws IOException {
+    public static double getNumberOfDocuments() throws IOException {
         RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
         FileChannel outChannel = outFile.getChannel();
         int pos = 16;

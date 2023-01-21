@@ -12,6 +12,7 @@ import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import preprocessing.PreprocessDoc;
+import utility.Utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,30 +21,23 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class Daat {
 
     private int maxDocID;
 
-    private HashMap<String, LexiconStats> lexicon;
-    private DB db;
-    private HTreeMap<String, Integer> docIndex;
+    public HashMap<String, LexiconStats> lexicon;
     private InvertedIndex index;
-    private String lexiconPath = "docs/lexicon.txt";
+    private String lexiconPath = "docs/lexiconTot.txt";
     private String docidsPath = "docs/docids.txt";
     private String tfsPath = "docs/tfs.txt";
-
+    private String docIndexPath = "docs/docIndex.txt";
+    private String skipsPath = "docs/skipInfo.txt";
 
     public Daat(){
-        //TODO: non usiamo questo, abbiamo un file per il document index!!
-        //open document index
-        db = DBMaker.fileDB("docs/docIndex.db").make();
-        docIndex = db
-                .hashMap("documentIndex")
-                .keySerializer(Serializer.STRING)
-                .valueSerializer(Serializer.INTEGER)
-                .createOrOpen();
+        lexicon = new HashMap<>();
     }
 
     /*
@@ -61,82 +55,56 @@ public class Daat {
         List<String> proQuery = new ArrayList<>();
         proQuery = preprocessing.preprocess_doc_optimized(query);
         int queryLen = proQuery.size();
-        // Initialize the result list
-        List<Integer> result = new ArrayList<>();
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
         FileChannel lexChannel = lexFile.getChannel();
-        MappedByteBuffer lexBuf = lexChannel.map(FileChannel.MapMode.READ_WRITE,0, lexChannel.size());
-        // Create a heap to store the postings of the terms in the query
-        //PriorityQueue<Posting> heap = new PriorityQueue<>();
-        /*
-        for (i = 0; i < num; i++) lp[i] = openList(q[i]);
-        did = 0;
-        while (did <= maxdocID){
-            did = nextGEQ(lp[0], did);
-            for (i=1; (i<num) && ((d=nextGEQ(lp[i], did)) == did); i++);
-            if (d > did) did = d; // not in intersection
+        RandomAccessFile docFile = new RandomAccessFile(new File(docidsPath), "rw");
+        FileChannel docChannel = docFile.getChannel();
+        RandomAccessFile tfFile = new RandomAccessFile(new File(tfsPath), "rw");
+        FileChannel tfChannel = tfFile.getChannel();
+        RandomAccessFile skipFile = new RandomAccessFile(new File(skipsPath), "rw");
+        FileChannel skipChannel = skipFile.getChannel();
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
+        FileChannel docIndexChannel = docIndexFile.getChannel();
+        TreeMap<Integer, Double> scores = new TreeMap<>();
+        int[] tf = new int[proQuery.size()];
+        for(String term: proQuery){
+            LexiconStats l = getPointer(lexChannel, term);
+            lexicon.put(term, l);
+        }
+        //TODO: sort query terms in lexicon by shortest list
+        int did = 0;
+        int maxDocID = (int)ConfigurationParameters.getNumberOfDocuments();
+        while (did <= maxDocID){
+            did = nextGEQ(docChannel, skipChannel, proQuery.get(0), did);
+            //System.out.println("NEW DOCID: " + did);
+            if(did == -1){
+                break;
+            }
+            int d = 0;
+            for (int i=1; (i<queryLen) && ((d=nextGEQ(docChannel, skipChannel, proQuery.get(i), did)) == did); i++);
+            if (d > did){
+                //System.out.println("HERE!!! " + did + " " + d);
+                did = d; // not in intersection
+                //System.out.println("After update!!! " + did + " " + d);
+            }
             else
             {
                 //docID is in intersection; now get all frequencies
-                for (i=0; i<num; i++) f[i] = getFreq(lp[i], did);
-                //compute BM25 score from frequencies and other data
+                for (int i=0; i<proQuery.size(); i++){
+                    //TODO: update getFreq to compute scores
+                    //tf[i] = getFreq(tfChannel, proQuery.get(i));
+                    int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                    double idf = lexicon.get(proQuery.get(i)).getIdf();
+                    //compute BM25 score from frequencies and other data
+                    double score = Scorer.bm25Weight(1, docLen, idf); //to modify after getFreq
+                    //TODO: dopo aver aggiunto uno score al treemap, controllare che ci siano almeno k elementi;
+                    // in quel caso togli via il primo
+                }
                 did++; //and increase did to search for next post
             }
         }
-        for (i = 0; i < num; i++) closeList(lp[i]);
-         */
-        /*
-        for (String term : proQuery) {
-            // Check if the term is in the lexicon
-            if (lexicon.containsKey(term)) {
-                // Get the posting list for the term
-                List<Posting> pl = index.get(lexicon.get(term).getIndex());
-                // Convert the byte array to a list of Posting objects
-                List<Posting> postings = new ArrayList<>();
-                    // Check if the term is in the lexicon
-                    if (lexicon.containsKey(term)) {
-                        // Get the posting list for the term
-                        // Add the postings to the heap
-                        heap.addAll(pl);
-                    } else {
-                        // If the term is not in the lexicon, return an empty result list
-                        return result;
-                    }
-                
-                // Add the postings to the heap
-                heap.addAll(postings);
-            } else {
-                // If the term is not in the lexicon, return an empty result list
-                return result;
-            }
-        }
-        // Initialize the current docid and term frequency
-        int curDocid = -1;
-        int curTf = 0;
-        // Initialize the count of the terms found in the current docid
-        int count = 0;
-        // Process the postings in the heap until it is empty or the result list is full
-        while (!heap.isEmpty() && result.size() < k) {
-            Posting posting = heap.poll();
-            // Get the docid and term frequency from the posting
-            int docid = ByteBuffer.wrap(posting.getDoc()).getInt();
-            int tf = ByteBuffer.wrap(posting.getTf()).getInt();
-            if (docid != curDocid) {
-                // If the docid is different from the current docid, reset the count
-                count = 0;
-                curDocid = docid;
-                curTf = 0;
-            }
-            // Increment the count and the term frequency
-            count++;
-            curTf += tf;
-            if (count == queryLen && curTf >= k) {
-                // If all the terms in the query are found and the term frequency is at least k, add the docid to the result list
-                result.add(docid);
-            }
-        }*/
         // Return the result list
-        return result;
+        return scores.keySet().stream().collect(Collectors.toList());
     }
 
 
@@ -145,8 +113,60 @@ public class Daat {
         List<String> proQuery = new ArrayList<>();
         proQuery = preprocessing.preprocess_doc_optimized(query);
         int queryLen = proQuery.size();
+        RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
+        FileChannel lexChannel = lexFile.getChannel();
+        RandomAccessFile docFile = new RandomAccessFile(new File(docidsPath), "rw");
+        FileChannel docChannel = docFile.getChannel();
+        RandomAccessFile tfFile = new RandomAccessFile(new File(tfsPath), "rw");
+        FileChannel tfChannel = tfFile.getChannel();
+        RandomAccessFile skipFile = new RandomAccessFile(new File(skipsPath), "rw");
+        FileChannel skipChannel = skipFile.getChannel();
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
+        FileChannel docIndexChannel = docIndexFile.getChannel();
+        TreeMap<Integer, Double> scores = new TreeMap<>();
+        int[] tf = new int[proQuery.size()];
+        //TODO: ATTENZIONE ATTENZIONE ATTENZIONE!!!!! SORTA STI CAZZO DI HEAP!!!
+        PriorityQueue<Double> thresholds = new PriorityQueue<>(); //idealmente deve avvere k elementi inizializzati a 0
+        TreeMap<String, Double> maxScores = new TreeMap<>();
+        for(String term: proQuery){
+            maxScores.put(term, lexicon.get(term).getTermUpperBound());
+        }
         //TODO: complete --> bisogna implementare maxscore:
-        // vedere se fare term upper bound
+        int did = 0;
+        int maxDocID = (int)ConfigurationParameters.getNumberOfDocuments();
+        while (did <= maxDocID){
+            //check essential and non essential lists
+            double currentScore = 0;
+            List<String> nonEssential = new ArrayList<>();
+            for(String key:  maxScores.keySet()){
+                double score = maxScores.get(key);
+                currentScore+=score;
+                if(score <= thresholds.peek()){
+                    nonEssential.add(key);
+                    continue;
+                }//the list is essential: process the following lists in pure disjunctive mode
+            }
+            //TODO: una volta capite le liste essenziali e non, processiamo in maniera disjunctive le essenziali: modificare sotto
+            did = nextGEQ(docChannel, skipChannel, proQuery.get(0), did);
+            if(did == -1){
+                break;
+            }
+            //docID is in intersection; now get all frequencies
+            for (int i=0; i<proQuery.size(); i++){
+                //TODO: update getFreq to compute scores
+                //tf[i] = getFreq(tfChannel, proQuery.get(i));
+                int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                double idf = lexicon.get(proQuery.get(i)).getIdf();
+                //compute BM25 score from frequencies and other data
+                double score = Scorer.bm25Weight(1, docLen, idf); //to modify after getFreq
+                //TODO: dopo aver aggiunto uno score al treemap, controllare che ci siano almeno k elementi;
+                // in quel caso togli via il primo
+            }
+            //TODO: una volta processate le essenziali, fai lookup sulle non essenziali controllando la threshold con
+            // il document upper bound
+            did++; //and increase did to search for next post
+        }
+
 
     }
 
@@ -236,14 +256,14 @@ public class Daat {
     // non ha raggiunto l'indice, allora andiamo avanti, fino a quando non otteniamo l'elemento per cui il contatore
     // ha raggiunto l'indice corretto
     //iterate over the posting list to get the desired term frequency, return 0 otherwise
-    private int getFreq(FileChannel tfChannel, String term, int index) throws IOException {
+    private int getFreq(FileChannel tfChannel, String term) throws IOException {
         tfChannel.position(lexicon.get(term).getOffsetTf());
         // Read the compressed posting list data from the file
         ByteBuffer data = ByteBuffer.allocate(lexicon.get(term).getTfLen());
         tfChannel.read(data);
         byte[] tfs = data.array();
         Compressor c = new Compressor();
-        int tf = c.unaryDecodeBlock(tfs, index).get(0); //TODO: da modificare il metodo di decompressione
+        int tf = c.unaryDecodeBlock(tfs, lexicon.get(term).getCurdoc()).get(0); //TODO: da modificare il metodo di decompressione
         return tf;
     }
 
@@ -289,11 +309,23 @@ public class Daat {
         byte[] docids = data.array();
 
         // Decompress the data using the appropriate decompression algorithm
-        int n = (int) Math.floor(Math.sqrt(lexicon.get(term).getdF()));
-        int i = 0;
+
         int nPostings = lexicon.get(term).getdF();
+        int n = (int) Math.floor(Math.sqrt(nPostings));
+        int i = 0;
         skips.position(lexicon.get(term).getOffsetSkip());
+        //System.out.println("HERE " + term + " " + value );
         while(i<= nPostings) {
+            //we need to update the index; check if we are in the last block
+            if(i == nPostings){
+                i++;
+            }
+            else if(i+n > nPostings){
+                i = nPostings;
+            }
+            else{
+                i+=n;
+            }
             ByteBuffer readBuffer = ByteBuffer.allocate(lexicon.get(term).getSkipLen());
             skips.read(readBuffer);
             readBuffer.position(0);
@@ -308,14 +340,8 @@ public class Daat {
                 }
             }
             //TODO: if the docid is not in this block we need to shift the byte array and read the next block
+            //System.out.println("Update index "+ term + " " + value + " " + i + " " + n + " " + nPostings);
 
-            //we need to update the index; check if we are in the last block
-            if(i+n > nPostings){
-                i = nPostings;
-            }
-            else{
-                i+=n;
-            }
         }
         // If no such value was found, return a special value indicating that the search failed
         return -1;
