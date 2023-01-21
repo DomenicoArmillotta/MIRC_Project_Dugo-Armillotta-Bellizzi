@@ -157,8 +157,6 @@ public class InvertedIndex {
             double idf = Math.log((N/nn));
             for(Posting p: pl){ //take the posting list
                 //write posting list to file
-                //TODO: calcola la term upper bound
-                //double maxscore = Scorer.bm25Weight(p.getTf(), docIndex.get(key), idf);
                 byte[] baDocs = compressor.variableByteEncodeNumber(p.getDocid()); //compress the docid with variable byte
                 ByteBuffer bufferValue = ByteBuffer.allocate(baDocs.length);
                 bufferValue.put(baDocs);

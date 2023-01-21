@@ -48,7 +48,8 @@ public class DaatTest extends TestCase {
                 ByteBuffer bf1 = ByteBuffer.allocate(entrySize-22);
                 buffer.get(bf1.array(), 0, entrySize-22);
                 l = new LexiconStats(bf1);
-                System.out.println(l.getCf() + " " + l.getdF() + " " + l.getOffsetDocid() + " " + l.getDocidsLen() + " " + l.getTermUpperBound());
+                System.out.println(l.getCf() + " " + l.getdF() + " " + l.getOffsetDocid() + " " + l.getDocidsLen()
+                        + " " + l.getTermUpperBound() + " " + l.getOffsetSkip() + " " + l.getSkipLen());
                 break;
             } else if (key.compareTo(value) < 0) {
                 upperBound = midpoint - entrySize;
@@ -75,5 +76,22 @@ public class DaatTest extends TestCase {
         LexiconStats l8 = getPointer(lexChannel, "legal");
         LexiconStats l9 = getPointer(lexChannel, "dog");
         LexiconStats l10 = getPointer(lexChannel, "medic");*/
+    }
+
+    public void testSkipInfo() throws IOException {
+        String lexiconPath = "docs/lexiconTot.txt";
+        RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
+        FileChannel lexChannel = lexFile.getChannel();
+        LexiconStats l1 = getPointer(lexChannel, "bile");
+        LexiconStats l = getPointer(lexChannel, "american");
+        RandomAccessFile skipFile = new RandomAccessFile(new File("docs/skipInfo.txt"), "rw");
+        FileChannel skipChannel = skipFile.getChannel();
+        skipChannel.position(l.getOffsetSkip());
+        ByteBuffer readBuffer = ByteBuffer.allocate(l.getSkipLen());
+        skipChannel.read(readBuffer);
+        readBuffer.position(0);
+        int endocid1 = readBuffer.getInt();
+        int skiplen1 = readBuffer.getInt();
+        System.out.println(endocid1 + " " + skiplen1);
     }
 }

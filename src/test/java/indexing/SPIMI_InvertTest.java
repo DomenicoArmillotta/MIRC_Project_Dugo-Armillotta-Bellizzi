@@ -71,6 +71,7 @@ public class SPIMI_InvertTest extends TestCase {
         long docOffset = 0; //offset of the docids list in the docids output file
         long tfOffset = 0; //offset of the tfs list in the tfs output file
         while(totLen<inLexFile.length()){
+            int skipLen = 0;
             ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);
             //we set the position in the files using the offsets
             lexChannel.position(lexOffset);
@@ -104,6 +105,7 @@ public class SPIMI_InvertTest extends TestCase {
             //System.out.println("Docids: "  + decompressedDocids);
             //System.out.println("Tfs: " + decompressedTfs);
             //System.out.println(word + " " + l.getdF() + " " + l.getCf() + " " + l.getDocidsLen() + " " + l.getTfLen() + " " + l.getIdf());
+
             double maxscore = 0.0;
             for(int i = 0; i < decompressedDocids.size(); i++){
                 int tf = decompressedTfs.get(i);
@@ -115,6 +117,37 @@ public class SPIMI_InvertTest extends TestCase {
                 }
             }
             System.out.println(word + ": " + maxscore);
+            int nBlocks = (int) Math.floor(Math.sqrt(l.getdF()));
+            int nDocids = 0;
+            int nBytes = 0;
+            byte[] skips = new byte[0];
+            while(nDocids < decompressedDocids.size()){
+                int i = nDocids;
+                if(nDocids+nBlocks> decompressedDocids.size())
+                    nDocids = decompressedDocids.size();
+                else nDocids += nBlocks;
+                int docid = decompressedDocids.get(nDocids-1);
+                while(i <= nDocids-1){
+                    nBytes += c.variableByteEncodeNumber(decompressedDocids.get(i)).length;
+                    i++;
+                }
+                //write in the skip info file the pair (endDocid,nBytes)
+                byte[] endDocidBytes = ByteBuffer.allocate(4).putInt(docid).array();
+                byte[] numBytes = ByteBuffer.allocate(4).putInt(nBytes).array();
+                endDocidBytes = addByteArray(endDocidBytes,numBytes);
+                skipLen+=endDocidBytes.length;
+                if(skips.length == 1){
+                    skips = endDocidBytes;
+                }
+                else{
+                    skips = addByteArray(skips, endDocidBytes);
+                }
+            }
+            //write the skip blocks in the file
+            ByteBuffer bufferSkips = ByteBuffer.allocate(skips.length);
+            bufferSkips.put(skips);
+            bufferSkips.flip();
+            skipInfoChannel.write(bufferSkips);
             //write the new lexicon entry
             byte[] lexiconBytes = Utils.getBytesFromString(word);
             //take the document frequency
@@ -130,8 +163,8 @@ public class SPIMI_InvertTest extends TestCase {
             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(l.getOffsetDocid()).array();
             byte[] idfBytes = ByteBuffer.allocate(8).putDouble(l.getIdf()).array();
             byte[] tupBytes = ByteBuffer.allocate(8).putDouble(maxscore).array();
-            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(0).array();
-            byte[] skipBytes = ByteBuffer.allocate(4).putInt(0).array();
+            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(skipOffset).array();
+            byte[] skipBytes = ByteBuffer.allocate(4).putInt(skipLen).array();
             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -148,9 +181,10 @@ public class SPIMI_InvertTest extends TestCase {
             bufferLex.put(lexiconBytes);
             bufferLex.flip();
             outLexChannel.write(bufferLex);
-
-            lexOffset+=entrySize;
-            totLen+=entrySize;
+            skipOffset+=skipLen; //update the offset on the skip info file
+            lexOffset+=entrySize; //update the offset on the lexicon file
+            totLen+=entrySize; //go to the next entry of the lexicon file
+            System.out.println(skipOffset);
         }
     }
 

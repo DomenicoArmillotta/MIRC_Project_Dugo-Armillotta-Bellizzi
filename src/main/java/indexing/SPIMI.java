@@ -446,11 +446,12 @@ public class SPIMI {
         long docOffset = 0; //offset of the docids list in the docids output file
         long tfOffset = 0; //offset of the tfs list in the tfs output file
         while(totLen<inLexFile.length()){
+            int skipLen = 0;
             ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);
             //we set the position in the files using the offsets
             lexChannel.position(lexOffset);
             lexChannel.read(readBuffer);
-            readBuffer.position(0); //aggiungere anche nel merging!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            readBuffer.position(0);
             //read first 22 bytes for the term
             ByteBuffer term = ByteBuffer.allocate(entrySize);
             readBuffer.get(term.array(), 0, 22);
@@ -471,6 +472,7 @@ public class SPIMI {
             docChannel.position(offsetDoc);
             ByteBuffer docids = ByteBuffer.allocate(docLen);
             docChannel.read(docids);
+
             List<Integer> decompressedDocids = c.variableByteDecode(docids.array());
             tfChannel.position(offsetTf);
             ByteBuffer tfs = ByteBuffer.allocate(tfLen);
@@ -486,9 +488,36 @@ public class SPIMI {
                     maxscore = score;
                 }
             }
-            //TODO: calcolare skip blocks
-            // implement here...
-
+            int nBlocks = (int) Math.ceil(Math.sqrt(l.getdF()));
+            int nDocids = 0;
+            int nBytes = 0;
+            byte[] skips = new byte[0];
+            while(nDocids < decompressedDocids.size()){
+                int i = nDocids;
+                if(nDocids+nBlocks> decompressedDocids.size())
+                    nDocids = decompressedDocids.size();
+                else nDocids += nBlocks;
+                int docid = decompressedDocids.get(nDocids);
+                while(i <= nDocids){
+                    nBytes += c.variableByteEncodeNumber(decompressedDocids.get(i)).length;
+                }
+                //write in the skip info file the pair (endDocid,nBytes)
+                byte[] endDocidBytes = ByteBuffer.allocate(4).putInt(docid).array();
+                byte[] numBytes = ByteBuffer.allocate(4).putInt(nBytes).array();
+                endDocidBytes = addByteArray(endDocidBytes,numBytes);
+                skipLen+=endDocidBytes.length;
+                if(skips.length == 1){
+                    skips = endDocidBytes;
+                }
+                else{
+                    skips = addByteArray(skips, endDocidBytes);
+                }
+            }
+            //write the skip blocks in the file
+            ByteBuffer bufferSkips = ByteBuffer.allocate(skips.length);
+            bufferSkips.put(skips);
+            bufferSkips.flip();
+            skipInfoChannel.write(bufferSkips);
             //write the new lexicon entry
             byte[] lexiconBytes = Utils.getBytesFromString(word);
             //take the document frequency
@@ -504,8 +533,8 @@ public class SPIMI {
             byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(l.getOffsetDocid()).array();
             byte[] idfBytes = ByteBuffer.allocate(8).putDouble(l.getIdf()).array();
             byte[] tupBytes = ByteBuffer.allocate(8).putDouble(maxscore).array();
-            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(0).array();
-            byte[] skipBytes = ByteBuffer.allocate(4).putInt(0).array();
+            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(skipOffset).array();
+            byte[] skipBytes = ByteBuffer.allocate(4).putInt(skipLen).array();
             //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
             lexiconBytes = addByteArray(lexiconBytes,dfBytes);
             lexiconBytes = addByteArray(lexiconBytes,cfBytes);
@@ -522,9 +551,9 @@ public class SPIMI {
             bufferLex.put(lexiconBytes);
             bufferLex.flip();
             outLexChannel.write(bufferLex);
-
-            lexOffset+=entrySize;
-            totLen+=entrySize;
+            skipOffset+=skipLen; //update the offset on the skip info file
+            lexOffset+=entrySize; //update the offset on the lexicon file
+            totLen+=entrySize; //go to the next entry of the lexicon file
         }
 
     }
