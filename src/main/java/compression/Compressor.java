@@ -61,6 +61,40 @@ public class Compressor {
         return numbers;
     }
 
+    public int unaryDecodeAtPosition(byte[] b, int num){
+        List<Integer> numbers = new ArrayList<>();
+        //ArrayUtils.reverse(b); //forse non serve
+        int n = 0;
+        int cont = 0;
+        for(int i = 0; i < b.length; i++) {
+            if(b[i] == 0x00){
+                cont++;
+                if(cont == num){
+                    return 1;
+                }
+                n=0;
+            }
+            else if(b[i]!= 0xFF && ((b[i] & 0x01) == 0)){
+                BitSet bs = BitSet.valueOf(new byte[]{b[i]});
+                cont++;
+                int number = bs.length()+n;
+                System.out.println("Number: " +number);
+                if(cont == num){
+                    return bs.length()+n;
+                }
+                n=0;
+            }
+            else if(b[i] == 0xFF){
+                n+= 8;
+            }
+            else{
+                BitSet bs = BitSet.valueOf(new byte[]{b[i]});
+                n+=bs.length();
+            }
+        }
+        return 0;
+    }
+
     public List<Integer> unaryDecodeBlock(byte[] b, int num){
         List<Integer> numbers = new ArrayList<>();
         ArrayUtils.reverse(b); //forse non serve
@@ -68,7 +102,11 @@ public class Compressor {
         int cont = 0;
         for(int i = 0; i < b.length; i++) {
             if(cont == num) break;
-            if(b[i]!= 0xFF && ((b[i] & 0x01) == 0)){
+            if(b[i] == 0x00){
+                numbers.add(1);
+                n=0;
+            }
+            else if(b[i]!= 0xFF && ((b[i] & 0x01) == 0)){
                 BitSet bs = BitSet.valueOf(new byte[]{b[i]});
                 numbers.add(bs.length()+n);
                 n=0;

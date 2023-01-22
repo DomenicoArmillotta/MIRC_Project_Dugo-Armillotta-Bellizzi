@@ -92,11 +92,13 @@ public class Daat {
                 //docID is in intersection; now get all frequencies
                 for (int i=0; i<proQuery.size(); i++){
                     //TODO: update getFreq to compute scores
-                    //tf[i] = getFreq(tfChannel, proQuery.get(i));
+                    tf[i] = getFreq(tfChannel, proQuery.get(i));
+                    System.out.println("tf: " + proQuery.get(i) + " " + did + " " + tf[i]);
                     int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
                     double idf = lexicon.get(proQuery.get(i)).getIdf();
                     //compute BM25 score from frequencies and other data
-                    double score = Scorer.bm25Weight(1, docLen, idf); //to modify after getFreq
+                    double score = Scorer.bm25Weight(tf[i], docLen, idf); //to modify after getFreq
+                    System.out.println(score);
                     //TODO: dopo aver aggiunto uno score al treemap, controllare che ci siano almeno k elementi;
                     // in quel caso togli via il primo
                 }
@@ -108,6 +110,28 @@ public class Daat {
     }
 
 
+    /*
+    while pivot < n and current 6= ⊥ do
+    10 score ← 0
+    11 next ← +∞
+    12 for i ← pivot to n − 1 do // Essential lists
+    13 if p[i].docid() = current then
+    14 score ← score + p[i].score()
+    15 p[i].next()
+    16 if p[i].docid() < next then
+    17 next ← p[i].docid()
+    18 for i ← pivot − 1 to 0 do // Non-essential lists
+    19 if score + ub[i] ≤ θ then
+    20 break
+    21 p[i].next(current)
+    22 if p[i].docid() = current then
+    23 score ← score + p[i].score()
+    24 if q.push(current, score) then // List pivot update
+    25 θ ← q.min()
+    26 while pivot < n and ub[pivot] ≤ θ do
+    27 pivot ← pivot + 1
+    28 current ← next
+     */
     public void disjunctiveDaat(String query, int k) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = new ArrayList<>();
@@ -126,47 +150,91 @@ public class Daat {
         TreeMap<Integer, Double> scores = new TreeMap<>();
         int[] tf = new int[proQuery.size()];
         //TODO: ATTENZIONE ATTENZIONE ATTENZIONE!!!!! SORTA STI CAZZO DI HEAP!!!
-        PriorityQueue<Double> thresholds = new PriorityQueue<>(); //idealmente deve avvere k elementi inizializzati a 0
+        //PriorityQueue<Double> thresholds = new PriorityQueue<>(); //idealmente deve avvere k elementi inizializzati a 0
         TreeMap<String, Double> maxScores = new TreeMap<>();
         for(String term: proQuery){
             maxScores.put(term, lexicon.get(term).getTermUpperBound());
         }
-        //TODO: complete --> bisogna implementare maxscore:
+        int pivot = 0;
         int did = 0;
+        did = nextGEQ(docChannel, skipChannel, proQuery.get(0), did);
+        double[] documentUB = new double[queryLen];
+        double prec = 0.0;
+        int index = 0;
+        for(String term: maxScores.keySet()){
+            documentUB[index] = maxScores.get(term) + prec;
+            prec = documentUB[index];
+        }
+        double threshold = 0;
         int maxDocID = (int)ConfigurationParameters.getNumberOfDocuments();
-        while (did <= maxDocID){
-            //check essential and non essential lists
-            double currentScore = 0;
-            List<String> nonEssential = new ArrayList<>();
-            for(String key:  maxScores.keySet()){
-                double score = maxScores.get(key);
+        int next = maxDocID;
+        for (int i=1; (i<queryLen); i++){
+            int d=nextGEQ(docChannel, skipChannel, proQuery.get(i), did);
+            if(d<did){
+                did = d;
+            }
+        }
+        while (pivot < queryLen && did != -1){
+            double score = 0;
+            //process essential lists
+            for (int i=pivot; i<queryLen; i++){
+                int current = nextGEQ(docChannel, skipChannel, proQuery.get(i), did);
+                if(current == did){
+                    //TODO: update getFreq to compute scores
+                    //tf[i] = getFreq(tfChannel, proQuery.get(i));
+                    int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                    double idf = lexicon.get(proQuery.get(i)).getIdf();
+                    //compute BM25 score from frequencies and other data
+                    score += Scorer.bm25Weight(1, docLen, idf); //to modify after getFreq
+                    current = nextGEQ(docChannel, skipChannel, proQuery.get(i), did+1); //update the pointer to next docid
+                }
+                if(current < next){
+                    next = current;
+                }
+            }
+            //process non essential lists
+            for (int i=pivot-1; i>=0; i--){
+                //check document upper bound
+                if(documentUB[i] + score <= threshold){
+                    break;
+                }
+                int current = nextGEQ(docChannel, skipChannel, proQuery.get(i), did);
+                if(current == did) {
+                    //TODO: update getFreq to compute scores
+                    tf[i] = getFreq(tfChannel, proQuery.get(i));
+                    int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                    double idf = lexicon.get(proQuery.get(i)).getIdf();
+                    //compute BM25 score from frequencies and other data
+                    score += Scorer.bm25Weight(tf[i], docLen, idf); //to modify after getFreq
+                }
+            }
+            //update pivot
+            //check if the new threshold is higher than previous one, in this case update the threshold
+            scores.put(did, score);
+            if(scores.firstEntry().getValue() > threshold && scores.size()== k){
+                threshold = scores.firstEntry().getValue();
+                while(pivot < queryLen && documentUB[pivot]<= threshold){
+                    pivot++;
+                }
+            }
+            did = next;
+
+            //List<String> nonEssential = new ArrayList<>();
+            /*for(String key:  maxScores.keySet()){
+                score = maxScores.get(key);
                 currentScore+=score;
                 if(score <= thresholds.peek()){
                     nonEssential.add(key);
                     continue;
                 }//the list is essential: process the following lists in pure disjunctive mode
-            }
+            }*/
             //TODO: una volta capite le liste essenziali e non, processiamo in maniera disjunctive le essenziali: modificare sotto
-            did = nextGEQ(docChannel, skipChannel, proQuery.get(0), did);
+            /*did = nextGEQ(docChannel, skipChannel, proQuery.get(0), did);
             if(did == -1){
                 break;
-            }
-            //docID is in intersection; now get all frequencies
-            for (int i=0; i<proQuery.size(); i++){
-                //TODO: update getFreq to compute scores
-                //tf[i] = getFreq(tfChannel, proQuery.get(i));
-                int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
-                double idf = lexicon.get(proQuery.get(i)).getIdf();
-                //compute BM25 score from frequencies and other data
-                double score = Scorer.bm25Weight(1, docLen, idf); //to modify after getFreq
-                //TODO: dopo aver aggiunto uno score al treemap, controllare che ci siano almeno k elementi;
-                // in quel caso togli via il primo
-            }
-            //TODO: una volta processate le essenziali, fai lookup sulle non essenziali controllando la threshold con
-            // il document upper bound
-            did++; //and increase did to search for next post
+            }*/
         }
-
+        //return top k scores
 
     }
 
@@ -251,7 +319,7 @@ public class Daat {
     }
 
 
-    //TODO: questiìo metodo deve prendere in ingresso l'indice del docid nella lista e chiamare una funzione che decomprime
+    //TODO: questo metodo deve prendere in ingresso l'indice del docid nella lista e chiamare una funzione che decomprime
     // esclusivamente l'elemento desiderato; nella funzione usiamo un contatore, quando abbiamo un elemento, se il contatore
     // non ha raggiunto l'indice, allora andiamo avanti, fino a quando non otteniamo l'elemento per cui il contatore
     // ha raggiunto l'indice corretto
@@ -263,7 +331,7 @@ public class Daat {
         tfChannel.read(data);
         byte[] tfs = data.array();
         Compressor c = new Compressor();
-        int tf = c.unaryDecodeBlock(tfs, lexicon.get(term).getCurdoc()).get(0); //TODO: da modificare il metodo di decompressione
+        int tf = c.unaryDecodeAtPosition(tfs, lexicon.get(term).getCurdoc());
         return tf;
     }
 
@@ -313,11 +381,30 @@ public class Daat {
         int nPostings = lexicon.get(term).getdF();
         int n = (int) Math.floor(Math.sqrt(nPostings));
         int i = 0;
+        int index = 0;
         skips.position(lexicon.get(term).getOffsetSkip());
-        //System.out.println("HERE " + term + " " + value );
-        while(i<= nPostings) {
+        ByteBuffer readBuffer = ByteBuffer.allocate(lexicon.get(term).getSkipLen());
+        skips.read(readBuffer);
+        readBuffer.position(0);
+        System.out.println("NextGEQ: " + term + " " + value + " " + nPostings );
+        while(i< nPostings) {
             //we need to update the index; check if we are in the last block
-            if(i == nPostings){
+            int endocid = readBuffer.getInt();
+            int skiplen = readBuffer.getInt();
+            //TODO: shift doicds by skiplen
+            if(endocid >= value) {
+                List<Integer> posting_list = c.variableByteDecodeBlock(docids, n);
+                for (int docId : posting_list) {
+                    index++;
+                    if (docId >= value) {
+                        lexicon.get(term).setCurdoc(index);
+                        System.out.println("cur doc: " + term + " " + lexicon.get(term).getCurdoc());
+                        return docId;
+                    }
+                }
+            }
+            //System.out.println("Update index "+ term + " " + value + " " + i + " " + n + " " + nPostings);
+            if(i+1 == nPostings){
                 i++;
             }
             else if(i+n > nPostings){
@@ -326,21 +413,6 @@ public class Daat {
             else{
                 i+=n;
             }
-            ByteBuffer readBuffer = ByteBuffer.allocate(lexicon.get(term).getSkipLen());
-            skips.read(readBuffer);
-            readBuffer.position(0);
-            int endocid = readBuffer.getInt();
-            int skiplen = readBuffer.getInt();
-            if(endocid >= value) {
-                List<Integer> posting_list = c.variableByteDecodeBlock(docids, n);
-                for (int docId : posting_list) {
-                    if (docId >= value) {
-                        return docId;
-                    }
-                }
-            }
-            //TODO: if the docid is not in this block we need to shift the byte array and read the next block
-            //System.out.println("Update index "+ term + " " + value + " " + i + " " + n + " " + nPostings);
 
         }
         // If no such value was found, return a special value indicating that the search failed
