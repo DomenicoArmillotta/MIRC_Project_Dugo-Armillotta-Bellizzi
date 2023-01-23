@@ -490,16 +490,17 @@ public class SPIMI {
             }
             int nBlocks = (int) Math.ceil(Math.sqrt(l.getdF()));
             int nDocids = 0;
-            int nBytes = 0;
             byte[] skips = new byte[0];
             while(nDocids < decompressedDocids.size()){
+                int nBytes = 0;
                 int i = nDocids;
                 if(nDocids+nBlocks> decompressedDocids.size())
                     nDocids = decompressedDocids.size();
                 else nDocids += nBlocks;
-                int docid = decompressedDocids.get(nDocids);
-                while(i <= nDocids){
+                int docid = decompressedDocids.get(nDocids-1);
+                while(i <= nDocids-1){
                     nBytes += c.variableByteEncodeNumber(decompressedDocids.get(i)).length;
+                    i++;
                 }
                 //write in the skip info file the pair (endDocid,nBytes)
                 byte[] endDocidBytes = ByteBuffer.allocate(4).putInt(docid).array();

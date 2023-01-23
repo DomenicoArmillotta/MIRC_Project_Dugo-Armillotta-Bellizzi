@@ -102,9 +102,9 @@ public class SPIMI_InvertTest extends TestCase {
             ByteBuffer tfs = ByteBuffer.allocate(tfLen);
             tfChannel.read(tfs);
             List<Integer> decompressedTfs = c.unaryDecode(tfs.array());
-            //System.out.println("Docids: "  + decompressedDocids);
-            //System.out.println("Tfs: " + decompressedTfs);
-            //System.out.println(word + " " + l.getdF() + " " + l.getCf() + " " + l.getDocidsLen() + " " + l.getTfLen() + " " + l.getIdf());
+            System.out.println("Docids: "  + decompressedDocids);
+            System.out.println("Tfs: " + decompressedTfs);
+            System.out.println(word + " " + l.getdF() + " " + l.getCf() + " " + l.getDocidsLen() + " " + l.getTfLen() + " " + l.getIdf());
 
             double maxscore = 0.0;
             for(int i = 0; i < decompressedDocids.size(); i++){
@@ -119,9 +119,9 @@ public class SPIMI_InvertTest extends TestCase {
             System.out.println(word + ": " + maxscore);
             int nBlocks = (int) Math.floor(Math.sqrt(l.getdF()));
             int nDocids = 0;
-            int nBytes = 0;
             byte[] skips = new byte[0];
             while(nDocids < decompressedDocids.size()){
+                int nBytes = 0;
                 int i = nDocids;
                 if(nDocids+nBlocks> decompressedDocids.size())
                     nDocids = decompressedDocids.size();
@@ -129,11 +129,14 @@ public class SPIMI_InvertTest extends TestCase {
                 int docid = decompressedDocids.get(nDocids-1);
                 while(i <= nDocids-1){
                     nBytes += c.variableByteEncodeNumber(decompressedDocids.get(i)).length;
+                    //System.out.println("Bytes: " + nBytes);
                     i++;
                 }
                 //write in the skip info file the pair (endDocid,nBytes)
                 byte[] endDocidBytes = ByteBuffer.allocate(4).putInt(docid).array();
+                System.out.println("End docid bytes: " + docid + " " + endDocidBytes.length);
                 byte[] numBytes = ByteBuffer.allocate(4).putInt(nBytes).array();
+                System.out.println("Bytes bytes: " + docid + " " + nBytes);
                 endDocidBytes = addByteArray(endDocidBytes,numBytes);
                 skipLen+=endDocidBytes.length;
                 if(skips.length == 1){

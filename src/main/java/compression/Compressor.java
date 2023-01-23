@@ -78,7 +78,7 @@ public class Compressor {
                 BitSet bs = BitSet.valueOf(new byte[]{b[i]});
                 cont++;
                 int number = bs.length()+n;
-                System.out.println("Number: " +number);
+                //System.out.println("Number: " +number);
                 if(cont == num){
                     return bs.length()+n;
                 }

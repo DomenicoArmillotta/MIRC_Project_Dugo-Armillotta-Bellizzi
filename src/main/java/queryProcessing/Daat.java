@@ -374,7 +374,6 @@ public class Daat {
         // Read the compressed posting list data from the file
         ByteBuffer data = ByteBuffer.allocate(lexicon.get(term).getDocidsLen());
         docChannel.read(data);
-        byte[] docids = data.array();
 
         // Decompress the data using the appropriate decompression algorithm
 
@@ -386,19 +385,25 @@ public class Daat {
         ByteBuffer readBuffer = ByteBuffer.allocate(lexicon.get(term).getSkipLen());
         skips.read(readBuffer);
         readBuffer.position(0);
-        System.out.println("NextGEQ: " + term + " " + value + " " + nPostings );
+        data.position(0);
+        System.out.println("NextGEQ: " + term + " " + value + " " + nPostings + " " + n);
         while(i< nPostings) {
             //we need to update the index; check if we are in the last block
             int endocid = readBuffer.getInt();
             int skiplen = readBuffer.getInt();
-            //TODO: shift doicds by skiplen
+            ByteBuffer block = ByteBuffer.allocate(skiplen);
+            //System.out.println("Skipping: " + term + " " + value + " " + endocid + " " + skiplen + " " + data.array().length);
+            data.get(block.array(), 0, skiplen);
             if(endocid >= value) {
-                List<Integer> posting_list = c.variableByteDecodeBlock(docids, n);
+                //System.out.println("Skipped: " + term + " " + endocid + ">=" + value);
+                List<Integer> posting_list = c.variableByteDecodeBlock(block.array(), n);
+                //System.out.println(term + " :" + posting_list);
                 for (int docId : posting_list) {
                     index++;
                     if (docId >= value) {
+                        System.out.println("Found: " + term + " " + docId+ ">=" + value);
                         lexicon.get(term).setCurdoc(index);
-                        System.out.println("cur doc: " + term + " " + lexicon.get(term).getCurdoc());
+                        //System.out.println("cur doc: " + term + " " + lexicon.get(term).getCurdoc());
                         return docId;
                     }
                 }
