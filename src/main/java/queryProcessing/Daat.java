@@ -141,6 +141,7 @@ public class Daat {
     27 pivot ← pivot + 1
     28 current ← next
      */
+
     public void disjunctiveDaat(String query, int k) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = new ArrayList<>();
@@ -185,7 +186,8 @@ public class Daat {
         HashMap<Integer, Integer> docLens = new HashMap<>();
         int pivot = 0;
         int did = 0;
-        did = nextGEQ(docChannel, tfChannel, skipChannel, proQuery.get(0), did);
+        did = nextGEQ(docChannel, tfChannel, skipChannel, queryTerms[0], did);
+        //lexicon.get(queryTerms[0]).setCurdoc(did);
         double[] documentUB = new double[queryLen];
         double prec = 0.0;
         int index = 0;
@@ -197,17 +199,20 @@ public class Daat {
         }
         double threshold = 0;
         int maxDocID = (int)ConfigurationParameters.getNumberOfDocuments();
-        int next = maxDocID;
+        int next;
         for (int i=1; (i<queryLen); i++){
             int d=nextGEQ(docChannel, tfChannel, skipChannel, queryTerms[i], did);
+            //lexicon.get(queryTerms[i]).setCurdoc(d);
             if(d<did){
                 did = d;
             }
         }
         while (pivot < queryLen && did != -1){
+            next = maxDocID;
             double score = 0;
             //process essential lists
             for (int i=pivot; i<queryLen; i++){
+                //int current = lexicon.get(queryTerms[i]).getCurdoc();
                 int current = nextGEQ(docChannel, tfChannel, skipChannel, queryTerms[i], did);
                 if(current == did){
                     tf[i] = lexicon.get(queryTerms[i]).getCurTf();
@@ -255,13 +260,14 @@ public class Daat {
             }
             //update pivot
             //check if the new threshold is higher than previous one, in this case update the threshold
-            if(scores.firstEntry() == null || scores.firstEntry().getValue() > score){
+            if(scores.firstEntry() == null || scores.firstEntry().getValue() >= score){
                 scores.put(did, score);
             }
             if(scores.size() > k){
                 scores.pollFirstEntry();
             }
             //scores.put(did, score);
+            //System.out.println("Score for " + did + ": " + score);
             if(scores.firstEntry().getValue() > threshold){
                 threshold = scores.firstEntry().getValue();
                 System.out.println("updated threshold: " + threshold);
@@ -270,22 +276,7 @@ public class Daat {
                 }
             }
             did = next;
-            next++;
             //System.out.println("Next did: " + did);
-
-            //List<String> nonEssential = new ArrayList<>();
-            /*for(String key:  maxScores.keySet()){
-                score = maxScores.get(key);
-                currentScore+=score;
-                if(score <= thresholds.peek()){
-                    nonEssential.add(key);
-                    continue;
-                }//the list is essential: process the following lists in pure disjunctive mode
-            }*/
-            /*did = nextGEQ(docChannel, skipChannel, proQuery.get(0), did);
-            if(did == -1){
-                break;
-            }*/
         }
         //TODO: return top k scores
 
