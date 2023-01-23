@@ -38,7 +38,7 @@ public class Compressor {
 
     public List<Integer> unaryDecode(byte[] b){
         List<Integer> numbers = new ArrayList<>();
-        ArrayUtils.reverse(b); //forse non serve
+        //ArrayUtils.reverse(b); //forse non serve
         int n = 0;
         for(int i = 0; i < b.length; i++) {
             if(b[i] == 0x00){
@@ -61,7 +61,36 @@ public class Compressor {
         return numbers;
     }
 
-    public int unaryDecodeAtPosition(byte[] b, int num){
+    public List<Integer> unaryDecodeBlock(byte[] b, int num){
+        List<Integer> numbers = new ArrayList<>();
+        //ArrayUtils.reverse(b); //forse non serve
+        int n = 0;
+        int cont = 0;
+        for(int i = 0; i < b.length; i++) {
+            if(cont == num) break;
+            if(b[i] == 0x00){
+                numbers.add(1);
+                cont++;
+                n=0;
+            }
+            else if(b[i]!= 0xFF && ((b[i] & 0x01) == 0)){
+                BitSet bs = BitSet.valueOf(new byte[]{b[i]});
+                numbers.add(bs.length()+n);
+                cont++;
+                n=0;
+            }
+            else if(b[i] == 0xFF){
+                n+= 8;
+            }
+            else{
+                BitSet bs = BitSet.valueOf(new byte[]{b[i]});
+                n+=bs.length();
+            }
+        }
+        return numbers;
+    }
+
+    /*public int unaryDecodeAtPosition(byte[] b, int num){
         List<Integer> numbers = new ArrayList<>();
         //ArrayUtils.reverse(b); //forse non serve
         int n = 0;
@@ -93,34 +122,7 @@ public class Compressor {
             }
         }
         return 0;
-    }
-
-    public List<Integer> unaryDecodeBlock(byte[] b, int num){
-        List<Integer> numbers = new ArrayList<>();
-        ArrayUtils.reverse(b); //forse non serve
-        int n = 0;
-        int cont = 0;
-        for(int i = 0; i < b.length; i++) {
-            if(cont == num) break;
-            if(b[i] == 0x00){
-                numbers.add(1);
-                n=0;
-            }
-            else if(b[i]!= 0xFF && ((b[i] & 0x01) == 0)){
-                BitSet bs = BitSet.valueOf(new byte[]{b[i]});
-                numbers.add(bs.length()+n);
-                n=0;
-            }
-            else if(b[i] == 0xFF){
-                n+= 8;
-            }
-            else{
-                BitSet bs = BitSet.valueOf(new byte[]{b[i]});
-                n+=bs.length();
-            }
-        }
-        return numbers;
-    }
+    }*/
 
     //TODO: we need methods to convert byte arrays to Bitset!! Here are some examples found online: --> non servono più
     //FIRST EXAMPLE:

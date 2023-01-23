@@ -115,6 +115,16 @@ public class DaatTest extends TestCase {
         System.out.println(d.conjunctiveDaat(query,10));
     }
 
+    public void testDisjunctiveDaat() throws IOException {
+        Daat d = new Daat();
+        String query = "bile acid";
+        d.disjunctiveDaat(query,10);
+        /*query = "american people";
+        System.out.println(d.conjunctiveDaat(query,10));*/
+        query = "france kidney";
+        d.disjunctiveDaat(query,10);
+    }
+
     public void testSkipInfo() throws IOException {
         String lexiconPath = "docs/lexiconTot.txt";
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");

@@ -488,11 +488,12 @@ public class SPIMI {
                     maxscore = score;
                 }
             }
-            int nBlocks = (int) Math.ceil(Math.sqrt(l.getdF()));
+            int nBlocks = (int) Math.floor(Math.sqrt(l.getdF()));
             int nDocids = 0;
             byte[] skips = new byte[0];
             while(nDocids < decompressedDocids.size()){
                 int nBytes = 0;
+                int tfBytes = 0;
                 int i = nDocids;
                 if(nDocids+nBlocks> decompressedDocids.size())
                     nDocids = decompressedDocids.size();
@@ -500,12 +501,19 @@ public class SPIMI {
                 int docid = decompressedDocids.get(nDocids-1);
                 while(i <= nDocids-1){
                     nBytes += c.variableByteEncodeNumber(decompressedDocids.get(i)).length;
+                    tfBytes += c.unaryEncode(decompressedTfs.get(i)).length;
+                    //System.out.println("Bytes: " + nBytes);
                     i++;
                 }
                 //write in the skip info file the pair (endDocid,nBytes)
                 byte[] endDocidBytes = ByteBuffer.allocate(4).putInt(docid).array();
+                //System.out.println("End docid bytes: " + docid + " " + endDocidBytes.length);
                 byte[] numBytes = ByteBuffer.allocate(4).putInt(nBytes).array();
+                //System.out.println("Bytes docid: " + docid + " " + nBytes);
+                byte[] numTfBytes = ByteBuffer.allocate(4).putInt(tfBytes).array();
+                //System.out.println("Bytes tf: " + docid + " " + tfBytes);
                 endDocidBytes = addByteArray(endDocidBytes,numBytes);
+                endDocidBytes = addByteArray(endDocidBytes,numTfBytes);
                 skipLen+=endDocidBytes.length;
                 if(skips.length == 1){
                     skips = endDocidBytes;
@@ -531,7 +539,7 @@ public class SPIMI {
             //take the offset of docids
             byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(l.getOffsetDocid()).array();
             //take the offset of tfs
-            byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(l.getOffsetDocid()).array();
+            byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(l.getOffsetTf()).array();
             byte[] idfBytes = ByteBuffer.allocate(8).putDouble(l.getIdf()).array();
             byte[] tupBytes = ByteBuffer.allocate(8).putDouble(maxscore).array();
             byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(skipOffset).array();
