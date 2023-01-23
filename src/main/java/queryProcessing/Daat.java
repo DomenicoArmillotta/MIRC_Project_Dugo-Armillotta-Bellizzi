@@ -75,6 +75,11 @@ public class Daat {
             LexiconStats l = getPointer(lexChannel, term);
             lexicon.put(term, l);
         }
+        postingLists = new CompressedList[queryLen];
+        for(int i = 0; i < queryLen; i++){
+            postingLists[i] = openList(docChannel, tfChannel, skipChannel, proQuery.get(i));
+            lexicon.get(proQuery.get(i)).setIndex(i);
+        }
         //TODO: sort query terms in lexicon by shortest list
         int did = 0;
         int maxDocID = (int)ConfigurationParameters.getNumberOfDocuments();
@@ -172,6 +177,11 @@ public class Daat {
                 .forEachOrdered(x -> sortedTerms.put(x.getKey(), x.getValue()));
         Arrays.sort(termUB);
         String [] queryTerms = sortedTerms.keySet().toArray(new String[0]);
+        postingLists = new CompressedList[queryLen];
+        for(int i = 0; i < queryLen; i++){
+            postingLists[i] = openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
+            lexicon.get(queryTerms[i]).setIndex(i);
+        }
         HashMap<Integer, Integer> docLens = new HashMap<>();
         int pivot = 0;
         int did = 0;
@@ -182,6 +192,7 @@ public class Daat {
         for(double maxscore: termUB){
             documentUB[index] = maxscore + prec;
             prec = documentUB[index];
+            System.out.println(queryTerms[index] + " " + documentUB[index]);
             index++;
         }
         double threshold = 0;
@@ -222,7 +233,6 @@ public class Daat {
             for (int i=pivot-1; i>=0; i--){
                 //System.out.println("Non essential: " + queryTerms[i]);
                 //check document upper bound
-                double partial = documentUB[i] + score;
                 if(documentUB[i] + score <= threshold){
                     break;
                 }
@@ -279,6 +289,64 @@ public class Daat {
         }
         //TODO: return top k scores
 
+    }
+    //TODO: remove file channel from parameters
+    private int nextGEQ(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term, int value) throws IOException {
+        Compressor c = new Compressor();
+        //Seek to the position in the file where the posting list for the term is stored
+        int nPostings = lexicon.get(term).getdF();
+        int n = (int) Math.floor(Math.sqrt(nPostings));
+        int i = 0;
+        skips.position(lexicon.get(term).getOffsetSkip());
+        ByteBuffer data = ByteBuffer.wrap(postingLists[lexicon.get(term).getIndex()].getDocids());
+        ByteBuffer readBuffer = ByteBuffer.wrap(postingLists[lexicon.get(term).getIndex()].getSkipInfo());
+        ByteBuffer tfs = ByteBuffer.wrap(postingLists[lexicon.get(term).getIndex()].getTfs());
+        readBuffer.position(0);
+        data.position(0);
+        tfs.position(0);
+        //System.out.println("NextGEQ: " + term + " " + value + " " + nPostings + " " + n);
+        //System.out.println("TFS: "+ c.unaryDecode(tfs.array()));
+        while(i< nPostings) {
+            //we need to update the index; check if we are in the last block
+            int endocid = readBuffer.getInt();
+            int skipdocid = readBuffer.getInt();
+            int skiptf = readBuffer.getInt();
+            ByteBuffer blockDocId = ByteBuffer.allocate(skipdocid);
+            //System.out.println("Skipping: " + term + " " + value + " " + endocid + " " + skipdocid + " " + skiptf + " " + data.array().length);
+            data.get(blockDocId.array(), 0, skipdocid);
+            ByteBuffer blockTf = ByteBuffer.allocate(skipdocid);
+            tfs.get(blockTf.array(), 0, skiptf);
+            if(endocid >= value) {
+                //System.out.println("Skipped: " + term + " " + endocid + ">=" + value);
+                List<Integer> posting_list = c.variableByteDecodeBlock(blockDocId.array(), n);
+                List<Integer> postingTfs = c.unaryDecodeBlock(blockTf.array(), n);
+                //System.out.println(term + ": " + postingTfs);
+                int index = 0;
+                for (int docId : posting_list) {
+                    if (docId >= value) {
+                        //System.out.println("Found: " + term + " " + docId+ ">=" + value);
+                        //lexicon.get(term).setCurdoc(index);
+                        lexicon.get(term).setCurTf(postingTfs.get(index));
+                        //System.out.println("cur doc: " + term + " " + lexicon.get(term).getCurTf());
+                        return docId;
+                    }
+                    index++;
+                }
+            }
+            //System.out.println("Update index "+ term + " " + value + " " + i + " " + n + " " + nPostings);
+            if(i+1 == nPostings){
+                i++;
+            }
+            else if(i+n > nPostings){
+                i = nPostings;
+            }
+            else{
+                i+=n;
+            }
+
+        }
+        // If no such value was found, return a special value indicating that the search failed
+        return -1;
     }
 
     /*
@@ -344,8 +412,6 @@ public class Daat {
     //TODO: fare trec eval!!!!!
 
 
-    //TODO: scegliere come gestire le liste; se usare openlist su ogni termine e salvarle in memoria;
-    // oppure usare i puntatori su file, prendi la lista e applichi l'algoritmo
     public CompressedList openList(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term) throws IOException {
         docChannel.position(lexicon.get(term).getOffsetDocid());
         // Read the compressed posting list data from the file
@@ -412,7 +478,7 @@ public class Daat {
 
     //nextGEQ(lp, k) find the next posting in list lp with docID >= k and
     //return its docID. Return value > MAXDID if none exists.
-    private int nextGEQ(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term, int value) throws IOException {
+    private int nextGEQOld(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term, int value) throws IOException {
         Compressor c = new Compressor();
         //Seek to the position in the file where the posting list for the term is stored
         docChannel.position(lexicon.get(term).getOffsetDocid());
