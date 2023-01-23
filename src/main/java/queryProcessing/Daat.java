@@ -2,6 +2,7 @@ package queryProcessing;
 
 import compression.Compressor;
 import fileManager.ConfigurationParameters;
+import invertedIndex.CompressedList;
 import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
 import invertedIndex.Posting;
@@ -36,6 +37,8 @@ public class Daat {
     private String docIndexPath = "docs/docIndex.txt";
     private String skipsPath = "docs/skipInfo.txt";
 
+    private CompressedList[] postingLists;
+
     public Daat(){
         lexicon = new HashMap<>();
     }
@@ -65,6 +68,7 @@ public class Daat {
         FileChannel skipChannel = skipFile.getChannel();
         RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
         FileChannel docIndexChannel = docIndexFile.getChannel();
+        postingLists = new CompressedList[queryLen];
         TreeMap<Integer, Double> scores = new TreeMap<>();
         int[] tf = new int[proQuery.size()];
         for(String term: proQuery){
@@ -147,10 +151,9 @@ public class Daat {
         FileChannel skipChannel = skipFile.getChannel();
         RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
         FileChannel docIndexChannel = docIndexFile.getChannel();
-        TreeMap<Integer, Double> scores = new TreeMap<>();
+        TreeMap<Integer, Double> scores = new TreeMap<>(); //to store partial scores results
         int[] tf = new int[proQuery.size()];
-        //PriorityQueue<Double> thresholds = new PriorityQueue<>(); //idealmente deve avvere k elementi inizializzati a 0
-        TreeMap<String, Double> maxScores = new TreeMap<>();
+        TreeMap<String, Double> maxScores = new TreeMap<>(); //to store query term to term upper bound mappings
         double[] termUB = new double[queryLen];
         for(String term: proQuery){
             LexiconStats l = getPointer(lexChannel, term);
@@ -169,6 +172,7 @@ public class Daat {
                 .forEachOrdered(x -> sortedTerms.put(x.getKey(), x.getValue()));
         Arrays.sort(termUB);
         String [] queryTerms = sortedTerms.keySet().toArray(new String[0]);
+        HashMap<Integer, Integer> docLens = new HashMap<>();
         int pivot = 0;
         int did = 0;
         did = nextGEQ(docChannel, tfChannel, skipChannel, proQuery.get(0), did);
@@ -178,6 +182,7 @@ public class Daat {
         for(double maxscore: termUB){
             documentUB[index] = maxscore + prec;
             prec = documentUB[index];
+            index++;
         }
         double threshold = 0;
         int maxDocID = (int)ConfigurationParameters.getNumberOfDocuments();
@@ -195,41 +200,68 @@ public class Daat {
                 int current = nextGEQ(docChannel, tfChannel, skipChannel, queryTerms[i], did);
                 if(current == did){
                     tf[i] = lexicon.get(queryTerms[i]).getCurTf();
-                    int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                    //int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                    int docLen;
+                    if(docLens.get(did) == null){
+                        docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                    }
+                    else{
+                        docLen = docLens.get(did);
+                    }
                     double idf = lexicon.get(queryTerms[i]).getIdf();
                     //compute BM25 score from frequencies and other data
-                    score += Scorer.bm25Weight(tf[i], docLen, idf); //to modify after getFreq
-                    current = nextGEQ(docChannel, tfChannel, skipChannel, queryTerms[i], did+1); //update the pointer to next docid
+                    score += Scorer.bm25Weight(tf[i], docLen, idf);
+                    //System.out.println("Partial score for " + queryTerms[i] + " " + did + ": " + score);
                 }
+                current = nextGEQ(docChannel, tfChannel, skipChannel, queryTerms[i], did+1); //update the pointer to next docid
                 if(current < next){
                     next = current;
                 }
             }
             //process non essential lists
             for (int i=pivot-1; i>=0; i--){
+                //System.out.println("Non essential: " + queryTerms[i]);
                 //check document upper bound
+                double partial = documentUB[i] + score;
                 if(documentUB[i] + score <= threshold){
                     break;
                 }
                 int current = nextGEQ(docChannel, tfChannel, skipChannel, queryTerms[i], did);
                 if(current == did) {
                     tf[i] = lexicon.get(queryTerms[i]).getCurTf();
-                    int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                    //int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                    int docLen;
+                    if(docLens.get(did) == null){
+                        docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                    }
+                    else{
+                        docLen = docLens.get(did);
+                    }
                     double idf = lexicon.get(queryTerms[i]).getIdf();
                     //compute BM25 score from frequencies and other data
-                    score += Scorer.bm25Weight(tf[i], docLen, idf); //to modify after getFreq
+                    score += Scorer.bm25Weight(tf[i], docLen, idf);
+                    //System.out.println("Partial score for " + queryTerms[i] + " " + did + ": " + score);
                 }
             }
             //update pivot
             //check if the new threshold is higher than previous one, in this case update the threshold
-            scores.put(did, score);
-            if(scores.firstEntry().getValue() > threshold && scores.size()== k){
+            if(scores.firstEntry() == null || scores.firstEntry().getValue() > score){
+                scores.put(did, score);
+            }
+            if(scores.size() > k){
+                scores.pollFirstEntry();
+            }
+            //scores.put(did, score);
+            if(scores.firstEntry().getValue() > threshold){
                 threshold = scores.firstEntry().getValue();
+                System.out.println("updated threshold: " + threshold);
                 while(pivot < queryLen && documentUB[pivot]<= threshold){
                     pivot++;
                 }
             }
             did = next;
+            next++;
+            //System.out.println("Next did: " + did);
 
             //List<String> nonEssential = new ArrayList<>();
             /*for(String key:  maxScores.keySet()){
@@ -314,9 +346,22 @@ public class Daat {
 
     //TODO: scegliere come gestire le liste; se usare openlist su ogni termine e salvarle in memoria;
     // oppure usare i puntatori su file, prendi la lista e applichi l'algoritmo
-    public ArrayList<Posting> openList(String queryTerm) throws IOException {
-        //TODO: implement
-        return null;
+    public CompressedList openList(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term) throws IOException {
+        docChannel.position(lexicon.get(term).getOffsetDocid());
+        // Read the compressed posting list data from the file
+        ByteBuffer docIds = ByteBuffer.allocate(lexicon.get(term).getDocidsLen());
+        docChannel.read(docIds);
+        tfChannel.position(lexicon.get(term).getOffsetTf());
+        // Read the compressed posting list data from the file
+        ByteBuffer tfs = ByteBuffer.allocate(lexicon.get(term).getTfLen());
+        tfChannel.read(tfs);
+        skips.position(lexicon.get(term).getOffsetSkip());
+        ByteBuffer skipInfo = ByteBuffer.allocate(lexicon.get(term).getSkipLen());
+        skips.read(skipInfo);
+        skipInfo.position(0);
+        docIds.position(0);
+        tfs.position(0);
+        return new CompressedList(docIds.array(), tfs.array(), skipInfo.array());
     }
 
 
@@ -395,7 +440,7 @@ public class Daat {
             int skipdocid = readBuffer.getInt();
             int skiptf = readBuffer.getInt();
             ByteBuffer blockDocId = ByteBuffer.allocate(skipdocid);
-            System.out.println("Skipping: " + term + " " + value + " " + endocid + " " + skipdocid + " " + skiptf + " " + data.array().length);
+            //System.out.println("Skipping: " + term + " " + value + " " + endocid + " " + skipdocid + " " + skiptf + " " + data.array().length);
             data.get(blockDocId.array(), 0, skipdocid);
             ByteBuffer blockTf = ByteBuffer.allocate(skipdocid);
             tfs.get(blockTf.array(), 0, skiptf);
@@ -403,11 +448,11 @@ public class Daat {
                 //System.out.println("Skipped: " + term + " " + endocid + ">=" + value);
                 List<Integer> posting_list = c.variableByteDecodeBlock(blockDocId.array(), n);
                 List<Integer> postingTfs = c.unaryDecodeBlock(blockTf.array(), n);
-                System.out.println(term + " :" + postingTfs);
+                //System.out.println(term + ": " + postingTfs);
                 int index = 0;
                 for (int docId : posting_list) {
                     if (docId >= value) {
-                        System.out.println("Found: " + term + " " + docId+ ">=" + value);
+                        //System.out.println("Found: " + term + " " + docId+ ">=" + value);
                         //lexicon.get(term).setCurdoc(index);
                         lexicon.get(term).setCurTf(postingTfs.get(index));
                         //System.out.println("cur doc: " + term + " " + lexicon.get(term).getCurTf());

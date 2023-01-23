@@ -107,7 +107,7 @@ public class DaatTest extends TestCase {
 
     public void testConjunctiveDaat() throws IOException {
         Daat d = new Daat();
-        String query = "bile acid";
+        String query = "bile acid stomach";
         System.out.println(d.conjunctiveDaat(query,10));
         /*query = "american people";
         System.out.println(d.conjunctiveDaat(query,10));*/
@@ -117,12 +117,12 @@ public class DaatTest extends TestCase {
 
     public void testDisjunctiveDaat() throws IOException {
         Daat d = new Daat();
-        String query = "bile acid";
+        String query = "bile acid stomach american";
         d.disjunctiveDaat(query,10);
         /*query = "american people";
         System.out.println(d.conjunctiveDaat(query,10));*/
-        query = "france kidney";
-        d.disjunctiveDaat(query,10);
+        /*query = "france kidney";
+        d.disjunctiveDaat(query,10);*/
     }
 
     public void testSkipInfo() throws IOException {
