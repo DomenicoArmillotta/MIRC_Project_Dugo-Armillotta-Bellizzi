@@ -149,27 +149,37 @@ public class Daat {
         FileChannel docIndexChannel = docIndexFile.getChannel();
         TreeMap<Integer, Double> scores = new TreeMap<>();
         int[] tf = new int[proQuery.size()];
-        //TODO: ATTENZIONE ATTENZIONE ATTENZIONE!!!!! SORTA STI CAZZO DI HEAP!!!
         //PriorityQueue<Double> thresholds = new PriorityQueue<>(); //idealmente deve avvere k elementi inizializzati a 0
         TreeMap<String, Double> maxScores = new TreeMap<>();
+        double[] termUB = new double[queryLen];
+        for(int i = 0; i < queryLen; i++){
+            termUB[i] = lexicon.get(proQuery.get(i)).getTermUpperBound();
+        }
         for(String term: proQuery){
             maxScores.put(term, lexicon.get(term).getTermUpperBound());
         }
+        HashMap<String, Double> sortedTerms = new HashMap();
+        maxScores.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue())
+                .forEachOrdered(x -> sortedTerms.put(x.getKey(), x.getValue()));
+        Arrays.sort(termUB);
+        String [] queryTerms = sortedTerms.keySet().toArray(new String[0]);
         int pivot = 0;
         int did = 0;
         did = nextGEQ(docChannel, skipChannel, proQuery.get(0), did);
         double[] documentUB = new double[queryLen];
         double prec = 0.0;
         int index = 0;
-        for(String term: maxScores.keySet()){
-            documentUB[index] = maxScores.get(term) + prec;
+        for(double maxscore: termUB){
+            documentUB[index] = maxscore + prec;
             prec = documentUB[index];
         }
         double threshold = 0;
         int maxDocID = (int)ConfigurationParameters.getNumberOfDocuments();
         int next = maxDocID;
         for (int i=1; (i<queryLen); i++){
-            int d=nextGEQ(docChannel, skipChannel, proQuery.get(i), did);
+            int d=nextGEQ(docChannel, skipChannel, queryTerms[i], did);
             if(d<did){
                 did = d;
             }
@@ -178,15 +188,15 @@ public class Daat {
             double score = 0;
             //process essential lists
             for (int i=pivot; i<queryLen; i++){
-                int current = nextGEQ(docChannel, skipChannel, proQuery.get(i), did);
+                int current = nextGEQ(docChannel, skipChannel, queryTerms[i], did);
                 if(current == did){
                     //TODO: update getFreq to compute scores
                     //tf[i] = getFreq(tfChannel, proQuery.get(i));
                     int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
-                    double idf = lexicon.get(proQuery.get(i)).getIdf();
+                    double idf = lexicon.get(queryTerms[i]).getIdf();
                     //compute BM25 score from frequencies and other data
                     score += Scorer.bm25Weight(1, docLen, idf); //to modify after getFreq
-                    current = nextGEQ(docChannel, skipChannel, proQuery.get(i), did+1); //update the pointer to next docid
+                    current = nextGEQ(docChannel, skipChannel, queryTerms[i], did+1); //update the pointer to next docid
                 }
                 if(current < next){
                     next = current;
@@ -198,12 +208,12 @@ public class Daat {
                 if(documentUB[i] + score <= threshold){
                     break;
                 }
-                int current = nextGEQ(docChannel, skipChannel, proQuery.get(i), did);
+                int current = nextGEQ(docChannel, skipChannel, queryTerms[i], did);
                 if(current == did) {
                     //TODO: update getFreq to compute scores
-                    tf[i] = getFreq(tfChannel, proQuery.get(i));
+                    tf[i] = getFreq(tfChannel, queryTerms[i]);
                     int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
-                    double idf = lexicon.get(proQuery.get(i)).getIdf();
+                    double idf = lexicon.get(queryTerms[i]).getIdf();
                     //compute BM25 score from frequencies and other data
                     score += Scorer.bm25Weight(tf[i], docLen, idf); //to modify after getFreq
                 }
@@ -228,25 +238,14 @@ public class Daat {
                     continue;
                 }//the list is essential: process the following lists in pure disjunctive mode
             }*/
-            //TODO: una volta capite le liste essenziali e non, processiamo in maniera disjunctive le essenziali: modificare sotto
             /*did = nextGEQ(docChannel, skipChannel, proQuery.get(0), did);
             if(did == -1){
                 break;
             }*/
         }
-        //return top k scores
+        //TODO: return top k scores
 
     }
-
-    //TODO: come gestire il query processing con maxscore:
-    // tenere una priority queue con le threshold (che sono i top k score parziali ottenuti finora); se non ci sono ancora k scores,
-    // la threshold è uguale a 0
-    // tenere in ordine crescente i term upper bound della query (presi dal lexicon): la prima con cui superiamo la threshold indica
-    // l'inizio delle posting list essenziali (non skippabili!!!!)
-    // calcolare la document upper bound per vedere se supera la threshold (valore più piccolo della priority queue);
-    // se il document upper bound (term upper bound attualmente considerate + partial scores se ci sono) è inferiore alla thershold ci
-    // fermiamo
-
 
     /*
     Questo è solo uno spunto:
@@ -370,13 +369,10 @@ public class Daat {
         Compressor c = new Compressor();
         //Seek to the position in the file where the posting list for the term is stored
         docChannel.position(lexicon.get(term).getOffsetDocid());
-
         // Read the compressed posting list data from the file
         ByteBuffer data = ByteBuffer.allocate(lexicon.get(term).getDocidsLen());
         docChannel.read(data);
-
         // Decompress the data using the appropriate decompression algorithm
-
         int nPostings = lexicon.get(term).getdF();
         int n = (int) Math.floor(Math.sqrt(nPostings));
         int i = 0;
