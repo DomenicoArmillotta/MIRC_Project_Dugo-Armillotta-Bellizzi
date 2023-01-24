@@ -71,52 +71,6 @@ public class InvertedIndex {
     }
 
 
-    /*public void addPosting(String term, int docid, int freq) throws IOException {
-        List<Posting> pl = new ArrayList<>();
-        Compressor compressor = new Compressor();
-        byte[] doc = ByteBuffer.allocate(4).putInt(docid).array(); //convert the docID to bytes
-        byte[] tf = ByteBuffer.allocate(4).putInt(freq).array(); //convert the term frequency to bytes
-        //check if the posting list for this term has already been created
-        if(lexicon.get(term) != null){
-            LexiconStats l = lexicon.get(term); //get the pointer of the list
-            l.setCf(l.getCf()+1); //update collection frequency
-            pl = invIndex.get(lexicon.get(term).getIndex()); //get the list
-            if(l.getCurdoc() == docid){
-                int oldTf = l.getCurTf(); //get the current term frequency value of the term
-                oldTf++; //increase term frequency by one
-                //pl.get(pl.size()-1).setTf(ByteBuffer.allocate(4).putInt(oldTf).array());
-                byte[] newTf = ByteBuffer.allocate(4).putInt(oldTf).array(); //update term frequency
-                //update data structures
-                l.setCurTf(oldTf);
-                invIndex.get(lexicon.get(term).getIndex()).get(pl.size()-1).setTf(newTf);
-                lexicon.put(term, l);
-                return; //we already had the given docID so we exit after updating the term and collection frequency
-            }
-            l.setdF(l.getdF()+1); //update document frequency, since this docID was not present before in the list
-            l.setCurdoc(docid);
-            l.setCurTf(freq);
-            //pl.add(new Posting(doc, tf)); //add the posting to the list
-            //update data structures
-            byte[] compressedDoc = compressor.variableByteEncodeNumber(docid);
-            invIndex.get(lexicon.get(term).getIndex()).add(new Posting(compressedDoc, tf));
-            lexicon.put(term, l);
-        }
-        else{ //create new posting list
-            LexiconStats l = new LexiconStats();
-            //initialize the lexicon statistics for the term and add it to the lexicon
-            l.setIndex(nList);
-            l.setCf(1); //initialize collection frequency to 1
-            l.setdF(1); //initialize document frequency by 1
-            l.setCurdoc(docid); //set the current document id
-            l.setCurTf(freq); //set the current term frequency
-            lexicon.put(term, l);
-            nList++; //increase the pointer for the next list
-            byte[] compressedDoc = compressor.variableByteEncodeNumber(docid);
-            pl.add(new Posting(compressedDoc, tf)); //add posting to the new list
-            invIndex.add(pl); //insert the new list in the inverted index
-        }
-    }*/
-
     public void sortTerms() {
         //sort the lexicon by key putting it in the sortedTerms list
         sortedTerms = lexicon.keySet().stream().sorted().collect(Collectors.toList());
@@ -222,42 +176,5 @@ public class InvertedIndex {
         docChannel.close();
         tfChannel.close();
     }
-
-/*
-    public byte[] get(int docid, String term) {
-        // Check if the term is in the lexicon
-        LexiconStats lexiconStats = lexicon.get(term);
-        if (lexiconStats != null) {
-            // Get the posting list for the term
-            List<Posting> pl = invIndex.get(lexiconStats.getIndex());
-            // Get the size of the posting list
-            int size = pl.size();
-            // Use binary search to find the posting with the given docid
-            int start = 0;
-            int end = size - 1;
-            while (start <= end) {
-                int mid = (start + end) / 2;
-                int midDocid = ByteBuffer.wrap(pl.get(mid).getDoc()).getInt();
-                if (midDocid == docid) {
-                    // Return the term frequency if the docid is found
-                    return pl.get(mid).getTf();
-                } else if (midDocid < docid) {
-                    start = mid + 1;
-                } else {
-                    end = mid - 1;
-                }
-            }
-        }
-        // Return null if the docid is not found or the term is not in the lexicon
-        return null;
-    }
-
-    public List<Posting> get(int index) {
-        // Get the posting list at the given index
-        List<Posting> pl = invIndex.get(index);
-        // Return the posting list
-        return pl;
-    }
- */
 }
 

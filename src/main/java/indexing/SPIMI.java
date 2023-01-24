@@ -54,14 +54,6 @@ public class SPIMI {
                         break;
                     }
                 }
-                //vecchio controllo
-                /*while (it.hasNext() && Runtime.getRuntime().totalMemory()*0.80 <= Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()) {
-                    //--> its the ram of jvm
-                    String line = it.nextLine();
-                    spimiInvertMapped(line);
-                    //System.out.println(cont);
-                    //cont++;
-                }*/
                 invertedIndex.sortTerms();
                 invertedIndex.writePostings();
                 indexBlock++;

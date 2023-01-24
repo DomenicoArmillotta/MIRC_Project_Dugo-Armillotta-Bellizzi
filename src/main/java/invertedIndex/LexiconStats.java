@@ -24,8 +24,6 @@ public class LexiconStats implements Serializable {
     private long offsetSkip;
     private int skipLen;
 
-    //TODO: decidere se metter qua l'indice e creare le statistiche man mano in spimi
-
     public LexiconStats(){
         this.dF = 0;
         this.cf = 0;
@@ -46,19 +44,7 @@ public class LexiconStats implements Serializable {
         this.termUpperBound = b.getDouble(44);
         this.offsetSkip = b.getLong(52);
         this.skipLen = b.getInt(60);
-        //TODO: add to the class a field for the term upper bound, the offset of the skip info file and the length of the skip entry
     }
-
-    /*public LexiconStats(ByteBuffer b){
-        //use the getInt/getLong method of ByteBuffer to read the value at the correct position
-        this.dF = b.getInt(); //read first int
-        this.cf = b.getLong(4); //read second value, a long
-        this.docidsLen = b.getInt(12); //read third value, an int
-        this.tfLen = b.getInt(16); //read fourth value, an int
-        this.offsetDocid = b.getLong(20); //read fifth value, a long
-        this.offsetTf = b.getLong(28); //read sixth value, a long
-        this.idf = b.getDouble(36); //read seventh value, a double
-    }*/
 
     public int getdF() {
         return dF;
@@ -125,7 +111,6 @@ public class LexiconStats implements Serializable {
         this.curdoc = curdoc;
     }
 
-
     public int getCurTf() {
         return curTf;
     }
@@ -141,6 +126,7 @@ public class LexiconStats implements Serializable {
     public void setIdf(double idf) {
         this.idf = idf;
     }
+
     public double getTermUpperBound() {
         return termUpperBound;
     }
