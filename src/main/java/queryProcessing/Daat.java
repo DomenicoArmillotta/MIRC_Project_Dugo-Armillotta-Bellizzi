@@ -37,7 +37,10 @@ public class Daat {
     private String docIndexPath = "docs/docIndex.txt";
     private String skipsPath = "docs/skipInfo.txt";
 
-    private CompressedList[] postingLists;
+    private CompressedList[] postingLists; //to keep the compressed posting list for each term of the query
+
+    private List<Integer>[] decompressedDocIds; //to keep the current block of docids for each term of the query
+    private List<Integer>[] decompressedTfs; //to keep the current block of tfs for each term of the query
 
     public Daat(){
         lexicon = new HashMap<>();
@@ -60,6 +63,8 @@ public class Daat {
         RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
         FileChannel docIndexChannel = docIndexFile.getChannel();
         postingLists = new CompressedList[queryLen];
+        decompressedDocIds = new List[queryLen];
+        decompressedTfs = new List[queryLen];
         TreeMap<Integer, Double> scores = new TreeMap<>();
         int[] tf = new int[proQuery.size()];
         for(String term: proQuery){
@@ -164,6 +169,8 @@ public class Daat {
         Arrays.sort(termUB);
         String [] queryTerms = sortedTerms.keySet().toArray(new String[0]);
         postingLists = new CompressedList[queryLen];
+        decompressedDocIds = new List[queryLen];
+        decompressedTfs = new List[queryLen];
         for(int i = 0; i < queryLen; i++){
             postingLists[i] = openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
             lexicon.get(queryTerms[i]).setIndex(i);
@@ -309,14 +316,19 @@ public class Daat {
             tfs.get(blockTf.array(), 0, skiptf);
             if(endocid >= value) {
                 //System.out.println("Skipped: " + term + " " + endocid + ">=" + value);
-                List<Integer> posting_list = c.variableByteDecodeBlock(blockDocId.array(), n);
-                List<Integer> postingTfs = c.unaryDecodeBlock(blockTf.array(), n);
+                //we do this to decompress only one time when we first enter the block, and not each time we enter
+                if(decompressedDocIds[lexicon.get(term).getIndex()] == null){
+                    decompressedDocIds[lexicon.get(term).getIndex()] = c.variableByteDecodeBlock(blockDocId.array(), n);
+                    decompressedTfs[lexicon.get(term).getIndex()] = c.unaryDecodeBlock(blockTf.array(), n);
+                }
+                //List<Integer> postingDocIds = c.variableByteDecodeBlock(blockDocId.array(), n);
+                //List<Integer> postingTfs = c.unaryDecodeBlock(blockTf.array(), n);
                 //System.out.println(term + ": " + postingTfs);
                 int index = 0;
-                for (int docId : posting_list) {
+                for (int docId : decompressedDocIds[lexicon.get(term).getIndex()]) {
                     if (docId >= value) {
                         //System.out.println("Found: " + term + " " + docId+ ">=" + value);
-                        lexicon.get(term).setCurTf(postingTfs.get(index));
+                        lexicon.get(term).setCurTf(decompressedTfs[lexicon.get(term).getIndex()].get(index));
                         //System.out.println("cur doc: " + term + " " + lexicon.get(term).getCurTf());
                         return docId;
                     }
@@ -325,6 +337,8 @@ public class Daat {
             }
             //update posting lists removing the old block
             postingLists[lexicon.get(term).getIndex()] = new CompressedList(data.array(), tfs.array(), readBuffer.array());
+            decompressedDocIds[lexicon.get(term).getIndex()] = null;
+            decompressedTfs[lexicon.get(term).getIndex()] = null;
             //System.out.println("Update index "+ term + " " + value + " " + i + " " + n + " " + nPostings);
             if(i+1 == nPostings){
                 i++;
