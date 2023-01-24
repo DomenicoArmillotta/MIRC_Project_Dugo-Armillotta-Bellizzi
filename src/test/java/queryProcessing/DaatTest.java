@@ -111,15 +111,15 @@ public class DaatTest extends TestCase {
         System.out.println(d.conjunctiveDaat(query,10));
         /*query = "american people";
         System.out.println(d.conjunctiveDaat(query,10));*/
-        query = "france kidney";
-        System.out.println(d.conjunctiveDaat(query,10));
+        /*query = "france kidney";
+        System.out.println(d.conjunctiveDaat(query,10));*/
     }
 
     public void testDisjunctiveDaat() throws IOException {
         Daat d = new Daat();
         String query = "bile acid stomach";
         //String query = "bile acid stomach american people table dratini";
-        d.disjunctiveDaat(query,10);
+        System.out.println(d.disjunctiveDaat(query,10));
         /*query = "american people";
         System.out.println(d.conjunctiveDaat(query,10));*/
         /*query = "france kidney";
