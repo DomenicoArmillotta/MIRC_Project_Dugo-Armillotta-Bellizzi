@@ -35,6 +35,12 @@ public class SPIMI_InvertTest extends TestCase {
         s.spimiInvertBlockMapped("docs/collection.tsv");
     }
 
+    public void testMerging() throws IOException {
+        SPIMI s = new SPIMI();
+        //s.spimiInvertBlockMapped("docs/collection_test3.tsv");
+        s.mergeBlocks(11);
+    }
+
     public void testMaxScores() throws IOException {
         //questo metodo legge il lexicon un termine alla volta; per ogni termine calcola la term upper bound leggendo la lista;
         //serve anche aprire il doc index per la document length; si chiama bm25 per ogni doc della lista e si prende il massimo
@@ -103,11 +109,16 @@ public class SPIMI_InvertTest extends TestCase {
             ByteBuffer tfs = ByteBuffer.allocate(tfLen);
             tfChannel.read(tfs);
             List<Integer> decompressedTfs = c.unaryDecode(tfs.array());
-            if(word.equals("bile") || word.equals("acid")){
-                System.out.println("Docids: "  + decompressedDocids);
-                System.out.println("Tfs: " + decompressedTfs);
-                System.out.println(word + " " + l.getdF() + " " + l.getCf() + " " + l.getDocidsLen() + " " + l.getTfLen() + " " + l.getIdf());
+
+            if(decompressedDocids.size() != decompressedTfs.size()){
+                System.out.println("ERROR: " + word);
+                return;
             }
+            //System.out.println("Docids: "  + decompressedDocids);
+            //System.out.println(decompressedDocids.size());
+            //System.out.println("Tfs: " + decompressedTfs);
+            //System.out.println(decompressedTfs.size());
+            //System.out.println(word + " " + l.getdF() + " " + l.getCf() + " " + l.getDocidsLen() + " " + l.getTfLen() + " " + l.getIdf());
             double maxscore = 0.0;
             double tfidfMaxScore = 0.0;
             for(int i = 0; i < decompressedDocids.size(); i++){

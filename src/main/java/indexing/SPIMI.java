@@ -62,7 +62,7 @@ public class SPIMI {
         } finally {
             LineIterator.closeQuietly(it);
         }
-        mergeBlocks(indexBlock);
+        //mergeBlocks(indexBlock);
     }
 
     public void spimiInvertMapped(String doc) throws IOException {
@@ -79,7 +79,9 @@ public class SPIMI {
         docid++;
     }
 
-    private void mergeBlocks(int n) throws IOException {
+    //TODO: da correggere
+
+    public void mergeBlocks(int n) throws IOException {
         //per lettura
         List<String> lexPaths = new ArrayList<>();
         List<String> docPaths = new ArrayList<>();
@@ -102,6 +104,7 @@ public class SPIMI {
         ConfigurationParameters cp = new ConfigurationParameters();
         double N = cp.getNumberOfDocuments(); //take the total number of documents in the collection
         //in the case of multiple block to merge
+        int nFile = 0;
         while(nIndex>1){
             System.out.println("HERE " + nIndex);
             //inizializzare una variabile per indicizzare il numero del file intermedio, in modo tale che ad ogni
@@ -110,14 +113,14 @@ public class SPIMI {
             List<String> tempLex = new ArrayList<>();
             List<String> tempDocs = new ArrayList<>();
             List<String> tempTfs = new ArrayList<>();
-            int nFile = 0;
-            long totalSize = 0; //we need to keep track of the total length of the file(s) to merge;
             //when total_size is equal to the sum of the lengths of the files, we have finished to read
             for (int i = 0; i<nIndex; i+=2){
+                long totalSize = 0; //we need to keep track of the total length of the file(s) to merge;
                 //output files
                 String docPath = "docs/tempD"+nFile+".txt";
                 String tfPath = "docs/tempT"+nFile+".txt";
                 String lexPath = "docs/tempL"+nFile+".txt";
+                System.out.println("Output file: " +docPath + ", " + tfPath);
                 RandomAccessFile outDocsFile = new RandomAccessFile(new File(docPath),"rw");
                 FileChannel tempDocChannel = outDocsFile.getChannel();
                 RandomAccessFile outTfFile = new RandomAccessFile(new File(tfPath),"rw");
@@ -126,6 +129,7 @@ public class SPIMI {
                 FileChannel tempChannel = outFile.getChannel();
                 if(i == nIndex-1) { //there are no other blocks to merge
                     //in this case we need to copy the filename in the new list of paths
+                    System.out.println("Current file: " + currDocs.get(i)+ ", " + currTfs.get(i));
                     tempLex.add(currLex.get(i));
                     tempDocs.add(currDocs.get(i));
                     tempTfs.add(currTfs.get(i));
@@ -133,6 +137,7 @@ public class SPIMI {
                 //controlla che ci sia un altro blocco o meno e in quel caso non mergiare
                 //altrimenti:
                 else{
+                    System.out.println("Current file: " + currDocs.get(i)+ ", " + currTfs.get(i) + ", " + currDocs.get(i+1) + ", " + currTfs.get(i+1));
                     //declare input files
                     RandomAccessFile doc1File = new RandomAccessFile(new File(currDocs.get(i)),"rw");
                     FileChannel doc1Channel = doc1File.getChannel();
@@ -153,6 +158,7 @@ public class SPIMI {
                     long docOffset = 0; //offset of the docids list in the docids output file
                     long tfOffset = 0; //offset of the tfs list in the tfs output file
                     while(totalSize < lex1File.length() + lex2File.length()){
+                        //System.out.println("Compare file: " + currDocs.get(i)+ ", " + currTfs.get(i) + ", " + currDocs.get(i+1) + ", " + currTfs.get(i+1));
                         readBuffers[i] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
                         readBuffers[i+1] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
                         //we set the position in the files using the offsets
@@ -190,7 +196,8 @@ public class SPIMI {
                         //if the second is greater than the other
                         //if they are equal: in this case we merge them
                         //in the LexiconStats
-                        if(word1.compareTo(word2) > 0){
+                        Compressor c = new Compressor();
+                        if(word1.compareTo(word2) < 0){
                             ByteBuffer docids = ByteBuffer.allocate(l1.getDocidsLen());
                             ByteBuffer tfs = ByteBuffer.allocate(l1.getTfLen());
                             doc1Channel.position(l1.getOffsetDocid());
@@ -201,6 +208,7 @@ public class SPIMI {
                             tempDocChannel.write(docids);
                             tfs.flip();
                             tempTfChannel.write(tfs);
+                            //System.out.println(word1 + ": " + c.variableByteDecode(docids.array()));
                             byte[] lexiconBytes = Utils.getBytesFromString(word1);
                             //idf value
                             long nn = l1.getdF(); // number of documents that contain the term t among the data set
@@ -221,7 +229,7 @@ public class SPIMI {
                             offset1+= LEXICON_ENTRY_SIZE;
                             totalSize+=LEXICON_ENTRY_SIZE;
                         }
-                        else if(word2.compareTo(word1) > 0){
+                        else if(word2.compareTo(word1) < 0){
                             ByteBuffer docids = ByteBuffer.allocate(l2.getDocidsLen());
                             ByteBuffer tfs = ByteBuffer.allocate(l2.getTfLen());
                             doc2Channel.position(l2.getOffsetDocid());
@@ -297,11 +305,11 @@ public class SPIMI {
                             offset2 += LEXICON_ENTRY_SIZE;
                             totalSize+=LEXICON_ENTRY_SIZE*2; //we read two entries in total
                         }
-                        //add output files to paths
-                        tempLex.add(lexPath);
-                        tempDocs.add(docPath);
-                        tempTfs.add(tfPath);
                     }
+                    //add output files to paths
+                    tempLex.add(lexPath);
+                    tempDocs.add(docPath);
+                    tempTfs.add(tfPath);
                 }
                 nFile++;
             }

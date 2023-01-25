@@ -36,9 +36,10 @@ public class DaatTest extends TestCase {
                 byte[] term = new byte[22];
                 term = ba.array();
                 String value = Text.decode(term).toString();
+                value = value.replaceAll("\0", "");
                 System.out.println(value + " " + lowerBound);
             }
-            lowerBound+=66;
+            lowerBound+=entrySize;
         }*/
         while (lowerBound <= upperBound) {
             int midpoint = (lowerBound + upperBound) / 2;
@@ -69,19 +70,20 @@ public class DaatTest extends TestCase {
     }
 
     public void testLexiconRead() throws IOException {
-        //String lexiconPath = "docs/lexicon.txt";
-        String lexiconPath = "docs/lexiconTot.txt";
+        //String lexiconPath = "docs/lexiconTot.txt";
+        String lexiconPath = "docs/lexicon.txt";
         HashMap<String, LexiconStats> lexicon = new HashMap<>();
         PreprocessDoc preprocessing = new PreprocessDoc();
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
         FileChannel lexChannel = lexFile.getChannel();
         String query = "how often do american people eat";
         List<String> proQuery = preprocessing.preprocess_doc_optimized(query);
-        for(String term: proQuery){
+        LexiconStats l = getPointer(lexChannel, "peopl");
+        /*for(String term: proQuery){
             LexiconStats l = getPointer(lexChannel, term);
             lexicon.put(term, l);
-        }
-        RandomAccessFile skipFile = new RandomAccessFile(new File("docs/skipInfo.txt"), "rw");
+        }*/
+        /*RandomAccessFile skipFile = new RandomAccessFile(new File("docs/skipInfo.txt"), "rw");
         FileChannel skipChannel = skipFile.getChannel();
         for(LexiconStats l: lexicon.values()) {
             skipChannel.position(l.getOffsetSkip());
@@ -91,7 +93,7 @@ public class DaatTest extends TestCase {
             int endocid1 = readBuffer.getInt();
             int skiplen1 = readBuffer.getInt();
             System.out.println(endocid1 + " " + skiplen1);
-        }
+        }*/
         /*LexiconStats l = getPointer(lexChannel, "bile");
         LexiconStats l1 = getPointer(lexChannel, "american");
         LexiconStats l2 = getPointer(lexChannel, "medi");
