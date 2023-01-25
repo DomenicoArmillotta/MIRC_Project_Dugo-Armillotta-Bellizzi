@@ -8,9 +8,6 @@ import invertedIndex.LexiconStats;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.thirdparty.org.checkerframework.checker.units.qual.C;
-import org.jetbrains.annotations.NotNull;
-import org.mapdb.*;
 import preprocessing.PreprocessDoc;
 import queryProcessing.Scorer;
 import utility.Utils;
@@ -19,42 +16,42 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 import static utility.Utils.addByteArray;
 
 public class SPIMI {
     private InvertedIndex invertedIndex;
-    private String outPath;
     private int docid = 0;
 
-
-    //creazione dei blocchi usando il limite su ram
+    /**
+     * divide the input file in different block
+     * for each block create the inverted index and write on file
+     * @param readPath input path file
+     * @throws IOException
+     */
     public void spimiInvertBlockMapped(String readPath) throws IOException {
         File inputFile = new File(readPath);
+        //iterate over the input file
         LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
         int indexBlock = 0;
-        //int cont = 0;
         try {
             //create chunk of data , splitting in n different block
             while (it.hasNext()){
                 //instantiate a new Inverted Index and Lexicon per block
                 invertedIndex = new InvertedIndex(indexBlock);
-                outPath = "index"+indexBlock+".txt";
                 while (it.hasNext()){
                     String line = it.nextLine();
+                    //populate invertedIndex with posting list of document
                     spimiInvertMapped(line);
+                    //end of block when jvm is out of memory
                     if(Runtime.getRuntime().totalMemory()*0.80 >
                             Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()){
-                        //--> its the ram of jvm
                         break;
                     }
                 }
                 invertedIndex.sortTerms();
+                //write the inverted on file
                 invertedIndex.writePostings();
                 indexBlock++;
                 System.gc();
@@ -65,13 +62,19 @@ public class SPIMI {
         mergeBlocks(indexBlock);
     }
 
+    /**
+     * method to generate posting after pre-processing phases
+     * @param doc input document string format
+     * @throws IOException
+     */
     public void spimiInvertMapped(String doc) throws IOException {
         //initialize a new InvertedIndex
         PreprocessDoc preprocessDoc = new PreprocessDoc();
         String[] parts = doc.split("\t");
         String doc_corpus = parts[1];
-        List<String> pro_doc = preprocessDoc.preprocess_doc_optimized(doc_corpus);
-        //read the terms and generate postings
+        //preprocess document using the pipeline
+        List<String> pro_doc = preprocessDoc.preprocess_doc(doc_corpus);
+        //iterate over the term in the doc , and populate the invertedIndex with posting
         for (String term : pro_doc) {
             invertedIndex.addPosting(term, docid, 1);
         }
@@ -79,7 +82,7 @@ public class SPIMI {
     }
 
     private void mergeBlocks(int n) throws IOException {
-        //per lettura
+        //to create input file to merge
         List<String> lexPaths = new ArrayList<>();
         List<String> docPaths = new ArrayList<>();
         List<String> tfPaths = new ArrayList<>();
@@ -90,28 +93,25 @@ public class SPIMI {
         }
         //take the entry size of the lexicon from the configuration parameters
         int LEXICON_ENTRY_SIZE = ConfigurationParameters.LEXICON_ENTRY_SIZE;
-        //Buffer per leggere ogni termine con annesse statistiche
         ByteBuffer[] readBuffers = new ByteBuffer[n];
-        //ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
-        //IDEA: tenere una variabile che conta quanti blocchi sono rimasti
         List<String> currLex = lexPaths;
         List<String> currDocs = docPaths;
         List<String> currTfs = tfPaths;
+        //number of block created from input file
         int nIndex = n;
         ConfigurationParameters cp = new ConfigurationParameters();
-        double N = cp.getNumberOfDocuments(); //take the total number of documents in the collection
+        //take the total number of documents in the collection
+        double N = cp.getNumberOfDocuments();
         //System.out.println("HERE " + nIndex);
         //in the case of multiple block to merge
         while(nIndex>1){
-            //inizializzare una variabile per indicizzare il numero del file intermedio, in modo tale che ad ogni
-            //for abbiamo il numero di file intermedi creat e all'inizio di una nuova iterazione del while, lo rimettiamo
-            // a zero per segnarci i nuovi indici dei nuovi file intermedi
+            //tmp file for intermediate merging block
             List<String> tempLex = new ArrayList<>();
             List<String> tempDocs = new ArrayList<>();
             List<String> tempTfs = new ArrayList<>();
             int nFile = 0;
-            long totalSize = 0; //we need to keep track of the total length of the file(s) to merge;
-            //when total_size is equal to the sum of the lengths of the files, we have finished to read
+            long totalSize = 0;
+            //iterate over all blocks , two blocks at time
             for (int i = 0; i<nIndex; i+=2){
                 //output files
                 String docPath = "docs/tempD"+nFile+".txt";
@@ -123,16 +123,16 @@ public class SPIMI {
                 FileChannel tempTfChannel = outTfFile.getChannel();
                 RandomAccessFile outFile = new RandomAccessFile(new File(lexPath),"rw");
                 FileChannel tempChannel = outFile.getChannel();
-                if(i == nIndex-1) { //there are no other blocks to merge
+                //if there are no other blocks to merge (case of odd file)
+                if(i == nIndex-1) {
                     //in this case we need to copy the filename in the new list of paths
                     tempLex.add(currLex.get(i));
                     tempDocs.add(currDocs.get(i));
                     tempTfs.add(currTfs.get(i));
                 }
-                //controlla che ci sia un altro blocco o meno e in quel caso non mergiare
-                //altrimenti:
+                //start to merge two block at time
                 else{
-                    //declare input files
+                    //declare input files of two block to merge
                     RandomAccessFile doc1File = new RandomAccessFile(new File(currDocs.get(i)),"rw");
                     FileChannel doc1Channel = doc1File.getChannel();
                     RandomAccessFile tf1File = new RandomAccessFile(new File(currTfs.get(i)),"rw");
@@ -147,7 +147,7 @@ public class SPIMI {
                     FileChannel lex2Channel = lex2File.getChannel();
                     //for reading we use the pointers with the position method, so we need the offsets of the two files
                     //offsets for reading the two files
-                    long offset1 = 0;
+                    long offset1 = 0; //lexicon offset
                     long offset2 = 0;
                     long docOffset = 0; //offset of the docids list in the docids output file
                     long tfOffset = 0; //offset of the tfs list in the tfs output file

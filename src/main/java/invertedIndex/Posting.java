@@ -1,18 +1,20 @@
 package invertedIndex;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 
+/**
+ * Posting is used to build and manipulate posting list in the inverted index structure
+ */
 public class Posting implements Comparable<Posting>, Serializable {
     private int docid;
+    //term frequency
     private int tf;
 
     public Posting(int docid, int tf){
         this.docid = docid;
         this.tf = tf;
     }
-    private byte[] docidb;
-    private byte[] tfb;
+
     public int getDocid() {
 
         return docid;
