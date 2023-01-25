@@ -336,21 +336,12 @@ public class SPIMI {
         inputLexChannel.transferTo(0, inputLexChannel.size(), lexChannel);
     }
 
+    /**
+     * Method reads lexicon one term at a time. For each term it calculates the Term Upper Bound reading out the list
+     * Document length is needed so document index must be opened.
+     * BM25 is called for each document in the list, score is write out then on lexicon file.
+     */
     public void computeMaxScores() throws IOException {
-        //questo metodo legge il lexicon un termine alla volta; per ogni termine calcola la term upper bound leggendo la lista;
-        //serve anche aprire il doc index per la document length; si chiama bm25 per ogni doc della lista e si prende il massimo
-        //punteggio e si scrive sul file del lexicon
-        //SKIP BLOCKS:
-        //aggiungere nel lexicon la lunghezza dell'header (int)
-        //per sapere quante coppie (b,endocid) sono basta fare la radice di docfreq
-        //conviene fare in un altro file e aggiungere offset e lunghezza del blocco (long, int)
-        //File da dichiarare per leggere:
-        //docindex -> ok
-        //docids -> ok
-        //tf -> ok
-        //File da dichiarare per leggere e scrivere:
-        //lexicon -> lettura ok
-        //skipinfo ->ok
         RandomAccessFile inDocsFile = new RandomAccessFile(new File("docs/docids.txt"),"rw");
         FileChannel docChannel = inDocsFile.getChannel();
         RandomAccessFile inTfFile = new RandomAccessFile(new File("docs/tfs.txt"),"rw");
@@ -365,7 +356,7 @@ public class SPIMI {
         RandomAccessFile outLexFile = new RandomAccessFile(new File("docs/lexiconTot.txt"),"rw");
         FileChannel outLexChannel = outLexFile.getChannel();
         Compressor c = new Compressor();
-        //for each term we read the posting list, decompress it and compute the max score
+        //for each term posting list is read out and decompress to compute the max score
         int totLen = 0;
         int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
         long lexOffset = 0;
@@ -375,7 +366,7 @@ public class SPIMI {
         while(totLen<inLexFile.length()){
             int skipLen = 0;
             ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);
-            //we set the position in the files using the offsets
+            //position is set in files using the offsets
             lexChannel.position(lexOffset);
             lexChannel.read(readBuffer);
             readBuffer.position(0);
@@ -385,13 +376,13 @@ public class SPIMI {
             //read remaining bytes for the lexicon stats
             ByteBuffer val = ByteBuffer.allocate(entrySize-22);
             readBuffer.get(val.array(), 0, entrySize-22);
-            //we use a method for reading the 36 bytes in a LexiconStats object
+            //a method is used for reading the 36 bytes in a LexiconStats object
             LexiconStats l = new LexiconStats(val);
             //convert the bytes to the String
             String word = Text.decode(term.array());
             //replace null characters
             word = word.replaceAll("\0", "");
-            //now we read the inverted files and compute the scores
+            //the inverted files are now read to compute the scores
             long offsetDoc = l.getOffsetDocid();
             long offsetTf = l.getOffsetTf();
             int docLen = l.getDocidsLen();
@@ -399,7 +390,7 @@ public class SPIMI {
             docChannel.position(offsetDoc);
             ByteBuffer docids = ByteBuffer.allocate(docLen);
             docChannel.read(docids);
-
+            //decompress docids
             List<Integer> decompressedDocids = c.variableByteDecode(docids.array());
             tfChannel.position(offsetTf);
             ByteBuffer tfs = ByteBuffer.allocate(tfLen);
