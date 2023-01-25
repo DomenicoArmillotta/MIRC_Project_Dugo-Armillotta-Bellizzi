@@ -12,27 +12,6 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 public class PreprocessDoc {
-    /**
-     * given a string, runs the preprocessing pipeline and returns a processed word list.
-     * In order, it performs: tokenization , stopword removal , stemming
-     * @param s string of document to elaborate
-     * @return output_stopwords_removal
-     * @throws IOException
-     */
-    public List<String> preprocess_doc (String s) throws IOException {
-        Normalizer normalizer = new Normalizer();
-        Tokenizer tokenizer = new Tokenizer();
-        StopwordRemoval stopword_removal = new StopwordRemoval();
-        Stemmer stemmer = new Stemmer();
-        String output_normalizer = normalizer.normalize(s);
-        List<String> output_tokenizer = new ArrayList<>();
-        output_tokenizer = tokenizer.tokenize(output_normalizer);
-        List<String> output_stopwords_removal = new ArrayList<>();
-        output_stopwords_removal = stopword_removal.remove(output_tokenizer);
-        List<String> output_stemming = new ArrayList<>();
-        output_stemming = stemmer.stemming(output_stopwords_removal);
-        return output_stemming;
-    }
 
     /**
      * In this optimised preprocessing pipelining, an attempt was made to reduce the loop for processing.
@@ -41,7 +20,7 @@ public class PreprocessDoc {
      * @return terms list of word of document pre-processed
      * @throws IOException
      */
-    public List<String> preprocess_doc_optimized (String s) throws IOException {
+    public List<String> preprocess_doc(String s) throws IOException {
         Normalizer normalizer = new Normalizer();
         Stemmer stemmer = new Stemmer();
         //stop words removal file
@@ -78,8 +57,6 @@ public class PreprocessDoc {
         }
         return  terms;
     }
-
-
 
 
 }

@@ -34,9 +34,9 @@ public class Compressor {
      */
     public List<Integer> unaryDecode(byte[] b){
         List<Integer> numbers = new ArrayList<>();
-        //ArrayUtils.reverse(b); //forse non serve
         int n = 0;
         for(int i = 0; i < b.length; i++) {
+            //0x00 represent 0 , and in unary is +1
             if(b[i] == 0x00){
                 numbers.add(1);
                 n=0;
@@ -87,6 +87,12 @@ public class Compressor {
     }
 
 
+    /**
+     * compression with variable byte
+     * used for doc_id compression
+     * @param n int number to compress with variable byte
+     * @return
+     */
     public byte[] variableByteEncodeNumber(int n){
         byte[] b = new byte[0];
         while(true){
@@ -101,7 +107,12 @@ public class Compressor {
         return b;
     }
 
-
+    /**
+     * given a byte[], decompress using variable byte and generate the list of integer
+     * used for decompress list of doc_id
+     * @param bs compressed list of doc_id byte[] format
+     * @return
+     */
     public List<Integer> variableByteDecode(byte[] bs){
         List<Integer> numbers = new ArrayList<>();
         int n = 0;

@@ -1,25 +1,19 @@
 package queryProcessing;
 
 import fileManager.ConfigurationParameters;
-import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.Text;
 import preprocessing.PreprocessDoc;
-import utility.Utils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 public class DaatTest extends TestCase {
     public LexiconStats getPointer(FileChannel channel, String key) throws IOException {
@@ -77,9 +71,11 @@ public class DaatTest extends TestCase {
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
         FileChannel lexChannel = lexFile.getChannel();
         String query = "how often do american people eat";
-        List<String> proQuery = preprocessing.preprocess_doc_optimized(query);
+        List<String> proQuery = preprocessing.preprocess_doc(query);
         LexiconStats l = getPointer(lexChannel, "peopl");
         /*for(String term: proQuery){
+        List<String> proQuery = preprocessing.preprocess_doc(query);
+        for(String term: proQuery){
             LexiconStats l = getPointer(lexChannel, term);
             lexicon.put(term, l);
         }*/

@@ -1,14 +1,8 @@
 package fileManager;
 
-import invertedIndex.LexiconStats;
-import invertedIndex.Posting;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.hadoop.io.Text;
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
-import org.mapdb.HTreeMap;
-import org.mapdb.Serializer;
 import preprocessing.PreprocessDoc;
 
 import java.io.File;
@@ -18,7 +12,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static utility.Utils.addByteArray;
 
@@ -45,7 +38,7 @@ public class CollectionParser {
                 String[] parts = doc.split("\t");
                 String docno = parts[0];
                 String doc_corpus = parts[1];
-                List<String> pro_doc = preprocessDoc.preprocess_doc_optimized(doc_corpus);
+                List<String> pro_doc = preprocessDoc.preprocess_doc(doc_corpus);
                 //read the terms and count the length of the document
                 for (String term : pro_doc) {
                     cont++;

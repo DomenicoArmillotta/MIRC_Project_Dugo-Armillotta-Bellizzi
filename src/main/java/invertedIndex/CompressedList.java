@@ -1,5 +1,8 @@
 package invertedIndex;
 
+/**
+ * used to store the compressed POSTING LIST  belonging to a posting list
+ */
 public class CompressedList {
     private byte[] docids;
     private byte[] tfs;

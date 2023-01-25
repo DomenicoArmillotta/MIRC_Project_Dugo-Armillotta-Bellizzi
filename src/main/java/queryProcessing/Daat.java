@@ -5,13 +5,6 @@ import fileManager.ConfigurationParameters;
 import invertedIndex.CompressedList;
 import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
-import invertedIndex.Posting;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.thirdparty.org.checkerframework.checker.units.qual.C;
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
-import org.mapdb.HTreeMap;
-import org.mapdb.Serializer;
 import preprocessing.PreprocessDoc;
 import utility.Utils;
 
@@ -19,7 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -50,7 +42,7 @@ public class Daat {
     public List<Map.Entry<Integer,Double>> conjunctiveDaat(String query, int k) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = new ArrayList<>();
-        proQuery = preprocessing.preprocess_doc_optimized(query);
+        proQuery = preprocessing.preprocess_doc(query);
         int queryLen = proQuery.size();
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
         FileChannel lexChannel = lexFile.getChannel();
@@ -135,7 +127,7 @@ public class Daat {
 
     public List<Map.Entry<Integer, Double>> disjunctiveDaat(String query, int k) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
-        List<String> proQuery = preprocessing.preprocess_doc_optimized(query);
+        List<String> proQuery = preprocessing.preprocess_doc(query);
         int queryLen = proQuery.size();
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
         FileChannel lexChannel = lexFile.getChannel();

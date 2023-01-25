@@ -58,12 +58,4 @@ public class Normalizer {
         return formattedLine;
     }
 
-    private String replaceCountryCodes(String doc) throws IOException {
-        if(doc.contains(" US ") ||
-                (doc.contains(" US") && doc.indexOf("US")==doc.length()-2) ||
-                (doc.contains("US ") && doc.indexOf("US")==0)){
-            doc = doc.replaceAll("US", "United States");
-        }
-        return doc;
-    }
 }
