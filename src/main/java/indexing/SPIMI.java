@@ -70,7 +70,7 @@ public class SPIMI {
         PreprocessDoc preprocessDoc = new PreprocessDoc();
         String[] parts = doc.split("\t");
         String doc_corpus = parts[1];
-        List<String> pro_doc = preprocessDoc.preprocess_doc_optimized(doc_corpus);
+        List<String> pro_doc = preprocessDoc.preprocess_doc(doc_corpus);
         //read the terms and generate postings
         for (String term : pro_doc) {
             invertedIndex.addPosting(term, docid, 1);
