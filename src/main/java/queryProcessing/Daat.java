@@ -329,7 +329,7 @@ public class Daat {
                     if (docId >= value) {
                         //System.out.println("Found: " + term + " " + docId+ ">=" + value);
                         lexicon.get(term).setCurTf(decompressedTfs[lexicon.get(term).getIndex()].get(index));
-                        //System.out.println("cur doc: " + term + " " + lexicon.get(term).getCurTf());
+                        //System.out.println("cur doc: " + term + " " + " " + docId + " " + lexicon.get(term).getCurTf());
                         return docId;
                     }
                     index++;

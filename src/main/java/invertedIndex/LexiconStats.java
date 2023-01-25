@@ -21,6 +21,7 @@ public class LexiconStats implements Serializable {
     private int curTf;
     private double idf;
     private double termUpperBound;
+    private double termUpperBoundTf;
     private long offsetSkip;
     private int skipLen;
 
@@ -42,8 +43,9 @@ public class LexiconStats implements Serializable {
         this.offsetTf = b.getLong(28); //read sixth value, a long
         this.idf = b.getDouble(36); //read seventh value, a double
         this.termUpperBound = b.getDouble(44);
-        this.offsetSkip = b.getLong(52);
-        this.skipLen = b.getInt(60);
+        this.termUpperBoundTf = b.getDouble(52);
+        this.offsetSkip = b.getLong(60);
+        this.skipLen = b.getInt(68);
     }
 
     public int getdF() {
@@ -134,6 +136,10 @@ public class LexiconStats implements Serializable {
     public void setTermUpperBound(double termUpperBound) {
         this.termUpperBound = termUpperBound;
     }
+
+    public double getTermUpperBoundTf() { return termUpperBoundTf;}
+
+    public void setTermUpperBoundTf(double termUpperBoundTf) { this.termUpperBoundTf = termUpperBoundTf; }
 
     public long getOffsetSkip() {
         return offsetSkip;

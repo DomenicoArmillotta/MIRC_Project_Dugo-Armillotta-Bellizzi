@@ -31,6 +31,40 @@ public class Utils {
         return lexiconBytes;
     }
 
+    public static byte[] createLexiconEntry(int dF, long cF, int docLen, int tfLen, long offsetDocs, long offsetTfs, double idf, double tup, double tuptfidf, long offsetSkip, int skipLen){
+        //take the document frequency
+        byte[] dfBytes = ByteBuffer.allocate(4).putInt(dF).array();
+        //take the collection frequency
+        byte[] cfBytes = ByteBuffer.allocate(8).putLong(cF).array();
+        //take list dim for both docids and tfs
+        byte[] docBytes = ByteBuffer.allocate(4).putInt(docLen).array();
+        byte[] tfBytes = ByteBuffer.allocate(4).putInt(tfLen).array();
+        //take the offset of docids
+        byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(offsetDocs).array();
+        //take the offset of tfs
+        byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(offsetTfs).array();
+        //take the idf
+        byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
+        //initialize the bytes for other info (not available now)
+        byte[] tupBytes = ByteBuffer.allocate(8).putDouble(tup).array();
+        byte[] tupTfIdfBytes = ByteBuffer.allocate(8).putDouble(tuptfidf).array();
+        byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(offsetSkip).array();
+        byte[] skipBytes = ByteBuffer.allocate(4).putInt(skipLen).array();
+        //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
+        byte[] lexiconBytes = dfBytes;
+        lexiconBytes = addByteArray(lexiconBytes,cfBytes);
+        lexiconBytes = addByteArray(lexiconBytes,docBytes);
+        lexiconBytes = addByteArray(lexiconBytes,tfBytes);
+        lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
+        lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
+        lexiconBytes = addByteArray(lexiconBytes,idfBytes);
+        lexiconBytes = addByteArray(lexiconBytes,tupBytes);
+        lexiconBytes = addByteArray(lexiconBytes,tupTfIdfBytes);
+        lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
+        lexiconBytes = addByteArray(lexiconBytes,skipBytes);
+        return lexiconBytes;
+    }
+
     /*
     Map the file into memory using the FileChannel.map method. This will return a MappedByteBuffer that you can use to access
     the contents of the file.

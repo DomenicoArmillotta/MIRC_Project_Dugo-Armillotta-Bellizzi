@@ -20,7 +20,7 @@ public class Scorer {
     }
 
     //tfidf scoring function for computing term frequency weights
-    private double tfidf(int tf_d, int d_len, double idf){
+    public static double tfidf(int tf_d, int d_len, double idf){
         //return (1.0 + Math.log(tf_d)*Math.log(htDocindex.keySet().size()/doc_freq));
         return (1.0 + Math.log(tf_d)*idf);
     }

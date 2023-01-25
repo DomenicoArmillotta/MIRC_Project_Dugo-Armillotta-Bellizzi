@@ -9,6 +9,7 @@ import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import queryProcessing.Scorer;
+import utility.Utils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -134,8 +135,9 @@ public class InvertedIndex {
             else{ //we allocate 22 bytes for the Text object, which is a string of 20 chars
                 lexiconBytes = ByteBuffer.allocate(22).put(key.getBytes()).array();
             }
+            lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(l.getdF(), l.getCf(), docLen, tfLen, offsetDocs, offsetTfs, idf, 0.0, 0.0, 0, 0));
             //take the document frequency
-            byte[] dfBytes = ByteBuffer.allocate(4).putInt(l.getdF()).array();
+            /*byte[] dfBytes = ByteBuffer.allocate(4).putInt(l.getdF()).array();
             //take the collection frequency
             byte[] cfBytes = ByteBuffer.allocate(8).putLong(l.getCf()).array();
             //take list dim for both docids and tfs
@@ -161,7 +163,7 @@ public class InvertedIndex {
             lexiconBytes = addByteArray(lexiconBytes,idfBytes);
             lexiconBytes = addByteArray(lexiconBytes,tupBytes);
             lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
-            lexiconBytes = addByteArray(lexiconBytes,skipBytes);
+            lexiconBytes = addByteArray(lexiconBytes,skipBytes);*/
             //write lexicon entry to disk
             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
             bufferLex.put(lexiconBytes);

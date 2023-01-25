@@ -201,35 +201,14 @@ public class SPIMI {
                             tfs.flip();
                             tempTfChannel.write(tfs);
                             byte[] lexiconBytes = Utils.getBytesFromString(word1);
-                            //take the document frequency
-                            byte[] dfBytes = ByteBuffer.allocate(4).putInt(l1.getdF()).array();
-                            //take the collection frequency
-                            byte[] cfBytes = ByteBuffer.allocate(8).putLong(l1.getCf()).array();
-                            //take list dim for both docids and tfs
-                            byte[] docBytes = ByteBuffer.allocate(4).putInt(l1.getDocidsLen()).array();
-                            byte[] tfBytes = ByteBuffer.allocate(4).putInt(l1.getTfLen()).array();
-                            //take the offset of docids
-                            byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(docOffset).array();
-                            //take the offset of tfs
-                            byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(tfOffset).array();
                             //idf value
                             long nn = l1.getdF(); // number of documents that contain the term t among the data set
                             double idf = Math.log((N/nn));
-                            byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
-                            byte[] tupBytes = ByteBuffer.allocate(8).putDouble(0.0).array();
-                            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(0).array();
-                            byte[] skipBytes = ByteBuffer.allocate(4).putInt(0).array();
-                            //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
-                            lexiconBytes = addByteArray(lexiconBytes,dfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,cfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,docBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,tfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,idfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,tupBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,skipBytes);
+                            int docLen = l1.getDocidsLen();
+                            int tfLen = l1.getTfLen();
+                            int df = l1.getdF();
+                            long cF = l1.getCf();
+                            lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(df, cF, docLen,tfLen, docOffset, tfOffset, idf, 0.0, 0.0, 0, 0));
                             //write lexicon entry to disk
                             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
                             bufferLex.put(lexiconBytes);
@@ -253,35 +232,14 @@ public class SPIMI {
                             tfs.flip();
                             tempTfChannel.write(tfs);
                             byte[] lexiconBytes = Utils.getBytesFromString(word2);
-                            //take the document frequency
-                            byte[] dfBytes = ByteBuffer.allocate(4).putInt(l2.getdF()).array();
-                            //take the collection frequency
-                            byte[] cfBytes = ByteBuffer.allocate(8).putLong(l2.getCf()).array();
-                            //take list dim for both docids and tfs
-                            byte[] docBytes = ByteBuffer.allocate(4).putInt(l2.getDocidsLen()).array();
-                            byte[] tfBytes = ByteBuffer.allocate(4).putInt(l2.getTfLen()).array();
-                            //take the offset of docids
-                            byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(docOffset).array();
-                            //take the offset of tfs
-                            byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(tfOffset).array();
                             //idf value
                             long nn = l2.getdF(); // number of documents that contain the term t among the data set
                             double idf = Math.log((N/nn));
-                            byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
-                            byte[] tupBytes = ByteBuffer.allocate(8).putDouble(0.0).array();
-                            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(0).array();
-                            byte[] skipBytes = ByteBuffer.allocate(4).putInt(0).array();
-                            //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
-                            lexiconBytes = addByteArray(lexiconBytes,dfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,cfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,docBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,tfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,idfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,tupBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,skipBytes);
+                            int docLen = l2.getDocidsLen();
+                            int tfLen = l2.getTfLen();
+                            int df = l2.getdF();
+                            long cF = l2.getCf();
+                            lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(df, cF, docLen,tfLen, docOffset, tfOffset, idf, 0.0, 0.0, 0, 0));
                             //write lexicon entry to disk
                             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
                             bufferLex.put(lexiconBytes);
@@ -320,35 +278,12 @@ public class SPIMI {
                             int docLen = l1.getDocidsLen()+l2.getDocidsLen();
                             int tfLen = l1.getTfLen()+l2.getTfLen();
                             byte[] lexiconBytes = Utils.getBytesFromString(word1);
-                            //take the document frequency
-                            byte[] dfBytes = ByteBuffer.allocate(4).putInt(l1.getdF()+l2.getdF()).array();
-                            //take the collection frequency
-                            byte[] cfBytes = ByteBuffer.allocate(8).putLong(l1.getCf()+l2.getCf()).array();
-                            //take list dim for both docids and tfs
-                            byte[] docBytes = ByteBuffer.allocate(4).putInt(docLen).array();
-                            byte[] tfBytes = ByteBuffer.allocate(4).putInt(tfLen).array();
-                            //take the offset of docids
-                            byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(docOffset).array();
-                            //take the offset of tfs
-                            byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(tfOffset).array();
                             //idf value
                             long nn = l1.getdF()+l2.getdF(); // number of documents that contain the term t among the data set
                             double idf = Math.log((N/nn));
-                            byte[] idfBytes = ByteBuffer.allocate(8).putDouble(idf).array();
-                            byte[] tupBytes = ByteBuffer.allocate(8).putDouble(0.0).array();
-                            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(0).array();
-                            byte[] skipBytes = ByteBuffer.allocate(4).putInt(0).array();
-                            //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
-                            lexiconBytes = addByteArray(lexiconBytes,dfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,cfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,docBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,tfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,idfBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,tupBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
-                            lexiconBytes = addByteArray(lexiconBytes,skipBytes);
+                            int df = l1.getdF()+l2.getdF();
+                            long cF = l1.getCf()+l2.getCf();
+                            lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(df, cF, docLen, tfLen, docOffset, tfOffset, idf, 0.0, 0.0, 0, 0));
                             //write lexicon entry to disk
                             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
                             bufferLex.put(lexiconBytes);
@@ -471,6 +406,7 @@ public class SPIMI {
             tfChannel.read(tfs);
             List<Integer> decompressedTfs = c.unaryDecode(tfs.array());
             double maxscore = 0.0;
+            double tfidfMaxScore = 0.0;
             for(int i = 0; i < decompressedDocids.size(); i++){
                 int tf = decompressedTfs.get(i);
                 double idf = l.getIdf();
@@ -478,6 +414,10 @@ public class SPIMI {
                 double score = Scorer.bm25Weight(tf, documentLength, idf);
                 if(score>maxscore){
                     maxscore = score;
+                }
+                double scoreTfIdf = Scorer.tfidf(tf, documentLength, idf);
+                if(scoreTfIdf>tfidfMaxScore){
+                    tfidfMaxScore = scoreTfIdf;
                 }
             }
             int nBlocks = (int) Math.floor(Math.sqrt(l.getdF()));
@@ -521,32 +461,7 @@ public class SPIMI {
             skipInfoChannel.write(bufferSkips);
             //write the new lexicon entry
             byte[] lexiconBytes = Utils.getBytesFromString(word);
-            //take the document frequency
-            byte[] dfBytes = ByteBuffer.allocate(4).putInt(l.getdF()).array();
-            //take the collection frequency
-            byte[] cfBytes = ByteBuffer.allocate(8).putLong(l.getCf()).array();
-            //take list dim for both docids and tfs
-            byte[] docBytes = ByteBuffer.allocate(4).putInt(docLen).array();
-            byte[] tfBytes = ByteBuffer.allocate(4).putInt(tfLen).array();
-            //take the offset of docids
-            byte[] offsetDocBytes = ByteBuffer.allocate(8).putLong(l.getOffsetDocid()).array();
-            //take the offset of tfs
-            byte[] offsetTfBytes = ByteBuffer.allocate(8).putLong(l.getOffsetTf()).array();
-            byte[] idfBytes = ByteBuffer.allocate(8).putDouble(l.getIdf()).array();
-            byte[] tupBytes = ByteBuffer.allocate(8).putDouble(maxscore).array();
-            byte[] offsetSkipBytes = ByteBuffer.allocate(8).putLong(skipOffset).array();
-            byte[] skipBytes = ByteBuffer.allocate(4).putInt(skipLen).array();
-            //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
-            lexiconBytes = addByteArray(lexiconBytes,dfBytes);
-            lexiconBytes = addByteArray(lexiconBytes,cfBytes);
-            lexiconBytes = addByteArray(lexiconBytes,docBytes);
-            lexiconBytes = addByteArray(lexiconBytes,tfBytes);
-            lexiconBytes = addByteArray(lexiconBytes,offsetDocBytes);
-            lexiconBytes = addByteArray(lexiconBytes,offsetTfBytes);
-            lexiconBytes = addByteArray(lexiconBytes,idfBytes);
-            lexiconBytes = addByteArray(lexiconBytes,tupBytes);
-            lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
-            lexiconBytes = addByteArray(lexiconBytes,skipBytes);
+            lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(l.getdF(), l.getCf(), docLen, tfLen, l.getOffsetDocid(), l.getOffsetTf(), l.getIdf(), maxscore, tfidfMaxScore, skipOffset, skipLen));
             //write lexicon entry to disk
             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
             bufferLex.put(lexiconBytes);
