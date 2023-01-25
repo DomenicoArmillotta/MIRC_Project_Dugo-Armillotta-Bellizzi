@@ -362,7 +362,7 @@ public class SPIMI {
         //output file for the updated lexicon with the skip info pointers and term upper bound
         RandomAccessFile outLexFile = new RandomAccessFile(new File("docs/lexiconTot.txt"),"rw");
         FileChannel outLexChannel = outLexFile.getChannel();
-        Compressor c = new Compressor();
+        Compressor compressor = new Compressor();
         //for each term posting list is read out and decompress to compute the max score
         int totLen = 0;
         int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
@@ -398,11 +398,11 @@ public class SPIMI {
             ByteBuffer docids = ByteBuffer.allocate(docLen);
             docChannel.read(docids);
             //decompress docids
-            List<Integer> decompressedDocids = c.variableByteDecode(docids.array());
+            List<Integer> decompressedDocids = compressor.variableByteDecode(docids.array());
             tfChannel.position(offsetTf);
             ByteBuffer tfs = ByteBuffer.allocate(tfLen);
             tfChannel.read(tfs);
-            List<Integer> decompressedTfs = c.unaryDecode(tfs.array());
+            List<Integer> decompressedTfs = compressor.unaryDecode(tfs.array());
             double maxscore = 0.0;
             double tfidfMaxScore = 0.0;
             for(int i = 0; i < decompressedDocids.size(); i++){
@@ -430,8 +430,8 @@ public class SPIMI {
                 else nDocids += nBlocks;
                 int docid = decompressedDocids.get(nDocids-1);
                 while(i <= nDocids-1){
-                    nBytes += c.variableByteEncodeNumber(decompressedDocids.get(i)).length;
-                    tfBytes += c.unaryEncode(decompressedTfs.get(i)).length;
+                    nBytes += compressor.variableByteEncodeNumber(decompressedDocids.get(i)).length;
+                    tfBytes += compressor.unaryEncode(decompressedTfs.get(i)).length;
                     //System.out.println("Bytes: " + nBytes);
                     i++;
                 }

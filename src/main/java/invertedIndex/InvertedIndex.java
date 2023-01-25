@@ -17,9 +17,12 @@ public class InvertedIndex {
     private String outPath;
     //map for the lexicon: the entry are the term + the statistics for each term
     private Map<String, LexiconStats> lexicon;
+    //list of sorted term of lexicon
     private List<String> sortedTerms;
-    private List<List<Posting>> invIndex; //pointers of the inverted list, one for each term
-    private int nList = 0; //pointer of the list for a term in the lexicon
+    //pointers of the inverted list, one for each term
+    private List<List<Posting>> invIndex;
+    //pointer of the list for a term in the lexicon
+    private int nList = 0;
     public InvertedIndex(int n){
         outPath = "_"+n;
         lexicon = new HashMap<>();
@@ -79,21 +82,28 @@ public class InvertedIndex {
     }
 
 
+    /**
+     * sort the term of the lexicon in one list
+     */
     public void sortTerms() {
         //sort the lexicon by key putting it in the sortedTerms list
         sortedTerms = lexicon.keySet().stream().sorted().collect(Collectors.toList());
     }
 
+    /**
+     * is used to write each block of SPIMI on disk
+     * It does two things:
+     * 1. write the inverted index to file, iterating the postings of each term,
+     * compresses the data and writes them to the appropriate file.
+     *  We use one file for each type of data:
+     * - doc_id file
+     * - term frequency file
+     * 2. Writes the compressed lexicon to file
+     * - lexicon file
+     * @throws IOException
+     */
     public void writePostings() throws IOException {
-        List<Posting> list = invIndex.get(lexicon.get("bile").getIndex());
-        List<Posting> list2 = invIndex.get(lexicon.get("american").getIndex());
-        System.out.println(lexicon.get("bile").getCf() + " " + lexicon.get("bile").getdF());
-        System.out.println(list);
-        System.out.println(lexicon.get("american").getCf() + " " + lexicon.get("american").getdF());
-        System.out.println(list2);
-        List<Posting> list3 = invIndex.get(lexicon.get("lime").getIndex());
-        System.out.println(lexicon.get("lime").getCf() + " " + lexicon.get("lime").getdF());
-        System.out.println(list3);
+        //output file for different type of data
         File lexFile = new File("docs/lexicon"+outPath+".txt");
         File docFile = new File("docs/docids"+outPath+".txt");
         File tfFile = new File("docs/tfs"+outPath+".txt");
@@ -108,29 +118,32 @@ public class InvertedIndex {
         double N = cp.getNumberOfDocuments();
         int offsetDocs = 0;
         int offsetTfs = 0;
+        //iterate over term in the collection
         for(String term : sortedTerms){
-            LexiconStats l = lexicon.get(term);
-            int index = l.getIndex();
-            List<Posting> pl = invIndex.get(index);
+            LexiconStats lexiconStats = lexicon.get(term);
+            int index = lexiconStats.getIndex();
+            List<Posting> postingList = invIndex.get(index);
             int docLen = 0;
             int tfLen = 0;
-            //idf value
-            long nn = l.getdF(); // number of documents that contain the term t
+            long nn = lexiconStats.getdF(); // number of documents that contain the term t
             double idf = Math.log((N/nn));
-            for(Posting p: pl){ //take the posting list
-                //write posting list to file
-                byte[] baDocs = compressor.variableByteEncodeNumber(p.getDocid()); //compress the docid with variable byte
-                ByteBuffer bufferValue = ByteBuffer.allocate(baDocs.length);
-                bufferValue.put(baDocs);
+            //iterate over the posting of the term
+            for(Posting p: postingList){ //take the posting list
+                //write posting list into compressed file : for each posting compress and write on appropriate file
+                //compress the docid with variable byte
+                byte[] compressedDocs = compressor.variableByteEncodeNumber(p.getDocid());
+                ByteBuffer bufferValue = ByteBuffer.allocate(compressedDocs.length);
+                bufferValue.put(compressedDocs);
                 bufferValue.flip();
                 docChannel.write(bufferValue);
-                byte[] baFreqs = compressor.unaryEncode(p.getTf()); //compress the term frequency with unary
-                ByteBuffer bufferFreq = ByteBuffer.allocate(baFreqs.length);
-                bufferFreq.put(baFreqs);
+                //compress the TermFreq with variable byte
+                byte[] compressedTF = compressor.unaryEncode(p.getTf()); //compress the term frequency with unary
+                ByteBuffer bufferFreq = ByteBuffer.allocate(compressedTF.length);
+                bufferFreq.put(compressedTF);
                 bufferFreq.flip();
                 tfChannel.write(bufferFreq);
-                docLen+= baDocs.length;
-                tfLen+= baFreqs.length;
+                docLen+= compressedDocs.length;
+                tfLen+= compressedTF.length;
             }
             //we check if the string is greater than 20 chars, in that case we truncate it
             Text key = new Text(term);
@@ -142,7 +155,7 @@ public class InvertedIndex {
             else{ //we allocate 22 bytes for the Text object, which is a string of 20 chars
                 lexiconBytes = ByteBuffer.allocate(22).put(key.getBytes()).array();
             }
-            lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(l.getdF(), l.getCf(), docLen, tfLen, offsetDocs, offsetTfs, idf, 0.0, 0.0, 0, 0));
+            lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(lexiconStats.getdF(), lexiconStats.getCf(), docLen, tfLen, offsetDocs, offsetTfs, idf, 0.0, 0.0, 0, 0));
             //take the document frequency
             //write lexicon entry to disk
             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
