@@ -31,7 +31,8 @@ public class SPIMI_InvertTest extends TestCase {
 
     public void testSpimi() throws IOException {
         SPIMI s = new SPIMI();
-        s.spimiInvertBlockMapped("docs/collection_test3.tsv");
+        //s.spimiInvertBlockMapped("docs/collection_test3.tsv");
+        s.spimiInvertBlockMapped("docs/collection.tsv");
     }
 
     public void testMaxScores() throws IOException {
@@ -222,7 +223,8 @@ public class SPIMI_InvertTest extends TestCase {
     }
     public void testParser() throws IOException {
         CollectionParser cp = new CollectionParser();
-        cp.parseFile("docs/collection_test3.tsv");
+        //cp.parseFile("docs/collection_test3.tsv");
+        cp.parseFile("docs/collection.tsv");
         RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
         RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
         FileChannel docIndexChannel = docIndexFile.getChannel();

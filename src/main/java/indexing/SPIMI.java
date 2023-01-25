@@ -75,6 +75,7 @@ public class SPIMI {
         for (String term : pro_doc) {
             invertedIndex.addPosting(term, docid, 1);
         }
+        System.out.println(docid);
         docid++;
     }
 
@@ -100,9 +101,9 @@ public class SPIMI {
         int nIndex = n;
         ConfigurationParameters cp = new ConfigurationParameters();
         double N = cp.getNumberOfDocuments(); //take the total number of documents in the collection
-        //System.out.println("HERE " + nIndex);
         //in the case of multiple block to merge
         while(nIndex>1){
+            System.out.println("HERE " + nIndex);
             //inizializzare una variabile per indicizzare il numero del file intermedio, in modo tale che ad ogni
             //for abbiamo il numero di file intermedi creat e all'inizio di una nuova iterazione del while, lo rimettiamo
             // a zero per segnarci i nuovi indici dei nuovi file intermedi

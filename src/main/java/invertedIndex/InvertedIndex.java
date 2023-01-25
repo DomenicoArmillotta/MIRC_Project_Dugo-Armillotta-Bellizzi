@@ -78,7 +78,7 @@ public class InvertedIndex {
     }
 
     public void writePostings() throws IOException {
-        List<Posting> list = invIndex.get(lexicon.get("bile").getIndex());
+        /*List<Posting> list = invIndex.get(lexicon.get("bile").getIndex());
         List<Posting> list2 = invIndex.get(lexicon.get("american").getIndex());
         System.out.println(lexicon.get("bile").getCf() + " " + lexicon.get("bile").getdF());
         System.out.println(list);
@@ -86,7 +86,7 @@ public class InvertedIndex {
         System.out.println(list2);
         List<Posting> list3 = invIndex.get(lexicon.get("lime").getIndex());
         System.out.println(lexicon.get("lime").getCf() + " " + lexicon.get("lime").getdF());
-        System.out.println(list3);
+        System.out.println(list3);*/
         File lexFile = new File("docs/lexicon"+outPath+".txt");
         File docFile = new File("docs/docids"+outPath+".txt");
         File tfFile = new File("docs/tfs"+outPath+".txt");
