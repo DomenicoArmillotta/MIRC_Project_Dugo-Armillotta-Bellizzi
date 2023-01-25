@@ -81,6 +81,13 @@ public class SPIMI {
         docid++;
     }
 
+    /**
+     * this function is used to merge different block returned by SPIMI in one unique file
+     *initially merge the files two by two, create intermediate files,
+     * and continue with the merge of intermediate files, until only one output file is generated
+     * @param n number of block to merge
+     * @throws IOException
+     */
     private void mergeBlocks(int n) throws IOException {
         //to create input file to merge
         List<String> lexPaths = new ArrayList<>();
@@ -131,6 +138,10 @@ public class SPIMI {
                     tempTfs.add(currTfs.get(i));
                 }
                 //start to merge two block at time
+                //merging strategy :
+                //1. term1 > term2 : write t1 on output and update offset1
+                //1. term2 > term1 : write t2 on output and update offset2
+                //1. term1 = term2 : merge the posting and write on the output file
                 else{
                     //declare input files of two block to merge
                     RandomAccessFile doc1File = new RandomAccessFile(new File(currDocs.get(i)),"rw");
@@ -147,10 +158,11 @@ public class SPIMI {
                     FileChannel lex2Channel = lex2File.getChannel();
                     //for reading we use the pointers with the position method, so we need the offsets of the two files
                     //offsets for reading the two files
-                    long offset1 = 0; //lexicon offset
-                    long offset2 = 0;
+                    long offset1 = 0; //first lexicon offset
+                    long offset2 = 0; //second lexicon offset
                     long docOffset = 0; //offset of the docids list in the docids output file
                     long tfOffset = 0; //offset of the tfs list in the tfs output file
+                    //we iterate over the all word in the two files
                     while(totalSize < lex1File.length() + lex2File.length()){
                         readBuffers[i] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
                         readBuffers[i+1] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
@@ -162,9 +174,7 @@ public class SPIMI {
                         //place the pointers in the buffers at the beginning
                         readBuffers[i].position(0);
                         readBuffers[i+1].position(0);
-                        //next steps:
-                        //1)read the term in both buffers (first 22 bytes) and the lexicon statistics (remaining 44);
-                        //read first 22 bytes for the term
+                        //Read term in both buffers (first 22 bytes) and lexicon statistics(remaining 44)
                         byte[] term1 = new byte[22];
                         byte[] term2 = new byte[22];
                         readBuffers[i].get(term1, 0, 22).array();
@@ -174,21 +184,19 @@ public class SPIMI {
                         ByteBuffer val2 = ByteBuffer.allocate(LEXICON_ENTRY_SIZE-22);
                         readBuffers[i].get(val1.array(), 0, LEXICON_ENTRY_SIZE-22);
                         readBuffers[i+1].get(val2.array(), 0, LEXICON_ENTRY_SIZE-22);
-                        //we use a method for reading the 36 bytes in a LexiconStats object
+                        //A method is used to read the 36 bytes in a LexiconStats object
                         LexiconStats l1 = new LexiconStats(val1);
                         LexiconStats l2 = new LexiconStats(val2);
                         //convert the bytes to the String
+                        //word1 owns to the first buffer
+                        //word2 owns to the second buffer
                         String word1 = Text.decode(term1);
                         String word2 = Text.decode(term2);
                         //replace null characters
                         word1 = word1.replaceAll("\0", "");
                         word2 = word2.replaceAll("\0", "");
-                        //2)compare terms to see what to merge in the result
-                        //3)check:
-                        //if the 1st term is greater than the second
-                        //if the second is greater than the other
-                        //if they are equal: in this case we merge them
-                        //in the LexiconStats
+                        //Now terms comparison is required to figure out which are terms to merge
+                        //in case of wod 1 greater , write on file word 1 and update the offset in the file 1
                         if(word1.compareTo(word2) > 0){
                             ByteBuffer docids = ByteBuffer.allocate(l1.getDocidsLen());
                             ByteBuffer tfs = ByteBuffer.allocate(l1.getTfLen());
@@ -220,6 +228,7 @@ public class SPIMI {
                             offset1+= LEXICON_ENTRY_SIZE;
                             totalSize+=LEXICON_ENTRY_SIZE;
                         }
+                        //write word 2 on output and update file 2 offset
                         else if(word2.compareTo(word1) > 0){
                             ByteBuffer docids = ByteBuffer.allocate(l2.getDocidsLen());
                             ByteBuffer tfs = ByteBuffer.allocate(l2.getTfLen());
@@ -232,7 +241,6 @@ public class SPIMI {
                             tfs.flip();
                             tempTfChannel.write(tfs);
                             byte[] lexiconBytes = Utils.getBytesFromString(word2);
-                            //idf value
                             long nn = l2.getdF(); // number of documents that contain the term t among the data set
                             double idf = Math.log((N/nn));
                             int docLen = l2.getDocidsLen();
@@ -251,10 +259,10 @@ public class SPIMI {
                             offset2+=LEXICON_ENTRY_SIZE;
                             totalSize+=LEXICON_ENTRY_SIZE;
                         }
+                        //in this case w1=w2
+                        //merge the docids, the tfs in the files; we merge the dF, cF, docidslen and tfslen
+                        //in the new merged files we need to write the term and the new lexicon stats with the
                         else if (word1.compareTo(word2) == 0){
-                            //3.5) MERGE: we merge the docids, the tfs in the files; we merge the dF, cF, docidslen and tfslen
-                            //4) in the new merged files we need to write the term and the new lexicon stats with the
-                            //updated stats (offsets etc..)
                             ByteBuffer docids1 = ByteBuffer.allocate(l1.getDocidsLen());
                             ByteBuffer tfs1 = ByteBuffer.allocate(l1.getTfLen());
                             doc1Channel.position(l1.getOffsetDocid());
@@ -278,7 +286,6 @@ public class SPIMI {
                             int docLen = l1.getDocidsLen()+l2.getDocidsLen();
                             int tfLen = l1.getTfLen()+l2.getTfLen();
                             byte[] lexiconBytes = Utils.getBytesFromString(word1);
-                            //idf value
                             long nn = l1.getdF()+l2.getdF(); // number of documents that contain the term t among the data set
                             double idf = Math.log((N/nn));
                             int df = l1.getdF()+l2.getdF();
@@ -311,7 +318,7 @@ public class SPIMI {
             currDocs = tempDocs;
             currTfs = tempTfs;
             currLex = tempLex;
-            nIndex = (int) Math.ceil((double)nIndex/2); //attenzione all'approssimazione nel caso di numero di blocchi dispari
+            nIndex = (int) Math.ceil((double)nIndex/2);
         }
         //Writing the output files
         File lexFile = new File("docs/lexicon.txt");
