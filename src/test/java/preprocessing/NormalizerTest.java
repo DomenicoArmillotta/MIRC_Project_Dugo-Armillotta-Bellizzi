@@ -33,9 +33,9 @@ public class NormalizerTest extends TestCase {
         File file = new File("docs/collection_test.tsv");
         Path p = Paths.get(path);
         BufferedReader reader = Files.newBufferedReader(p, StandardCharsets.UTF_8);
-
+        
         List<String> list = Files.readAllLines(p, StandardCharsets.UTF_8);
-        Preprocess_doc preprocess_doc = new Preprocess_doc();
+        PreprocessDoc preprocess_doc = new PreprocessDoc();
         String test = list.get(40);
         String[] parts = test.split("\t");
         int doc_id = Integer.parseInt(parts[0]);
