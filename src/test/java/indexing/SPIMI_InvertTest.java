@@ -64,10 +64,10 @@ public class SPIMI_InvertTest extends TestCase {
         FileChannel lexChannel = inLexFile.getChannel();
         RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"),"rw");
         FileChannel docIndexChannel = docIndexFile.getChannel();
-        RandomAccessFile skipInfoFile = new RandomAccessFile(new File("docs/skipInfo.txt"),"rw");
+        RandomAccessFile skipInfoFile = new RandomAccessFile(new File("docs/skipInfo2.txt"),"rw");
         FileChannel skipInfoChannel = skipInfoFile.getChannel();
         //output file for the updated lexicon with the skip info pointers and term upper bound
-        RandomAccessFile outLexFile = new RandomAccessFile(new File("docs/lexiconTot.txt"),"rw");
+        RandomAccessFile outLexFile = new RandomAccessFile(new File("docs/lexiconTot2.txt"),"rw");
         FileChannel outLexChannel = outLexFile.getChannel();
         Compressor c = new Compressor();
         //for each term we read the posting list, decompress it and compute the max score
@@ -77,6 +77,7 @@ public class SPIMI_InvertTest extends TestCase {
         long skipOffset = 0;
         long docOffset = 0; //offset of the docids list in the docids output file
         long tfOffset = 0; //offset of the tfs list in the tfs output file
+        long start = System.currentTimeMillis();
         while(totLen<inLexFile.length()){
             int skipLen = 0;
             ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);
@@ -109,7 +110,8 @@ public class SPIMI_InvertTest extends TestCase {
             ByteBuffer tfs = ByteBuffer.allocate(tfLen);
             tfChannel.read(tfs);
             List<Integer> decompressedTfs = c.unaryDecode(tfs.array());
-
+            String prec = "a";
+            if(word.startsWith(prec))
             if(decompressedDocids.size() != decompressedTfs.size()){
                 System.out.println("ERROR: " + word);
                 return;
@@ -134,7 +136,7 @@ public class SPIMI_InvertTest extends TestCase {
                     tfidfMaxScore = scoreTfIdf;
                 }
             }
-            System.out.println(word + ": " + maxscore + ", " + tfidfMaxScore);
+            //System.out.println(word + ": " + maxscore + ", " + tfidfMaxScore);
             int nBlocks = (int) Math.floor(Math.sqrt(l.getdF()));
             int nDocids = 0;
             byte[] skips = new byte[0];
@@ -187,6 +189,11 @@ public class SPIMI_InvertTest extends TestCase {
             totLen+=entrySize; //go to the next entry of the lexicon file
             //System.out.println(skipOffset);
         }
+        long end = System.currentTimeMillis();
+        long tot = end - start;
+        tot/=1000;
+        tot/=60;
+        System.out.println("Time for computing term upper bounds and skip blocks: " + tot + " minutes");
     }
 
     public int getDocLen(FileChannel channel, String key) throws IOException {

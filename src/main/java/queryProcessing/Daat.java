@@ -22,7 +22,7 @@ public class Daat {
     private int maxDocID;
 
     public HashMap<String, LexiconStats> lexicon;
-    private InvertedIndex index;
+    private int[] numPosting;
     private String lexiconPath = "docs/lexiconTot.txt";
     private String docidsPath = "docs/docids.txt";
     private String tfsPath = "docs/tfs.txt";
@@ -34,15 +34,15 @@ public class Daat {
     private List<Integer>[] decompressedDocIds; //to keep the current block of docids for each term of the query
     private List<Integer>[] decompressedTfs; //to keep the current block of tfs for each term of the query
 
-    public Daat(){
+    public Daat() throws IOException {
         lexicon = new HashMap<>();
+        maxDocID = (int)ConfigurationParameters.getNumberOfDocuments();
     }
 
 
     public List<Map.Entry<Integer,Double>> conjunctiveDaat(String query, int k) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
-        List<String> proQuery = new ArrayList<>();
-        proQuery = preprocessing.preprocess_doc(query);
+        List<String> proQuery = preprocessing.preprocess_doc(query);
         int queryLen = proQuery.size();
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
         FileChannel lexChannel = lexFile.getChannel();
@@ -58,7 +58,6 @@ public class Daat {
         decompressedDocIds = new List[queryLen];
         decompressedTfs = new List[queryLen];
         TreeMap<Integer, Double> scores = new TreeMap<>();
-        int[] tf = new int[proQuery.size()];
         for(String term: proQuery){
             LexiconStats l = Utils.getPointer(lexChannel, term);
             lexicon.put(term, l);
@@ -67,34 +66,31 @@ public class Daat {
         for(int i = 0; i < queryLen; i++){
             postingLists[i] = openList(docChannel, tfChannel, skipChannel, proQuery.get(i));
             lexicon.get(proQuery.get(i)).setIndex(i);
+            numPosting[i] = lexicon.get(proQuery.get(i)).getdF();
         }
         //TODO: sort query terms in lexicon by shortest list
         int did = 0;
-        maxDocID = (int)ConfigurationParameters.getNumberOfDocuments();
         while (did <= maxDocID){
             double score = 0.0;
             did = nextGEQ(proQuery.get(0), did);
-            //System.out.println("NEW DOCID: " + did);
             if(did == -1){
                 break;
             }
             int d = 0;
             for (int i=1; (i<queryLen) && ((d=nextGEQ(proQuery.get(i), did)) == did); i++);
             if (d > did){
-                //System.out.println("HERE!!! " + did + " " + d);
                 did = d; // not in intersection
-                //System.out.println("After update!!! " + did + " " + d);
             }
             else
             {
                 //docID is in intersection; now get all frequencies
                 for (int i=0; i<proQuery.size(); i++){
-                    tf[i] = lexicon.get(proQuery.get(i)).getCurTf();
+                    int tf = lexicon.get(proQuery.get(i)).getCurTf();
                     //System.out.println("tf: " + proQuery.get(i) + " " + did + " " + tf[i]);
                     int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
                     double idf = lexicon.get(proQuery.get(i)).getIdf();
                     //compute BM25 score from frequencies and other data
-                    score += Scorer.bm25Weight(tf[i], docLen, idf); //to modify after getFreq
+                    score += Scorer.bm25Weight(tf, docLen, idf); //to modify after getFreq
                 }
                 Map.Entry<Integer, Double> minEntry = null;
                 if(scores.firstEntry() == null){
@@ -129,6 +125,7 @@ public class Daat {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocess_doc(query);
         int queryLen = proQuery.size();
+        numPosting = new int[queryLen];
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
         FileChannel lexChannel = lexFile.getChannel();
         RandomAccessFile docFile = new RandomAccessFile(new File(docidsPath), "rw");
@@ -140,8 +137,6 @@ public class Daat {
         RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
         FileChannel docIndexChannel = docIndexFile.getChannel();
         TreeMap<Integer, Double> scores = new TreeMap<>(); //to store partial scores results
-        int[] tf = new int[proQuery.size()];
-        TreeMap<String, Double> maxScores = new TreeMap<>(); //to store query term to term upper bound mappings
         double[] termUB = new double[queryLen];
         for(String term: proQuery){
             LexiconStats l = Utils.getPointer(lexChannel, term);
@@ -150,43 +145,39 @@ public class Daat {
         for(int i = 0; i < queryLen; i++){
             termUB[i] = lexicon.get(proQuery.get(i)).getTermUpperBound();
         }
-        for(String term: proQuery){
-            maxScores.put(term, lexicon.get(term).getTermUpperBound());
-        }
-        HashMap<String, Double> sortedTerms = new HashMap();
-        maxScores.entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByValue())
-                .forEachOrdered(x -> sortedTerms.put(x.getKey(), x.getValue()));
         Arrays.sort(termUB);
-        String [] queryTerms = sortedTerms.keySet().toArray(new String[0]);
+        String [] queryTerms = new String[queryLen];
+        for(String term: proQuery){
+            double ub = lexicon.get(term).getTermUpperBound();
+            int i = Arrays.binarySearch(termUB, ub);
+            queryTerms[i] = term;
+            //maxScores.put(term, lexicon.get(term).getTermUpperBound());
+        }
         postingLists = new CompressedList[queryLen];
-        decompressedDocIds = new List[queryLen];
-        decompressedTfs = new List[queryLen];
+        decompressedDocIds = new ArrayList[queryLen];
+        decompressedTfs = new ArrayList[queryLen];
         for(int i = 0; i < queryLen; i++){
             postingLists[i] = openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
             lexicon.get(queryTerms[i]).setIndex(i);
+            numPosting[i] = lexicon.get(queryTerms[i]).getdF();
         }
         HashMap<Integer, Integer> docLens = new HashMap<>();
         int pivot = 0;
         int did = 0;
         did = nextGEQ(queryTerms[0], did);
-        //lexicon.get(queryTerms[0]).setCurdoc(did);
         double[] documentUB = new double[queryLen];
         double prec = 0.0;
         int index = 0;
         for(double maxscore: termUB){
             documentUB[index] = maxscore + prec;
             prec = documentUB[index];
-            //System.out.println(queryTerms[index] + " " + documentUB[index]);
+            System.out.println(queryTerms[index] + " " + documentUB[index]);
             index++;
         }
         double threshold = 0;
-        maxDocID = (int)ConfigurationParameters.getNumberOfDocuments();
         int next;
         for (int i=1; (i<queryLen); i++){
             int d=nextGEQ(queryTerms[i], did);
-            //lexicon.get(queryTerms[i]).setCurdoc(d);
             if(d<did){
                 did = d;
             }
@@ -196,24 +187,23 @@ public class Daat {
             double score = 0.0;
             //process essential lists
             for (int i=pivot; i<queryLen; i++){
-                //int current = lexicon.get(queryTerms[i]).getCurdoc();
                 int current = nextGEQ(queryTerms[i], did);
                 if(current == did){
-                    tf[i] = lexicon.get(queryTerms[i]).getCurTf();
+                    int tf = lexicon.get(queryTerms[i]).getCurTf();
                     //int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
                     int docLen;
                     if(docLens.get(did) == null){
                         docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                        docLens.put(did, docLen);
                     }
                     else{
                         docLen = docLens.get(did);
                     }
                     double idf = lexicon.get(queryTerms[i]).getIdf();
                     //compute BM25 score from frequencies and other data
-                    score += Scorer.bm25Weight(tf[i], docLen, idf);
-                    //System.out.println("Partial score for " + queryTerms[i] + " " + did + ": " + score);
+                    score += Scorer.bm25Weight(tf, docLen, idf);
+                    current = nextGEQ(queryTerms[i], did+1); //update the pointer to next docid
                 }
-                current = nextGEQ(queryTerms[i], did+1); //update the pointer to next docid
                 if(current < next){
                     next = current;
                 }
@@ -227,18 +217,20 @@ public class Daat {
                 }
                 int current = nextGEQ(queryTerms[i], did);
                 if(current == did) {
-                    tf[i] = lexicon.get(queryTerms[i]).getCurTf();
+                    //System.out.println("Non essential: " + queryTerms[i] + " processed at " + did);
+                    int tf = lexicon.get(queryTerms[i]).getCurTf();
                     //int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
                     int docLen;
                     if(docLens.get(did) == null){
                         docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                        docLens.put(did, docLen);
                     }
                     else{
                         docLen = docLens.get(did);
                     }
                     double idf = lexicon.get(queryTerms[i]).getIdf();
                     //compute BM25 score from frequencies and other data
-                    score += Scorer.bm25Weight(tf[i], docLen, idf);
+                    score += Scorer.bm25Weight(tf, docLen, idf);
                     //System.out.println("Partial score for " + queryTerms[i] + " " + did + ": " + score);
                 }
             }
@@ -256,12 +248,13 @@ public class Daat {
                         minEntry = entry;
                     }
                 }
-                if(minEntry.getValue() <= score){
+                if(minEntry.getValue() < score){
                     scores.put(did, score);
+                    if(scores.size() > k) {
+                        scores.remove(minEntry.getKey(), minEntry.getValue());
+                        //System.out.println("Scores at: " + did + ": " + scores);
+                    }
                 }
-            }
-            if(scores.size() > k){
-                scores.remove(minEntry.getKey(), minEntry.getValue());
             }
             //System.out.println("Score for " + did + ": " + score);
             if(scores.size() == k && minEntry.getValue() > threshold){
@@ -281,57 +274,79 @@ public class Daat {
                 .collect(Collectors.toList());
 
     }
-    //TODO: remove file channel from parameters
+
     private int nextGEQ(String term, int value) throws IOException {
         Compressor c = new Compressor();
         //take number of posting in the list and in the blocks
-        int nPostings = lexicon.get(term).getdF();
-        int n = (int) Math.floor(Math.sqrt(nPostings));
+        int nPostings = numPosting[lexicon.get(term).getIndex()];
+        int n = (int) Math.floor(Math.sqrt(lexicon.get(term).getdF()));
         int i = 0;
-        ByteBuffer data = ByteBuffer.wrap(postingLists[lexicon.get(term).getIndex()].getDocids());
-        ByteBuffer readBuffer = ByteBuffer.wrap(postingLists[lexicon.get(term).getIndex()].getSkipInfo());
+        ByteBuffer docIds = ByteBuffer.wrap(postingLists[lexicon.get(term).getIndex()].getDocids());
+        ByteBuffer skipInfo = ByteBuffer.wrap(postingLists[lexicon.get(term).getIndex()].getSkipInfo());
         ByteBuffer tfs = ByteBuffer.wrap(postingLists[lexicon.get(term).getIndex()].getTfs());
-        readBuffer.position(0);
-        data.position(0);
+        skipInfo.position(0);
+        docIds.position(0);
         tfs.position(0);
-        //System.out.println("NextGEQ: " + term + " " + value + " " + nPostings + " " + n);
-        //System.out.println("TFS: "+ c.unaryDecode(tfs.array()));
-        while(i< nPostings) {
-            //we need to update the index; check if we are in the last block
-            int endocid = readBuffer.getInt();
-            int skipdocid = readBuffer.getInt();
-            int skiptf = readBuffer.getInt();
+        while(i< nPostings) { //we need to update the index; check if we are in the last block
+            int endocid = skipInfo.getInt();
+            int skipdocid = skipInfo.getInt();
+            int skiptf = skipInfo.getInt();
             ByteBuffer blockDocId = ByteBuffer.allocate(skipdocid);
-            //System.out.println("Skipping: " + term + " " + value + " " + endocid + " " + skipdocid + " " + skiptf + " " + data.array().length);
-            data.get(blockDocId.array(), 0, skipdocid);
+            docIds.get(blockDocId.array(), 0, skipdocid);
             ByteBuffer blockTf = ByteBuffer.allocate(skipdocid);
             tfs.get(blockTf.array(), 0, skiptf);
             if(endocid >= value) {
-                //System.out.println("Skipped: " + term + " " + endocid + ">=" + value);
                 //we do this to decompress only one time when we first enter the block, and not each time we enter
                 if(decompressedDocIds[lexicon.get(term).getIndex()] == null){
                     decompressedDocIds[lexicon.get(term).getIndex()] = c.variableByteDecodeBlock(blockDocId.array(), n);
                     decompressedTfs[lexicon.get(term).getIndex()] = c.unaryDecodeBlock(blockTf.array(), n);
                 }
-                //List<Integer> postingDocIds = c.variableByteDecodeBlock(blockDocId.array(), n);
-                //List<Integer> postingTfs = c.unaryDecodeBlock(blockTf.array(), n);
-                //System.out.println(term + ": " + postingTfs);
                 int index = 0;
                 for (int docId : decompressedDocIds[lexicon.get(term).getIndex()]) {
                     if (docId >= value) {
-                        //System.out.println("Found: " + term + " " + docId+ ">=" + value);
                         lexicon.get(term).setCurTf(decompressedTfs[lexicon.get(term).getIndex()].get(index));
-                        //System.out.println("cur doc: " + term + " " + " " + docId + " " + lexicon.get(term).getCurTf());
+                        int docIdSize = decompressedDocIds[lexicon.get(term).getIndex()].size();
+                        int tfSize = decompressedTfs[lexicon.get(term).getIndex()].size();
+                        if(docIdSize>1) {
+                            List<Integer> tmpDocIds = decompressedDocIds[lexicon.get(term).getIndex()];
+                            List<Integer> tmpTfs = decompressedTfs[lexicon.get(term).getIndex()];
+                            tmpDocIds.remove(0);
+                            tmpTfs.remove(0);
+                            decompressedDocIds[lexicon.get(term).getIndex()] = null;
+                            decompressedDocIds[lexicon.get(term).getIndex()] = new ArrayList<>(tmpDocIds);
+                            decompressedTfs[lexicon.get(term).getIndex()] = null;
+                            decompressedTfs[lexicon.get(term).getIndex()] = new ArrayList<>(tmpTfs);
+                            /*decompressedDocIds[lexicon.get(term).getIndex()].remove(0);
+                            decompressedTfs[lexicon.get(term).getIndex()].remove(0);*/
+                        }
                         return docId;
                     }
                     index++;
                 }
             }
             //update posting lists removing the old block
-            postingLists[lexicon.get(term).getIndex()] = new CompressedList(data.array(), tfs.array(), readBuffer.array());
+            //skipInfo.position(0);
+            //docIds.position(0);
+            //tfs.position(0);
+            int newSkipLen = lexicon.get(term).getSkipLen()-12;
+            int newDocIdsLen = lexicon.get(term).getDocidsLen()-skipdocid;
+            int newTfLen = lexicon.get(term).getTfLen()-skiptf;
+            ByteBuffer newBlock = ByteBuffer.allocate(newSkipLen);
+            ByteBuffer newBlockDocId = ByteBuffer.allocate(newDocIdsLen);
+            ByteBuffer newBlockTf = ByteBuffer.allocate(newTfLen);
+            skipInfo.get(newBlock.array(), 0, newSkipLen);
+            docIds.get(newBlockDocId.array(), 0, newDocIdsLen);
+            tfs.get(newBlockTf.array(), 0, newTfLen);
+            docIds = newBlockDocId;
+            skipInfo = newBlock;
+            tfs = newBlockTf;
+            lexicon.get(term).setSkipLen(newSkipLen);
+            lexicon.get(term).setDocidsLen(newDocIdsLen);
+            lexicon.get(term).setTfLen(newTfLen);
+            numPosting[lexicon.get(term).getIndex()] -= n;
+            postingLists[lexicon.get(term).getIndex()] = new CompressedList(newBlockDocId.array(), newBlockTf.array(), newBlock.array());
             decompressedDocIds[lexicon.get(term).getIndex()] = null;
             decompressedTfs[lexicon.get(term).getIndex()] = null;
-            //System.out.println("Update index "+ term + " " + value + " " + i + " " + n + " " + nPostings);
             if(i+1 == nPostings){
                 i++;
             }
@@ -341,6 +356,7 @@ public class Daat {
             else{
                 i+=n;
             }
+            nPostings = numPosting[lexicon.get(term).getIndex()];
 
         }
         // If no such value was found, return a special value indicating that the search failed

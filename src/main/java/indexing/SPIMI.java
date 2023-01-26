@@ -320,7 +320,7 @@ public class SPIMI {
             currDocs = tempDocs;
             currTfs = tempTfs;
             currLex = tempLex;
-            nIndex = (int) Math.ceil((double)nIndex/2); //attenzione all'approssimazione nel caso di numero di blocchi dispari
+            nIndex = (int) Math.ceil((double)nIndex/2);
         }
         //Writing the output files
         File lexFile = new File("docs/lexicon.txt");

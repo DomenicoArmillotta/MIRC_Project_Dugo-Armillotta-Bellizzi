@@ -108,7 +108,7 @@ public class Utils {
             String value = Text.decode(ba.array());
             value = value.replaceAll("\0", ""); //replace null characters
             if (value.equals(key)) { //if they are equal we are done
-                System.out.println("Found key " + key + " at position " + midpoint);
+                //System.out.println("Found key " + key + " at position " + midpoint);
                 ByteBuffer bf1 = ByteBuffer.allocate(entrySize-22);
                 buffer.get(bf1.array(), 0, entrySize-22); //take the bytes with the information we are searching
                 l = new LexiconStats(bf1);
