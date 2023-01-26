@@ -6,10 +6,19 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+/**
+ * Class to takes some lenght information on documents
+ */
 public class ConfigurationParameters {
 
     public static final int LEXICON_ENTRY_SIZE = 94; //size of the entry of the lexicon
     public static final int DOC_INDEX_ENTRY_SIZE = 14; //size of the entry of the document index
+
+    /**
+     * Calculates average length of a document
+     * @return
+     * @throws IOException
+     */
     public static double getAverageDocumentLength() throws IOException {
         RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
         FileChannel outChannel = outFile.getChannel();
@@ -22,6 +31,11 @@ public class ConfigurationParameters {
         return avgLen.getDouble();
     }
 
+    /**
+     * Get total document lenght
+     * @return
+     * @throws IOException
+     */
     public double getTotalDocumentLength() throws IOException {
         RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
         FileChannel outChannel = outFile.getChannel();
@@ -35,6 +49,11 @@ public class ConfigurationParameters {
         return totLen.getDouble();
     }
 
+    /**
+     * Get number of documents
+     * @return
+     * @throws IOException
+     */
     public static double getNumberOfDocuments() throws IOException {
         RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
         FileChannel outChannel = outFile.getChannel();
