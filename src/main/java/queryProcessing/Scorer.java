@@ -20,9 +20,9 @@ public class Scorer {
     }
 
     //tfidf scoring function for computing term frequency weights
-    public static double tfidf(int tf_d, int d_len, double idf){
+    public static double tfidf(int tf, int docLen, double idf){
         //return (1.0 + Math.log(tf_d)*Math.log(htDocindex.keySet().size()/doc_freq));
-        return (1.0 + Math.log(tf_d)*idf);
+        return (1.0 + Math.log(tf)*idf);
     }
 
     //normalized version of tfidf
@@ -33,10 +33,10 @@ public class Scorer {
     }
 
     //bm25 scoring function for computing weights for term frequency
-    public static double bm25Weight(int tf_d, int d_len, double idf) throws IOException {
+    public static double bm25Weight(int tf, int docLen, double idf) throws IOException {
         //return (((double)tf_d/((k1*((1-b) + b * (d_len/avg_len)))+tf_d)))*Math.log(htDocindex.keySet().size()/doc_freq);
         //we already computed the logarithm for the computation of idf, so we don't apply it here!!!
-        return (((double)tf_d/((k1*((1-b) + b * (d_len/avg_len)))+tf_d)))*idf;
+        return (((double)tf/((k1*((1-b) + b * (docLen/avg_len)))+tf)))*idf;
     }
 
     //method for normalizing the scores obtained with bm25

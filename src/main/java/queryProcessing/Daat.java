@@ -121,6 +121,87 @@ public class Daat {
                 .collect(Collectors.toList());
     }
 
+    public List<Map.Entry<Integer,Double>> conjunctiveDaatTfIdf(String query, int k) throws IOException {
+        PreprocessDoc preprocessing = new PreprocessDoc();
+        List<String> proQuery = preprocessing.preprocess_doc(query);
+        int queryLen = proQuery.size();
+        RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
+        FileChannel lexChannel = lexFile.getChannel();
+        RandomAccessFile docFile = new RandomAccessFile(new File(docidsPath), "rw");
+        FileChannel docChannel = docFile.getChannel();
+        RandomAccessFile tfFile = new RandomAccessFile(new File(tfsPath), "rw");
+        FileChannel tfChannel = tfFile.getChannel();
+        RandomAccessFile skipFile = new RandomAccessFile(new File(skipsPath), "rw");
+        FileChannel skipChannel = skipFile.getChannel();
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
+        FileChannel docIndexChannel = docIndexFile.getChannel();
+        postingLists = new CompressedList[queryLen];
+        decompressedDocIds = new List[queryLen];
+        decompressedTfs = new List[queryLen];
+        TreeMap<Integer, Double> scores = new TreeMap<>();
+        for(String term: proQuery){
+            LexiconStats l = Utils.getPointer(lexChannel, term);
+            lexicon.put(term, l);
+        }
+        postingLists = new CompressedList[queryLen];
+        for(int i = 0; i < queryLen; i++){
+            postingLists[i] = openList(docChannel, tfChannel, skipChannel, proQuery.get(i));
+            lexicon.get(proQuery.get(i)).setIndex(i);
+            numPosting[i] = lexicon.get(proQuery.get(i)).getdF();
+        }
+        //TODO: sort query terms in lexicon by shortest list
+        int did = 0;
+        while (did <= maxDocID){
+            double score = 0.0;
+            did = nextGEQ(proQuery.get(0), did);
+            if(did == -1){
+                break;
+            }
+            int d = 0;
+            for (int i=1; (i<queryLen) && ((d=nextGEQ(proQuery.get(i), did)) == did); i++);
+            if (d > did){
+                did = d; // not in intersection
+            }
+            else
+            {
+                //docID is in intersection; now get all frequencies
+                for (int i=0; i<proQuery.size(); i++){
+                    int tf = lexicon.get(proQuery.get(i)).getCurTf();
+                    //System.out.println("tf: " + proQuery.get(i) + " " + did + " " + tf[i]);
+                    int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                    double idf = lexicon.get(proQuery.get(i)).getIdf();
+                    //compute BM25 score from frequencies and other data
+                    score += Scorer.tfidf(tf, docLen, idf); //to modify after getFreq
+                }
+                Map.Entry<Integer, Double> minEntry = null;
+                if(scores.firstEntry() == null){
+                    scores.put(did, score);
+                }
+                else{
+                    for (Map.Entry<Integer, Double> entry : scores.entrySet())
+                    {
+                        if (minEntry == null || entry.getValue().compareTo(minEntry.getValue()) < 0)
+                        {
+                            minEntry = entry;
+                        }
+                    }
+                    if(minEntry.getValue() <= score){
+                        scores.put(did, score);
+                    }
+                }
+                if(scores.size() > k){
+                    scores.remove(minEntry.getKey(), minEntry.getValue());
+                }
+                did++; //and increase did to search for next post
+            }
+        }
+        // Return the result list
+        return scores.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .collect(Collectors.toList());
+    }
+
     public List<Map.Entry<Integer, Double>> disjunctiveDaat(String query, int k) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocess_doc(query);
@@ -168,8 +249,8 @@ public class Daat {
         double[] documentUB = new double[queryLen];
         double prec = 0.0;
         int index = 0;
-        for(double maxscore: termUB){
-            documentUB[index] = maxscore + prec;
+        for(double maxScore: termUB){
+            documentUB[index] = maxScore + prec;
             prec = documentUB[index];
             System.out.println(queryTerms[index] + " " + documentUB[index]);
             index++;
@@ -231,6 +312,159 @@ public class Daat {
                     double idf = lexicon.get(queryTerms[i]).getIdf();
                     //compute BM25 score from frequencies and other data
                     score += Scorer.bm25Weight(tf, docLen, idf);
+                    //System.out.println("Partial score for " + queryTerms[i] + " " + did + ": " + score);
+                }
+            }
+            //update pivot
+            //check if the new threshold is higher than previous one, in this case update the threshold
+            Map.Entry<Integer, Double> minEntry = null;
+            if(scores.firstEntry() == null){
+                scores.put(did, score);
+            }
+            else{
+                for (Map.Entry<Integer, Double> entry : scores.entrySet())
+                {
+                    if (minEntry == null || entry.getValue().compareTo(minEntry.getValue()) < 0)
+                    {
+                        minEntry = entry;
+                    }
+                }
+                if(minEntry.getValue() < score){
+                    scores.put(did, score);
+                    if(scores.size() > k) {
+                        scores.remove(minEntry.getKey(), minEntry.getValue());
+                        //System.out.println("Scores at: " + did + ": " + scores);
+                    }
+                }
+            }
+            //System.out.println("Score for " + did + ": " + score);
+            if(scores.size() == k && minEntry.getValue() > threshold){
+                threshold = minEntry.getValue();
+                //System.out.println("updated threshold: " + threshold);
+                while(pivot < queryLen && documentUB[pivot]<= threshold){
+                    pivot++;
+                }
+            }
+            did = next;
+            //System.out.println("Next did: " + did);
+        }
+        //Use Comparator.reverseOrder() for reverse ordering
+        return scores.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Map.Entry<Integer, Double>> disjunctiveDaatTfIdf(String query, int k) throws IOException {
+        PreprocessDoc preprocessing = new PreprocessDoc();
+        List<String> proQuery = preprocessing.preprocess_doc(query);
+        int queryLen = proQuery.size();
+        numPosting = new int[queryLen];
+        RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
+        FileChannel lexChannel = lexFile.getChannel();
+        RandomAccessFile docFile = new RandomAccessFile(new File(docidsPath), "rw");
+        FileChannel docChannel = docFile.getChannel();
+        RandomAccessFile tfFile = new RandomAccessFile(new File(tfsPath), "rw");
+        FileChannel tfChannel = tfFile.getChannel();
+        RandomAccessFile skipFile = new RandomAccessFile(new File(skipsPath), "rw");
+        FileChannel skipChannel = skipFile.getChannel();
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
+        FileChannel docIndexChannel = docIndexFile.getChannel();
+        TreeMap<Integer, Double> scores = new TreeMap<>(); //to store partial scores results
+        double[] termUB = new double[queryLen];
+        for(String term: proQuery){
+            LexiconStats l = Utils.getPointer(lexChannel, term);
+            lexicon.put(term, l);
+        }
+        for(int i = 0; i < queryLen; i++){
+            termUB[i] = lexicon.get(proQuery.get(i)).getTermUpperBoundTf();
+        }
+        Arrays.sort(termUB);
+        String [] queryTerms = new String[queryLen];
+        for(String term: proQuery){
+            double ub = lexicon.get(term).getTermUpperBoundTf();
+            int i = Arrays.binarySearch(termUB, ub);
+            queryTerms[i] = term;
+            //maxScores.put(term, lexicon.get(term).getTermUpperBound());
+        }
+        postingLists = new CompressedList[queryLen];
+        decompressedDocIds = new ArrayList[queryLen];
+        decompressedTfs = new ArrayList[queryLen];
+        for(int i = 0; i < queryLen; i++){
+            postingLists[i] = openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
+            lexicon.get(queryTerms[i]).setIndex(i);
+            numPosting[i] = lexicon.get(queryTerms[i]).getdF();
+        }
+        HashMap<Integer, Integer> docLens = new HashMap<>();
+        int pivot = 0;
+        int did = 0;
+        did = nextGEQ(queryTerms[0], did);
+        double[] documentUB = new double[queryLen];
+        double prec = 0.0;
+        int index = 0;
+        for(double maxScore: termUB){
+            documentUB[index] = maxScore + prec;
+            prec = documentUB[index];
+            System.out.println(queryTerms[index] + " " + documentUB[index]);
+            index++;
+        }
+        double threshold = 0;
+        int next;
+        for (int i=1; (i<queryLen); i++){
+            int d=nextGEQ(queryTerms[i], did);
+            if(d<did){
+                did = d;
+            }
+        }
+        while (pivot < queryLen && did != -1){
+            next = maxDocID;
+            double score = 0.0;
+            //process essential lists
+            for (int i=pivot; i<queryLen; i++){
+                int current = nextGEQ(queryTerms[i], did);
+                if(current == did){
+                    int tf = lexicon.get(queryTerms[i]).getCurTf();
+                    //int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                    int docLen;
+                    if(docLens.get(did) == null){
+                        docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                        docLens.put(did, docLen);
+                    }
+                    else{
+                        docLen = docLens.get(did);
+                    }
+                    double idf = lexicon.get(queryTerms[i]).getIdf();
+                    //compute BM25 score from frequencies and other data
+                    score += Scorer.tfidf(tf, docLen, idf);
+                    current = nextGEQ(queryTerms[i], did+1); //update the pointer to next docid
+                }
+                if(current < next){
+                    next = current;
+                }
+            }
+            //process non essential lists
+            for (int i=pivot-1; i>=0; i--){
+                //System.out.println("Non essential: " + queryTerms[i]);
+                //check document upper bound
+                if(documentUB[i] + score <= threshold){
+                    break;
+                }
+                int current = nextGEQ(queryTerms[i], did);
+                if(current == did) {
+                    //System.out.println("Non essential: " + queryTerms[i] + " processed at " + did);
+                    int tf = lexicon.get(queryTerms[i]).getCurTf();
+                    //int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                    int docLen;
+                    if(docLens.get(did) == null){
+                        docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
+                        docLens.put(did, docLen);
+                    }
+                    else{
+                        docLen = docLens.get(did);
+                    }
+                    double idf = lexicon.get(queryTerms[i]).getIdf();
+                    //compute BM25 score from frequencies and other data
+                    score += Scorer.tfidf(tf, docLen, idf);
                     //System.out.println("Partial score for " + queryTerms[i] + " " + did + ": " + score);
                 }
             }
