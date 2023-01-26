@@ -7,12 +7,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 /**
- * Class to takes some lenght information on documents
+ * Class to takes some length information on documents
  */
 public class ConfigurationParameters {
 
     public static final int LEXICON_ENTRY_SIZE = 94; //size of the entry of the lexicon
-    public static final int DOC_INDEX_ENTRY_SIZE = 14; //size of the entry of the document index
+    public static final int DOC_INDEX_ENTRY_SIZE = 18; //size of the entry of the document index
 
     /**
      * Calculates average length of a document

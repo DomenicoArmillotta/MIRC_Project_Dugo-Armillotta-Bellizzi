@@ -31,12 +31,18 @@ public class SPIMI {
     private InvertedIndex invertedIndex;
     private String outPath;
     private int docid = 0;
+    private static double totalLength = 0;
+    private static double numDocs = 0;
+    private FileChannel docIndexChannel;
+
 
 
     //creazione dei blocchi usando il limite su ram
     public void spimiInvertBlockMapped(String readPath) throws IOException {
         File inputFile = new File(readPath);
         LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
+        docIndexChannel = docIndexFile.getChannel();
         int indexBlock = 0;
         //int cont = 0;
         try {
@@ -62,6 +68,25 @@ public class SPIMI {
         } finally {
             LineIterator.closeQuietly(it);
         }
+        //compute the average document length
+        double averageDocLen = totalLength/numDocs;
+        RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
+        FileChannel outChannel = outFile.getChannel();
+        //System.out.println(averageDocLen + " " + totalLength + " " + numDocs);
+        byte[] avgLenBytes = ByteBuffer.allocate(8).putDouble(averageDocLen).array();
+        //take the offset of docids
+        byte[] totLenBytes = ByteBuffer.allocate(8).putDouble(totalLength).array();
+        //take the offset of tfs
+        byte[] numDocsBytes = ByteBuffer.allocate(8).putDouble(numDocs).array();
+        //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
+        avgLenBytes = addByteArray(avgLenBytes,totLenBytes);
+        avgLenBytes = addByteArray(avgLenBytes,numDocsBytes);
+        //write lexicon entry to disk
+        ByteBuffer outBuf = ByteBuffer.allocate(avgLenBytes.length);
+        outBuf.put(avgLenBytes);
+        outBuf.flip();
+        outChannel.write(outBuf);
+        outChannel.close();
         //mergeBlocks(indexBlock);
     }
 
@@ -69,17 +94,40 @@ public class SPIMI {
         //initialize a new InvertedIndex
         PreprocessDoc preprocessDoc = new PreprocessDoc();
         String[] parts = doc.split("\t");
-        String doc_corpus = parts[1];
-        List<String> pro_doc = preprocessDoc.preprocess_doc(doc_corpus);
+        String docno = parts[1];
+        List<String> pro_doc = preprocessDoc.preprocess_doc(docno);
+        int cont = 0;
         //read the terms and generate postings
         for (String term : pro_doc) {
             invertedIndex.addPosting(term, docid, 1);
+            cont++;
         }
+        totalLength+=cont;
+        numDocs++;
         System.out.println(docid);
         docid++;
+        Text key = new Text(docno);
+        byte[] docIndexBytes;
+        if (key.getLength() >= 9) {
+            Text truncKey = new Text(docno.substring(0, 8));
+            docIndexBytes = truncKey.getBytes();
+        } else { //we allocate 10 bytes for the Text object, which is a string of 20 chars
+            docIndexBytes = ByteBuffer.allocate(10).put(key.getBytes()).array();
+        }
+        //take the docid
+        byte[] docidBytes = ByteBuffer.allocate(4).putInt(docid).array();
+        //take the document frequency
+        byte[] dfBytes = ByteBuffer.allocate(4).putInt(cont).array();
+        //concatenate all the byte arrays in order
+        docIndexBytes = addByteArray(docIndexBytes, docidBytes);
+        docIndexBytes = addByteArray(docIndexBytes, dfBytes);
+        //write lexicon entry to disk
+        ByteBuffer bufferDoc = ByteBuffer.allocate(docIndexBytes.length);
+        bufferDoc.put(docIndexBytes);
+        bufferDoc.flip();
+        docIndexChannel.write(bufferDoc);
+        bufferDoc.clear();
     }
-
-    //TODO: da correggere
 
     public void mergeBlocks(int n) throws IOException {
         //per lettura
