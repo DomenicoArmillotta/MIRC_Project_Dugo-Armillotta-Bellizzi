@@ -9,8 +9,16 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+/**
+ * Class that put together all those auxiliary methods needed
+ */
 public class Utils {
-    //method used to concatenate two byte arrays
+    /**
+     * Method to concatanate two byte arrays
+     * @param array1 first array
+     * @param array2 second array
+     * @return resulting array
+     */
     public static byte[] addByteArray(byte[] array1, byte[] array2){
         byte[] concatenatedArray = new byte[array1.length + array2.length];
         System.arraycopy(array1, 0, concatenatedArray, 0, array1.length);
@@ -18,6 +26,11 @@ public class Utils {
         return concatenatedArray;
     }
 
+    /**
+     * Method to take out bytes from string
+     * @param term term from which byte are taken
+     * @return
+     */
     public static byte[] getBytesFromString(String term){
         Text key = new Text(term);
         byte[] lexiconBytes;
@@ -25,12 +38,28 @@ public class Utils {
             Text truncKey = new Text(term.substring(0,20));
             lexiconBytes = truncKey.getBytes();
         }
-        else{ //we allocate 22 bytes for the Text object, which is a string of 20 chars
+        else{
+            //bytes for the Text object are allocated, which is a string of 20 chars
             lexiconBytes = ByteBuffer.allocate(22).put(key.getBytes()).array();
         }
         return lexiconBytes;
     }
 
+    /**
+     * Method to create an entry in Lexicon
+     * @param dF
+     * @param cF
+     * @param docLen
+     * @param tfLen
+     * @param offsetDocs
+     * @param offsetTfs
+     * @param idf
+     * @param tup
+     * @param tuptfidf
+     * @param offsetSkip
+     * @param skipLen
+     * @return
+     */
     public static byte[] createLexiconEntry(int dF, long cF, int docLen, int tfLen, long offsetDocs, long offsetTfs, double idf, double tup, double tuptfidf, long offsetSkip, int skipLen){
         //take the document frequency
         byte[] dfBytes = ByteBuffer.allocate(4).putInt(dF).array();
@@ -65,32 +94,14 @@ public class Utils {
         return lexiconBytes;
     }
 
-    /*
-    Map the file into memory using the FileChannel.map method. This will return a MappedByteBuffer that you can use to access
-    the contents of the file.
 
-    Define a data structure that represents an entry in the file,
-    such as a simple Java class with fields for the key and value.
-
-    Implement a comparator for your data structure that can be used to compare two entries based on their keys.
-
-    Begin the binary search by setting the lower bound to 0 and the upper bound to the size of the file, in bytes.
-
-    Iterate until the lower bound is greater than the upper bound. In each iteration, calculate the midpoint
-    between the lower and upper bounds and use it to determine the location of the entry in the file.
-
-    Use the MappedByteBuffer.get method to read the entry at the calculated location and construct an instance of
-    your data structure from it.
-
-    Use the comparator to compare the key of the entry you just read with the key you're searching for. If they are equal,
-    you have found the key and can return the corresponding value. If the key you're searching for is less than the key of the
-    entry you just read, set the upper bound to the midpoint - 1. If the key you're searching for is greater than the key of the
-    entry you just read, set the lower bound to the midpoint + 1.
-
-    Repeat the process until you have found the key or the lower bound is greater than the upper bound, indicating that the key is
-    not present in the file.
+    /**
+     *
+     * @param channel
+     * @param key
+     * @return
+     * @throws IOException
      */
-
     public static LexiconStats getPointer(FileChannel channel, String key) throws IOException {
         LexiconStats l = new LexiconStats(); //initialize lexicon stats object
         int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE; //take entry size
@@ -122,6 +133,13 @@ public class Utils {
         return l;
     }
 
+    /**
+     *
+     * @param channel
+     * @param key
+     * @return
+     * @throws IOException
+     */
     public static int getDocLen(FileChannel channel, String key) throws IOException {
         int docLen = 0;
         int entrySize = ConfigurationParameters.DOC_INDEX_ENTRY_SIZE;
