@@ -158,7 +158,7 @@ public class Utils {
             value = value.replaceAll("\0", "");
             if (value.equals(key)) {
                 ByteBuffer bf1 = ByteBuffer.allocate(4);
-                buffer.get(bf1.array(), 4, 8);
+                buffer.get(bf1.array(), 0, 4);
                 docLen = bf1.getInt();
                 break;
             } else if (Integer.parseInt(key) - Integer.parseInt(value) < 0) {

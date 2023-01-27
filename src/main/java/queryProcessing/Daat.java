@@ -213,6 +213,8 @@ public class Daat {
         decompressedTfs = new ArrayList[queryLen];
         numPosting = new int[queryLen];
         endDocids = new int[queryLen];
+        docIdsIt = new Iterator[queryLen];
+        tfsIt = new Iterator[queryLen];
         TreeMap<Integer, Double> scores = new TreeMap<>(); //to store partial scores results
         double[] termUB = new double[queryLen];
         for(String term: proQuery){
@@ -231,9 +233,11 @@ public class Daat {
             //maxScores.put(term, lexicon.get(term).getTermUpperBound());
         }
         for(int i = 0; i < queryLen; i++){
-            postingLists[i] = openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
             lexicon.get(queryTerms[i]).setIndex(i);
-            numPosting[i] = lexicon.get(queryTerms[i]).getdF();
+            lexicon.get(queryTerms[i]).setCurdoc(0);
+            openListNew(docChannel, tfChannel, skipChannel, queryTerms[i]);
+            //postingLists[i] = openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
+            //numPosting[i] = lexicon.get(queryTerms[i]).getdF();
         }
         HashMap<Integer, Integer> docLens = new HashMap<>();
         int pivot = 0;
@@ -248,24 +252,19 @@ public class Daat {
         }
         double threshold = 0;
         int next;
-        int did = 0;
-        did = nextGEQ(queryTerms[0], did);
-        for (int i=1; (i<queryLen); i++){
-            int d=nextGEQ(queryTerms[i], did);
-            if(d<did){
-                did = d;
-            }
-        }
-        while (pivot < queryLen && did != -1){
+        int did = getMinDocid(queryTerms);
+        System.out.println(did);
+        while (pivot < queryLen && did != maxDocID){
             next = maxDocID;
             double score = 0.0;
             //process essential lists
             for (int i=pivot; i<queryLen; i++){
-                int current = nextGEQ(queryTerms[i], did);
+                int current = nextGEQNew(queryTerms[i], did);
+                //System.out.println(queryTerms[i] + ", Current: " + current +", Did: " + did);
                 if(current == did){
                     int tf = lexicon.get(queryTerms[i]).getCurTf();
                     //int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
-                    int docLen;
+                    int docLen = 20;
                     if(docLens.get(did) == null){
                         docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
                         docLens.put(did, docLen);
@@ -276,9 +275,10 @@ public class Daat {
                     double idf = lexicon.get(queryTerms[i]).getIdf();
                     //compute BM25 score from frequencies and other data
                     score += Scorer.bm25Weight(tf, docLen, idf);
-                    current = nextGEQ(queryTerms[i], did+1); //update the pointer to next docid
+                    //current = nextGEQNew(queryTerms[i], did); //update the pointer to next docid
+                    //System.out.println("Partial score for " + queryTerms[i] + " " + did + ": " + score);
                 }
-                if(current < next){
+                if((current < next && current > did)){
                     next = current;
                 }
             }
@@ -289,7 +289,7 @@ public class Daat {
                 if(documentUB[i] + score <= threshold){
                     break;
                 }
-                int current = nextGEQ(queryTerms[i], did);
+                int current = nextGEQNew(queryTerms[i], did);
                 if(current == did) {
                     //System.out.println("Non essential: " + queryTerms[i] + " processed at " + did);
                     int tf = lexicon.get(queryTerms[i]).getCurTf();
@@ -582,6 +582,21 @@ public class Daat {
         return -1;
     }
 
+    private int getMinDocid(String[] queryTerms) throws IOException {
+        int did = nextGEQNew(queryTerms[0], 1);
+        for (int i=1; (i<queryTerms.length); i++){
+            int d=nextGEQNew(queryTerms[i], did);
+            if(d<did){
+                did = d;
+            }
+            docIdsIt[lexicon.get(queryTerms[i]).getIndex()] = decompressedDocIds[lexicon.get(queryTerms[i]).getIndex()].iterator();
+            tfsIt[lexicon.get(queryTerms[i]).getIndex()] = decompressedTfs[lexicon.get(queryTerms[i]).getIndex()].iterator();
+        }
+        docIdsIt[lexicon.get(queryTerms[0]).getIndex()] = decompressedDocIds[lexicon.get(queryTerms[0]).getIndex()].iterator();
+        tfsIt[lexicon.get(queryTerms[0]).getIndex()] = decompressedTfs[lexicon.get(queryTerms[0]).getIndex()].iterator();
+        return did;
+    }
+
     //TODO: fare trec eval!!!!!
 
 
@@ -592,37 +607,58 @@ public class Daat {
     private int nextGEQNew(String term, int value) throws IOException {
         //take number of posting in the list and in the blocks
         //check if we are in a new block
-        if(value > endDocids[lexicon.get(term).getIndex()]){
-            openListNew(docChannel, tfChannel, skipChannel, term);
-        }
         Iterator<Integer> itDocs = docIdsIt[lexicon.get(term).getIndex()];
-        ByteBuffer skipInfo = ByteBuffer.wrap(postingLists[lexicon.get(term).getIndex()].getSkipInfo());
         Iterator<Integer> itTfs = tfsIt[lexicon.get(term).getIndex()];
-        skipInfo.position(0);
-        while(itDocs.hasNext()) { //we need to update the index; check if we are in the last block
-            int docId = itDocs.next();
-            int tf = itTfs.next();
+        //skipInfo.position(0);
+        //System.out.println("NextGEQ: " + term + " " + value + " " + lexicon.get(term).getCurdoc() + " " + endDocids[lexicon.get(term).getIndex()]);
+        //TODO: we have an error; if the docid is equal to the enddocid, we need to open a new block
+        while(lexicon.get(term).getCurdoc() <= endDocids[lexicon.get(term).getIndex()]) { //we need to update the index; check if we are in the last block
+            int prec = lexicon.get(term).getCurdoc();
+            int docId = prec;
+            int tf = lexicon.get(term).getCurTf();
+            if(itDocs.hasNext() && itTfs.hasNext()) {
+                docId = itDocs.next();
+                tf = itTfs.next();
+            }
+            if(value >= endDocids[lexicon.get(term).getIndex()] || docId == prec){
+                //System.out.println("BLOCK ENDED!" + value + " " + docId + " " + prec);
+                if(numPosting[lexicon.get(term).getIndex()]+ ConfigurationParameters.SKIP_BLOCK_SIZE >lexicon.get(term).getSkipLen()){
+                    //System.out.println("END IN LOOP");
+                    return maxDocID;
+                }
+                openListNew(docChannel, tfChannel, skipChannel, term);
+                itDocs = docIdsIt[lexicon.get(term).getIndex()];
+                itTfs = tfsIt[lexicon.get(term).getIndex()];
+                //docId = itDocs.next();
+                //tf = itTfs.next();
+            }
+            lexicon.get(term).setCurdoc(docId);
+            lexicon.get(term).setCurTf(tf);
             docIdsIt[lexicon.get(term).getIndex()] = itDocs; //update the iterator (non so se serve)
             tfsIt[lexicon.get(term).getIndex()] = itTfs;
-            if(docId >= value) {
-                lexicon.get(term).setCurTf(tf);
-                return docId;
+            //System.out.println("DOCID: " + docId);
+            if(prec >= value) {
+                //System.out.println("RETURNED DOCID: " + prec);
+                //System.out.println("NEXT DOCID: " + docId);
+                return prec;
             }
         }
         // If no such value was found, return a special value indicating that the search failed
-        return -1;
+        return maxDocID;
     }
     public void openListNew(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term) throws IOException {
         // Read the compressed posting list data from the file
+        //System.out.println("opening new block for " + term);
         Compressor compressor = new Compressor();
         skips.position(lexicon.get(term).getOffsetSkip() + numPosting[lexicon.get(term).getIndex()]);
         ByteBuffer skipInfo = ByteBuffer.allocate(lexicon.get(term).getSkipLen() - numPosting[lexicon.get(term).getIndex()]);
         skips.read(skipInfo);
+        skipInfo.position(0);
         int endocid = skipInfo.getInt();
         int skipdocid = skipInfo.getInt();
         int skiptf = skipInfo.getInt();
         endDocids[lexicon.get(term).getIndex()] = endocid;
-        skipInfo.position(0);
+        //System.out.println("enddocid: " + endocid);
         ByteBuffer docIds = ByteBuffer.allocate(skipdocid);
         docChannel.position(lexicon.get(term).getOffsetDocid());
         docChannel.read(docIds);
@@ -633,14 +669,18 @@ public class Daat {
         docIds.position(0);
         tfs.position(0);
         //uncompress the blocks from the disk
-        decompressedDocIds[lexicon.get(term).getIndex()] = compressor.variableByteDecode(docIds.array());
-        decompressedTfs[lexicon.get(term).getIndex()] = compressor.unaryDecode(tfs.array());
+        int n = lexicon.get(term).getdF();
+        decompressedDocIds[lexicon.get(term).getIndex()] = compressor.variableByteDecodeBlock(docIds.array(),n);
+        decompressedTfs[lexicon.get(term).getIndex()] = compressor.unaryDecodeBlock(tfs.array(),n);
         //update the skip blocks read so far
         numPosting[lexicon.get(term).getIndex()] += ConfigurationParameters.SKIP_BLOCK_SIZE;
         //instantiate the iterators
+        //System.out.println("NEW LIST: " + term + ": " + decompressedDocIds[lexicon.get(term).getIndex()]);
         docIdsIt[lexicon.get(term).getIndex()] = decompressedDocIds[lexicon.get(term).getIndex()].iterator();
         tfsIt[lexicon.get(term).getIndex()] = decompressedTfs[lexicon.get(term).getIndex()].iterator();
-
+        //update offsets
+        lexicon.get(term).setOffsetDocid(lexicon.get(term).getOffsetDocid()+skipdocid);
+        lexicon.get(term).setOffsetTf(lexicon.get(term).getOffsetTf()+skiptf);
     }
 
     public CompressedList openList(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term) throws IOException {

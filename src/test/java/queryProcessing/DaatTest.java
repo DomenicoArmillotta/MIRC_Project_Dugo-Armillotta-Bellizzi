@@ -146,17 +146,18 @@ public class DaatTest extends TestCase {
     public void testConjunctiveDaat() throws IOException {
         Daat d = new Daat();
         String query = "bile acid";
+        //System.out.println(d.conjunctiveDaat(query,10));
+        query = "american people";
+        //System.out.println(d.conjunctiveDaat(query,10));
+        query = "france kidney";
         System.out.println(d.conjunctiveDaat(query,10));
-        /*query = "american people";
-        System.out.println(d.conjunctiveDaat(query,10));*/
-        /*query = "france kidney";
-        System.out.println(d.conjunctiveDaat(query,10));*/
     }
 
     public void testDisjunctiveDaat() throws IOException {
         Daat d = new Daat();
         String query = "bile acid stomach";
-        query = "bile acid stomach american people table dratini";
+        //query = "american people";
+        //query = "bile acid stomach american people table dratini";
         //System.out.println(d.disjunctiveDaat(query,10));
         //Some tests:
         //[30426=8.283077691011705, 33136=8.151426009815147, 28819=8.11531806595153, 28817=8.01551599334571, 15218=7.734391511217466, 33137=7.499009903437889, 11601=7.451369281607839, 11598=7.197704376026827, 67384=7.107704678409375, 64=6.949409115587326]
