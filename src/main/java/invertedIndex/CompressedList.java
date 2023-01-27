@@ -3,6 +3,8 @@ package invertedIndex;
 /**
  * used to store the compressed POSTING LIST  belonging to a posting list
  */
+
+//TODO: quando abbiamo modificato per bene il query processing sta roba è inutile
 public class CompressedList {
     private byte[] docids;
     private byte[] tfs;

@@ -5,6 +5,7 @@ import fileManager.ConfigurationParameters;
 import invertedIndex.CompressedList;
 import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
+import org.apache.hadoop.thirdparty.org.checkerframework.checker.units.qual.C;
 import preprocessing.PreprocessDoc;
 import utility.Utils;
 
@@ -23,6 +24,9 @@ public class Daat {
 
     public HashMap<String, LexiconStats> lexicon;
     private int[] numPosting;
+    private int[] endDocids;
+    private Iterator<Integer>[] docIdsIt;
+    private Iterator<Integer>[] tfsIt;
     private String lexiconPath = "docs/lexiconTot.txt";
     private String docidsPath = "docs/docids.txt";
     private String tfsPath = "docs/tfs.txt";
@@ -33,10 +37,25 @@ public class Daat {
 
     private List<Integer>[] decompressedDocIds; //to keep the current block of docids for each term of the query
     private List<Integer>[] decompressedTfs; //to keep the current block of tfs for each term of the query
+    private FileChannel lexChannel;
+    private FileChannel docChannel;
+    private FileChannel tfChannel;
+    private FileChannel skipChannel;
+    private FileChannel docIndexChannel;
 
     public Daat() throws IOException {
         lexicon = new HashMap<>();
         maxDocID = (int)ConfigurationParameters.getNumberOfDocuments();
+        RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
+        lexChannel = lexFile.getChannel();
+        RandomAccessFile docFile = new RandomAccessFile(new File(docidsPath), "rw");
+        docChannel = docFile.getChannel();
+        RandomAccessFile tfFile = new RandomAccessFile(new File(tfsPath), "rw");
+        tfChannel = tfFile.getChannel();
+        RandomAccessFile skipFile = new RandomAccessFile(new File(skipsPath), "rw");
+        skipChannel = skipFile.getChannel();
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
+        docIndexChannel = docIndexFile.getChannel();
     }
 
 
@@ -44,25 +63,16 @@ public class Daat {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocess_doc(query);
         int queryLen = proQuery.size();
-        RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
-        FileChannel lexChannel = lexFile.getChannel();
-        RandomAccessFile docFile = new RandomAccessFile(new File(docidsPath), "rw");
-        FileChannel docChannel = docFile.getChannel();
-        RandomAccessFile tfFile = new RandomAccessFile(new File(tfsPath), "rw");
-        FileChannel tfChannel = tfFile.getChannel();
-        RandomAccessFile skipFile = new RandomAccessFile(new File(skipsPath), "rw");
-        FileChannel skipChannel = skipFile.getChannel();
-        RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
-        FileChannel docIndexChannel = docIndexFile.getChannel();
         postingLists = new CompressedList[queryLen];
         decompressedDocIds = new List[queryLen];
         decompressedTfs = new List[queryLen];
+        numPosting = new int[queryLen];
+        endDocids = new int[queryLen];
         TreeMap<Integer, Double> scores = new TreeMap<>();
         for(String term: proQuery){
             LexiconStats l = Utils.getPointer(lexChannel, term);
             lexicon.put(term, l);
         }
-        postingLists = new CompressedList[queryLen];
         for(int i = 0; i < queryLen; i++){
             postingLists[i] = openList(docChannel, tfChannel, skipChannel, proQuery.get(i));
             lexicon.get(proQuery.get(i)).setIndex(i);
@@ -125,19 +135,11 @@ public class Daat {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocess_doc(query);
         int queryLen = proQuery.size();
-        RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
-        FileChannel lexChannel = lexFile.getChannel();
-        RandomAccessFile docFile = new RandomAccessFile(new File(docidsPath), "rw");
-        FileChannel docChannel = docFile.getChannel();
-        RandomAccessFile tfFile = new RandomAccessFile(new File(tfsPath), "rw");
-        FileChannel tfChannel = tfFile.getChannel();
-        RandomAccessFile skipFile = new RandomAccessFile(new File(skipsPath), "rw");
-        FileChannel skipChannel = skipFile.getChannel();
-        RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
-        FileChannel docIndexChannel = docIndexFile.getChannel();
         postingLists = new CompressedList[queryLen];
         decompressedDocIds = new List[queryLen];
         decompressedTfs = new List[queryLen];
+        numPosting = new int[queryLen];
+        endDocids = new int[queryLen];
         TreeMap<Integer, Double> scores = new TreeMap<>();
         for(String term: proQuery){
             LexiconStats l = Utils.getPointer(lexChannel, term);
@@ -206,17 +208,11 @@ public class Daat {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocess_doc(query);
         int queryLen = proQuery.size();
+        postingLists = new CompressedList[queryLen];
+        decompressedDocIds = new ArrayList[queryLen];
+        decompressedTfs = new ArrayList[queryLen];
         numPosting = new int[queryLen];
-        RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
-        FileChannel lexChannel = lexFile.getChannel();
-        RandomAccessFile docFile = new RandomAccessFile(new File(docidsPath), "rw");
-        FileChannel docChannel = docFile.getChannel();
-        RandomAccessFile tfFile = new RandomAccessFile(new File(tfsPath), "rw");
-        FileChannel tfChannel = tfFile.getChannel();
-        RandomAccessFile skipFile = new RandomAccessFile(new File(skipsPath), "rw");
-        FileChannel skipChannel = skipFile.getChannel();
-        RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
-        FileChannel docIndexChannel = docIndexFile.getChannel();
+        endDocids = new int[queryLen];
         TreeMap<Integer, Double> scores = new TreeMap<>(); //to store partial scores results
         double[] termUB = new double[queryLen];
         for(String term: proQuery){
@@ -234,9 +230,6 @@ public class Daat {
             queryTerms[i] = term;
             //maxScores.put(term, lexicon.get(term).getTermUpperBound());
         }
-        postingLists = new CompressedList[queryLen];
-        decompressedDocIds = new ArrayList[queryLen];
-        decompressedTfs = new ArrayList[queryLen];
         for(int i = 0; i < queryLen; i++){
             postingLists[i] = openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
             lexicon.get(queryTerms[i]).setIndex(i);
@@ -244,8 +237,6 @@ public class Daat {
         }
         HashMap<Integer, Integer> docLens = new HashMap<>();
         int pivot = 0;
-        int did = 0;
-        did = nextGEQ(queryTerms[0], did);
         double[] documentUB = new double[queryLen];
         double prec = 0.0;
         int index = 0;
@@ -257,6 +248,8 @@ public class Daat {
         }
         double threshold = 0;
         int next;
+        int did = 0;
+        did = nextGEQ(queryTerms[0], did);
         for (int i=1; (i<queryLen); i++){
             int d=nextGEQ(queryTerms[i], did);
             if(d<did){
@@ -359,17 +352,11 @@ public class Daat {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocess_doc(query);
         int queryLen = proQuery.size();
+        postingLists = new CompressedList[queryLen];
+        decompressedDocIds = new ArrayList[queryLen];
+        decompressedTfs = new ArrayList[queryLen];
         numPosting = new int[queryLen];
-        RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
-        FileChannel lexChannel = lexFile.getChannel();
-        RandomAccessFile docFile = new RandomAccessFile(new File(docidsPath), "rw");
-        FileChannel docChannel = docFile.getChannel();
-        RandomAccessFile tfFile = new RandomAccessFile(new File(tfsPath), "rw");
-        FileChannel tfChannel = tfFile.getChannel();
-        RandomAccessFile skipFile = new RandomAccessFile(new File(skipsPath), "rw");
-        FileChannel skipChannel = skipFile.getChannel();
-        RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
-        FileChannel docIndexChannel = docIndexFile.getChannel();
+        endDocids = new int[queryLen];
         TreeMap<Integer, Double> scores = new TreeMap<>(); //to store partial scores results
         double[] termUB = new double[queryLen];
         for(String term: proQuery){
@@ -387,9 +374,6 @@ public class Daat {
             queryTerms[i] = term;
             //maxScores.put(term, lexicon.get(term).getTermUpperBound());
         }
-        postingLists = new CompressedList[queryLen];
-        decompressedDocIds = new ArrayList[queryLen];
-        decompressedTfs = new ArrayList[queryLen];
         for(int i = 0; i < queryLen; i++){
             postingLists[i] = openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
             lexicon.get(queryTerms[i]).setIndex(i);
@@ -397,8 +381,6 @@ public class Daat {
         }
         HashMap<Integer, Integer> docLens = new HashMap<>();
         int pivot = 0;
-        int did = 0;
-        did = nextGEQ(queryTerms[0], did);
         double[] documentUB = new double[queryLen];
         double prec = 0.0;
         int index = 0;
@@ -410,6 +392,8 @@ public class Daat {
         }
         double threshold = 0;
         int next;
+        int did = 0;
+        did = nextGEQ(queryTerms[0], did);
         for (int i=1; (i<queryLen); i++){
             int d=nextGEQ(queryTerms[i], did);
             if(d<did){
@@ -604,24 +588,59 @@ public class Daat {
     //TODO: noi vogliamo aprire in memoria solo i blocchi che ci servono; dobbiamo quindi tenere le due liste decompresse lette
     // e decompresse direttamente dal disco, e quando cambiamo blocco si aggiorna la lista; ci servirà anche un metodo closeList
     // inoltre dobbiamo tenere un iteratore per ogni lista
+
+    private int nextGEQNew(String term, int value) throws IOException {
+        //take number of posting in the list and in the blocks
+        //check if we are in a new block
+        if(value > endDocids[lexicon.get(term).getIndex()]){
+            openListNew(docChannel, tfChannel, skipChannel, term);
+        }
+        Iterator<Integer> itDocs = docIdsIt[lexicon.get(term).getIndex()];
+        ByteBuffer skipInfo = ByteBuffer.wrap(postingLists[lexicon.get(term).getIndex()].getSkipInfo());
+        Iterator<Integer> itTfs = tfsIt[lexicon.get(term).getIndex()];
+        skipInfo.position(0);
+        while(itDocs.hasNext()) { //we need to update the index; check if we are in the last block
+            int docId = itDocs.next();
+            int tf = itTfs.next();
+            docIdsIt[lexicon.get(term).getIndex()] = itDocs; //update the iterator (non so se serve)
+            tfsIt[lexicon.get(term).getIndex()] = itTfs;
+            if(docId >= value) {
+                lexicon.get(term).setCurTf(tf);
+                return docId;
+            }
+        }
+        // If no such value was found, return a special value indicating that the search failed
+        return -1;
+    }
     public void openListNew(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term) throws IOException {
         // Read the compressed posting list data from the file
-        skips.position(lexicon.get(term).getOffsetSkip());
-        ByteBuffer skipInfo = ByteBuffer.allocate(lexicon.get(term).getSkipLen());
+        Compressor compressor = new Compressor();
+        skips.position(lexicon.get(term).getOffsetSkip() + numPosting[lexicon.get(term).getIndex()]);
+        ByteBuffer skipInfo = ByteBuffer.allocate(lexicon.get(term).getSkipLen() - numPosting[lexicon.get(term).getIndex()]);
         skips.read(skipInfo);
         int endocid = skipInfo.getInt();
         int skipdocid = skipInfo.getInt();
         int skiptf = skipInfo.getInt();
+        endDocids[lexicon.get(term).getIndex()] = endocid;
         skipInfo.position(0);
         ByteBuffer docIds = ByteBuffer.allocate(skipdocid);
         docChannel.position(lexicon.get(term).getOffsetDocid());
         docChannel.read(docIds);
         tfChannel.position(lexicon.get(term).getOffsetTf());
         // Read the compressed posting list data from the file
-        ByteBuffer tfs = ByteBuffer.allocate(lexicon.get(term).getTfLen());
+        ByteBuffer tfs = ByteBuffer.allocate(skiptf);
         tfChannel.read(tfs);
         docIds.position(0);
         tfs.position(0);
+        //uncompress the blocks from the disk
+        decompressedDocIds[lexicon.get(term).getIndex()] = compressor.variableByteDecode(docIds.array());
+        decompressedTfs[lexicon.get(term).getIndex()] = compressor.unaryDecode(tfs.array());
+        //update the skip blocks read so far
+        numPosting[lexicon.get(term).getIndex()] += ConfigurationParameters.SKIP_BLOCK_SIZE;
+        //instantiate the iterators
+        docIdsIt[lexicon.get(term).getIndex()] = decompressedDocIds[lexicon.get(term).getIndex()].iterator();
+        tfsIt[lexicon.get(term).getIndex()] = decompressedTfs[lexicon.get(term).getIndex()].iterator();
+
     }
 
     public CompressedList openList(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term) throws IOException {
