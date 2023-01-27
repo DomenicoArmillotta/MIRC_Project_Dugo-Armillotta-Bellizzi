@@ -46,6 +46,8 @@ public class SPIMI {
         int indexBlock = 0;
         //int cont = 0;
         try {
+            //TODO: siccome comprimiamo alla fine qua possiamo anche passare un token per volta e non un documento, in
+            // quel caso nel merging bisogna controllare i docid quando si uniscono le liste ma è solo una possibile scelta da fare
             //create chunk of data , splitting in n different block
             while (it.hasNext()){
                 //instantiate a new Inverted Index and Lexicon per block
@@ -96,6 +98,7 @@ public class SPIMI {
         String[] parts = doc.split("\t");
         String docno = parts[1];
         List<String> pro_doc = preprocessDoc.preprocess_doc(docno);
+        docid++;
         int cont = 0;
         //read the terms and generate postings
         for (String term : pro_doc) {
@@ -105,7 +108,6 @@ public class SPIMI {
         totalLength+=cont;
         numDocs++;
         System.out.println(docid);
-        docid++;
         Text key = new Text(docno);
         byte[] docIndexBytes;
         if (key.getLength() >= 9) {
@@ -150,9 +152,11 @@ public class SPIMI {
         List<String> currTfs = tfPaths;
         int nIndex = n;
         ConfigurationParameters cp = new ConfigurationParameters();
-        double N = cp.getNumberOfDocuments(); //take the total number of documents in the collection
+        double N = totalLength; //take the total number of tokens in the collection
         //in the case of multiple block to merge
         int nFile = 0;
+        //TODO: modificare il ciclo, partiamo da nFile uguale a 1 e sommiamo uno, così mergiamo due e poi
+        // il risultato con il successivo, fino a quando nfile non raggiunge il numero di file da mergiare
         while(nIndex>1){
             System.out.println("HERE " + nIndex);
             //inizializzare una variabile per indicizzare il numero del file intermedio, in modo tale che ad ogni
@@ -393,6 +397,8 @@ public class SPIMI {
         inputLexChannel.transferTo(0, inputLexChannel.size(), lexChannel);
     }
 
+
+    //TODO: integrare con il merging; inoltre aggiungiamo la compressione qui alla fine
     public void computeMaxScores() throws IOException {
         //questo metodo legge il lexicon un termine alla volta; per ogni termine calcola la term upper bound leggendo la lista;
         //serve anche aprire il doc index per la document length; si chiama bm25 per ogni doc della lista e si prende il massimo

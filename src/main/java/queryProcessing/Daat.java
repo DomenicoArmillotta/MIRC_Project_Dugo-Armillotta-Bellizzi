@@ -509,6 +509,7 @@ public class Daat {
 
     }
 
+    //TODO: da modificare dopo aver modificato la gestione delle liste
     private int nextGEQ(String term, int value) throws IOException {
         Compressor c = new Compressor();
         //take number of posting in the list and in the blocks
@@ -599,6 +600,29 @@ public class Daat {
 
     //TODO: fare trec eval!!!!!
 
+
+    //TODO: noi vogliamo aprire in memoria solo i blocchi che ci servono; dobbiamo quindi tenere le due liste decompresse lette
+    // e decompresse direttamente dal disco, e quando cambiamo blocco si aggiorna la lista; ci servirà anche un metodo closeList
+    // inoltre dobbiamo tenere un iteratore per ogni lista
+    public void openListNew(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term) throws IOException {
+        // Read the compressed posting list data from the file
+        skips.position(lexicon.get(term).getOffsetSkip());
+        ByteBuffer skipInfo = ByteBuffer.allocate(lexicon.get(term).getSkipLen());
+        skips.read(skipInfo);
+        int endocid = skipInfo.getInt();
+        int skipdocid = skipInfo.getInt();
+        int skiptf = skipInfo.getInt();
+        skipInfo.position(0);
+        ByteBuffer docIds = ByteBuffer.allocate(skipdocid);
+        docChannel.position(lexicon.get(term).getOffsetDocid());
+        docChannel.read(docIds);
+        tfChannel.position(lexicon.get(term).getOffsetTf());
+        // Read the compressed posting list data from the file
+        ByteBuffer tfs = ByteBuffer.allocate(lexicon.get(term).getTfLen());
+        tfChannel.read(tfs);
+        docIds.position(0);
+        tfs.position(0);
+    }
 
     public CompressedList openList(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term) throws IOException {
         docChannel.position(lexicon.get(term).getOffsetDocid());

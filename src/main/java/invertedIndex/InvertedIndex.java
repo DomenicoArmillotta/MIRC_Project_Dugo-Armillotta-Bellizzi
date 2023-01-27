@@ -90,6 +90,7 @@ public class InvertedIndex {
         sortedTerms = lexicon.keySet().stream().sorted().collect(Collectors.toList());
     }
 
+    //TODO: la compressione non la facciamo qua ma a fine indexing
     /**
      * is used to write each block of SPIMI on disk
      * It does two things:
@@ -124,7 +125,6 @@ public class InvertedIndex {
         FileChannel tfChannel = streamTf.getChannel();
         ConfigurationParameters cp = new ConfigurationParameters();
         Compressor compressor = new Compressor();
-        double N = cp.getNumberOfDocuments();
         int offsetDocs = 0;
         int offsetTfs = 0;
         //iterate over term in the collection
@@ -134,8 +134,6 @@ public class InvertedIndex {
             List<Posting> postingList = invIndex.get(index);
             int docLen = 0;
             int tfLen = 0;
-            long nn = lexiconStats.getdF(); // number of documents that contain the term t
-            double idf = Math.log((N/nn));
             //iterate over the posting of the term
             for(Posting p: postingList){ //take the posting list
                 //write posting list into compressed file : for each posting compress and write on appropriate file
@@ -164,7 +162,7 @@ public class InvertedIndex {
             else{ //we allocate 22 bytes for the Text object, which is a string of 20 chars
                 lexiconBytes = ByteBuffer.allocate(22).put(key.getBytes()).array();
             }
-            lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(lexiconStats.getdF(), lexiconStats.getCf(), docLen, tfLen, offsetDocs, offsetTfs, idf, 0.0, 0.0, 0, 0));
+            lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(lexiconStats.getdF(), lexiconStats.getCf(), docLen, tfLen, offsetDocs, offsetTfs, 0.0, 0.0, 0.0, 0, 0));
             //take the document frequency
             //write lexicon entry to disk
             ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);

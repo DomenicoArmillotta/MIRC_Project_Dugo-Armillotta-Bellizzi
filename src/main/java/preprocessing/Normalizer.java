@@ -49,7 +49,6 @@ public class Normalizer {
         formattedLine = formattedLine.replaceAll("\\d", " ");
         //replace all single characters
         formattedLine = formattedLine.replaceAll("(\\s+.(?=\\s))", " ");
-        //replace the country codes with the country name
         //collapse multiple spaces
         formattedLine = formattedLine.replaceAll("\\s+", " ");
         //lower case
