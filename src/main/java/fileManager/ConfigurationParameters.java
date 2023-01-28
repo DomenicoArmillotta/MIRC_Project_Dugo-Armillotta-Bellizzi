@@ -13,7 +13,7 @@ public class ConfigurationParameters {
 
     public static final int LEXICON_ENTRY_SIZE = 94; //size of the entry of the lexicon in bytes
     public static final int LEXICON_KEY_SIZE = 22; //size of the key of each lexicon entry in bytes
-    public static final int DOC_INDEX_ENTRY_SIZE = 14; //size of the entry of the document index in bytes--> da aggiornare a 18
+    public static final int DOC_INDEX_ENTRY_SIZE = 18; //size of the entry of the document index in bytes--> da aggiornare a 18
     public static final int DOC_INDEX_KEY_SIZE = 10; //size of the key of each document index entry in bytes
     public static final int SKIP_BLOCK_SIZE = 12; //size of each skip block in bytes
 

@@ -1,6 +1,5 @@
 package queryProcessing;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.io.IOException;
 import java.util.Scanner;

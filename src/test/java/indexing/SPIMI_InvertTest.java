@@ -31,14 +31,91 @@ public class SPIMI_InvertTest extends TestCase {
 
     public void testSpimi() throws IOException {
         SPIMI s = new SPIMI();
-        //s.spimiInvertBlockMapped("docs/collection_test3.tsv");
-        s.spimiInvertBlockMapped("docs/collection.tsv");
+        s.spimiInvertBlockMapped("docs/collection_test2.tsv");
+        //s.spimiInvertBlockMapped("docs/collection.tsv");
     }
 
     public void testMerging() throws IOException {
         SPIMI s = new SPIMI();
         //s.spimiInvertBlockMapped("docs/collection_test3.tsv");
         s.mergeBlocks(11);
+    }
+
+    public void testIndex() throws IOException {
+        RandomAccessFile inDocsFile = new RandomAccessFile(new File("docs/docidstest_0.txt"), "rw");
+        FileChannel docChannel = inDocsFile.getChannel();
+        RandomAccessFile inTfFile = new RandomAccessFile(new File("docs/tfstest_0.txt"), "rw");
+        FileChannel tfChannel = inTfFile.getChannel();
+        RandomAccessFile inLexFile = new RandomAccessFile(new File("docs/lexicontest_0.txt"), "rw");
+        FileChannel lexChannel = inLexFile.getChannel();
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
+        FileChannel docIndexChannel = docIndexFile.getChannel();
+        //output file for the updated lexicon with the skip info pointers and term upper bound
+        RandomAccessFile outLexFile = new RandomAccessFile(new File("docs/lexiconTot2.txt"), "rw");
+        FileChannel outLexChannel = outLexFile.getChannel();
+        Compressor c = new Compressor();
+        //for each term we read the posting list, decompress it and compute the max score
+        int totLen = 0;
+        int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
+        long lexOffset = 0;
+        while (totLen < inLexFile.length()) {
+            int skipLen = 0;
+            ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);
+            //we set the position in the files using the offsets
+            lexChannel.position(lexOffset);
+            lexChannel.read(readBuffer);
+            //read first 22 bytes for the term
+            readBuffer.position(0); //aggiungere anche nel merging
+            ByteBuffer term = ByteBuffer.allocate(entrySize);
+            readBuffer.get(term.array(), 0, 22);
+            //read remaining bytes for the lexicon stats
+            ByteBuffer val = ByteBuffer.allocate(entrySize - 22);
+            readBuffer.get(val.array(), 0, entrySize - 22);
+            //we use a method for reading the 36 bytes in a LexiconStats object
+            LexiconStats l = new LexiconStats(val);
+            //convert the bytes to the String
+            String word = Text.decode(term.array());
+            //replace null characters
+            word = word.replaceAll("\0", "");
+            //now we read the inverted files and compute the scores
+            long offsetDoc = l.getOffsetDocid();
+            long offsetTf = l.getOffsetTf();
+            int docLen = l.getDocidsLen();
+            int tfLen = l.getTfLen();
+            docChannel.position(offsetDoc);
+            ByteBuffer docids = ByteBuffer.allocate(docLen);
+            docChannel.read(docids);
+            List<Integer> decompressedDocids = new ArrayList<>();
+            tfChannel.position(offsetTf);
+            ByteBuffer tfs = ByteBuffer.allocate(tfLen);
+            tfChannel.read(tfs);
+            List<Integer> decompressedTfs = new ArrayList<>();
+            int offDoc = 0;
+            int offTf = 0;
+            for(int i = 0; i < docLen/4; i++){
+                docids.position(offDoc);
+                tfs.position(offTf);
+                int docid = docids.getInt();
+                int tf = tfs.getInt();
+                decompressedDocids.add(docid);
+                decompressedTfs.add(tf);
+                offDoc+=4;
+                offTf+=4;
+            }
+            if(word.equals("bile")) {
+                System.out.println(word + " " + l.getdF() + " " + l.getCf() + " " + l.getDocidsLen() + " " + l.getTfLen() + " " + l.getIdf());
+                System.out.println("Docids: " + decompressedDocids);
+                //System.out.println(decompressedDocids.size());
+                System.out.println("Tfs: " + decompressedTfs);
+            }
+            //System.out.println(decompressedTfs.size());
+            lexOffset+=entrySize; //update the offset on the lexicon file
+            totLen+=entrySize; //go to the next entry of the lexicon file
+        }
+        HashMap<Integer,Integer> docIndex = Utils.getDocIndex(docIndexChannel);
+        for(Map.Entry<Integer,Integer> entry: docIndex.entrySet()){
+            System.out.println(entry.getKey() + ": " + entry.getValue());
+        }
     }
 
     public void testMaxScores() throws IOException {
