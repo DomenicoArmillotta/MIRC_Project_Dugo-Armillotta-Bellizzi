@@ -90,7 +90,7 @@ public class InvertedIndex {
         sortedTerms = lexicon.keySet().stream().sorted().collect(Collectors.toList());
     }
 
-    //TODO: la compressione non la facciamo qua ma a fine indexing
+    //TODO: pulire e modificare i commenti (ALLA FINE!!!!!!!!)
     /**
      * is used to write each block of SPIMI on disk
      * It does two things:
@@ -104,15 +104,6 @@ public class InvertedIndex {
      * @throws IOException
      */
     public void writePostings() throws IOException {
-        /*List<Posting> list = invIndex.get(lexicon.get("bile").getIndex());
-        List<Posting> list2 = invIndex.get(lexicon.get("american").getIndex());
-        System.out.println(lexicon.get("bile").getCf() + " " + lexicon.get("bile").getdF());
-        System.out.println(list);
-        System.out.println(lexicon.get("american").getCf() + " " + lexicon.get("american").getdF());
-        System.out.println(list2);
-        List<Posting> list3 = invIndex.get(lexicon.get("lime").getIndex());
-        System.out.println(lexicon.get("lime").getCf() + " " + lexicon.get("lime").getdF());
-        System.out.println(list3);*/
         //output file for different type of data
         File lexFile = new File("docs/lexicon"+outPath+".txt");
         File docFile = new File("docs/docids"+outPath+".txt");
@@ -123,7 +114,6 @@ public class InvertedIndex {
         FileChannel lexChannel = streamLex.getChannel();
         FileChannel docChannel = streamDocs.getChannel();
         FileChannel tfChannel = streamTf.getChannel();
-        ConfigurationParameters cp = new ConfigurationParameters();
         Compressor compressor = new Compressor();
         int offsetDocs = 0;
         int offsetTfs = 0;
@@ -134,34 +124,30 @@ public class InvertedIndex {
             List<Posting> postingList = invIndex.get(index);
             int docLen = 0;
             int tfLen = 0;
+            ByteBuffer docs = docChannel.map(FileChannel.MapMode.READ_WRITE, offsetDocs, 4L * postingList.size());
+            ByteBuffer tfs = tfChannel.map(FileChannel.MapMode.READ_WRITE, offsetTfs, 4L * postingList.size());
             //iterate over the posting of the term
             for(Posting p: postingList){ //take the posting list
                 //write posting list into compressed file : for each posting compress and write on appropriate file
                 //compress the docid with variable byte
-                byte[] compressedDocs = compressor.variableByteEncodeNumber(p.getDocid());
+                /*byte[] compressedDocs = compressor.variableByteEncodeNumber(p.getDocid());
                 ByteBuffer bufferValue = ByteBuffer.allocate(compressedDocs.length);
                 bufferValue.put(compressedDocs);
                 bufferValue.flip();
-                docChannel.write(bufferValue);
-                //compress the TermFreq with variable byte
-                byte[] compressedTF = compressor.unaryEncode(p.getTf()); //compress the term frequency with unary
+                docChannel.write(bufferValue);*/
+                //compress the TermFreq with unary
+                /*byte[] compressedTF = compressor.unaryEncode(p.getTf()); //compress the term frequency with unary
                 ByteBuffer bufferFreq = ByteBuffer.allocate(compressedTF.length);
                 bufferFreq.put(compressedTF);
                 bufferFreq.flip();
-                tfChannel.write(bufferFreq);
-                docLen+= compressedDocs.length;
-                tfLen+= compressedTF.length;
+                tfChannel.write(bufferFreq);*/
+                docs.putInt(p.getDocid());
+                tfs.putInt(p.getTf());
+                docLen+= 4;
+                tfLen+= 4;
             }
             //we check if the string is greater than 20 chars, in that case we truncate it
-            Text key = new Text(term);
-            byte[] lexiconBytes;
-            if(key.getLength()>=21){
-                Text truncKey = new Text(term.substring(0,20));
-                lexiconBytes = truncKey.getBytes();
-            }
-            else{ //we allocate 22 bytes for the Text object, which is a string of 20 chars
-                lexiconBytes = ByteBuffer.allocate(22).put(key.getBytes()).array();
-            }
+            byte[] lexiconBytes = Utils.getBytesFromString(term);
             lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(lexiconStats.getdF(), lexiconStats.getCf(), docLen, tfLen, offsetDocs, offsetTfs, 0.0, 0.0, 0.0, 0, 0));
             //take the document frequency
             //write lexicon entry to disk

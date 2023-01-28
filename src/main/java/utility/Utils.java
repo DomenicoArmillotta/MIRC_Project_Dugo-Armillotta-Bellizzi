@@ -35,6 +35,7 @@ public class Utils {
     public static byte[] getBytesFromString(String term){
         Text key = new Text(term);
         byte[] lexiconBytes;
+        //we check if the string is greater than 20 chars, in that case we truncate it
         if(key.getLength()>=21){
             Text truncKey = new Text(term.substring(0,20));
             lexiconBytes = truncKey.getBytes();
@@ -93,6 +94,18 @@ public class Utils {
         lexiconBytes = addByteArray(lexiconBytes,offsetSkipBytes);
         lexiconBytes = addByteArray(lexiconBytes,skipBytes);
         return lexiconBytes;
+    }
+
+    public static byte[] createSkipInfoBlock(int docId, int docBytes, int tfBytes){
+        byte[] endDocidBytes = ByteBuffer.allocate(4).putInt(docId).array();
+        //System.out.println("End docid bytes: " + docid + " " + endDocidBytes.length);
+        byte[] numBytes = ByteBuffer.allocate(4).putInt(docBytes).array();
+        //System.out.println("Bytes docid: " + docid + " " + nBytes);
+        byte[] numTfBytes = ByteBuffer.allocate(4).putInt(tfBytes).array();
+        //System.out.println("Bytes tf: " + docid + " " + tfBytes);
+        endDocidBytes = addByteArray(endDocidBytes,numBytes);
+        endDocidBytes = addByteArray(endDocidBytes,numTfBytes);
+        return endDocidBytes;
     }
 
 

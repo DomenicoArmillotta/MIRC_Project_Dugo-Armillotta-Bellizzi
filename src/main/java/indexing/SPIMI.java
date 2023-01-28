@@ -12,6 +12,7 @@ import org.apache.hadoop.thirdparty.org.checkerframework.checker.units.qual.C;
 import org.jetbrains.annotations.NotNull;
 import org.mapdb.*;
 import preprocessing.PreprocessDoc;
+import queryProcessing.MaxScore;
 import queryProcessing.Scorer;
 import utility.Utils;
 
@@ -406,26 +407,20 @@ public class SPIMI {
             tfPaths.add("docs/tfs_"+i+".txt");
         }
         //take the entry size of the lexicon from the configuration parameters
-        int LEXICON_ENTRY_SIZE = ConfigurationParameters.LEXICON_ENTRY_SIZE;
+        int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
+        int keySize = ConfigurationParameters.LEXICON_KEY_SIZE;
         //Buffer per leggere ogni termine con annesse statistiche
-        ByteBuffer[] readBuffers = new ByteBuffer[n];
-        //ByteBuffer buffer = ByteBuffer.allocate(58*termsNumber);
-        //IDEA: tenere una variabile che conta quanti blocchi sono rimasti
-        List<String> currLex = lexPaths;
-        List<String> currDocs = docPaths;
-        List<String> currTfs = tfPaths;
+        String currLex1 = lexPaths.get(0);
+        String currDocs1 = docPaths.get(0);
+        String currTf1 = tfPaths.get(0);
         double N = numDocs; //take the total number of documents in the collection
         //in the case of multiple block to merge
         int nFile = 1;
         while(nFile < n){
             System.out.println("HERE " + nFile);
-            int i = nFile-1;
-            //inizializzare una variabile per indicizzare il numero del file intermedio, in modo tale che ad ogni
-            //for abbiamo il numero di file intermedi creat e all'inizio di una nuova iterazione del while, lo rimettiamo
-            // a zero per segnarci i nuovi indici dei nuovi file intermedi
-            List<String> tempLex = new ArrayList<>();
-            List<String> tempDocs = new ArrayList<>();
-            List<String> tempTfs = new ArrayList<>();
+            String currLex2 = lexPaths.get(nFile);
+            String currDocs2 = lexPaths.get(nFile);
+            String currTf2 =lexPaths.get(nFile);
             //when total_size is equal to the sum of the lengths of the files, we have finished to read
             long totalSize = 0; //we need to keep track of the total length of the file(s) to merge;
             //output files
@@ -439,21 +434,18 @@ public class SPIMI {
             FileChannel tempTfChannel = outTfFile.getChannel();
             RandomAccessFile outFile = new RandomAccessFile(new File(lexPath),"rw");
             FileChannel tempChannel = outFile.getChannel();
-            //controlla che ci sia un altro blocco o meno e in quel caso non mergiare
-            //altrimenti:
-            System.out.println("Current file: " + currDocs.get(i)+ ", " + currTfs.get(i) + ", " + currDocs.get(i+1) + ", " + currTfs.get(i+1));
             //declare input files
-            RandomAccessFile doc1File = new RandomAccessFile(new File(currDocs.get(i)),"rw");
+            RandomAccessFile doc1File = new RandomAccessFile(new File(currDocs1),"rw");
             FileChannel doc1Channel = doc1File.getChannel();
-            RandomAccessFile tf1File = new RandomAccessFile(new File(currTfs.get(i)),"rw");
+            RandomAccessFile tf1File = new RandomAccessFile(new File(currTf1),"rw");
             FileChannel tf1Channel = tf1File.getChannel();
-            RandomAccessFile lex1File = new RandomAccessFile(new File(currLex.get(i)),"rw");
+            RandomAccessFile lex1File = new RandomAccessFile(new File(currLex1),"rw");
             FileChannel lex1Channel = lex1File.getChannel();
-            RandomAccessFile doc2File = new RandomAccessFile(new File(currDocs.get(i+1)),"rw");
+            RandomAccessFile doc2File = new RandomAccessFile(new File(currDocs2),"rw");
             FileChannel doc2Channel = doc2File.getChannel();
-            RandomAccessFile tf2File = new RandomAccessFile(new File(currTfs.get(i+1)),"rw");
+            RandomAccessFile tf2File = new RandomAccessFile(new File(currTf2),"rw");
             FileChannel tf2Channel = tf2File.getChannel();
-            RandomAccessFile lex2File = new RandomAccessFile(new File(currLex.get(i+1)),"rw");
+            RandomAccessFile lex2File = new RandomAccessFile(new File(currLex2),"rw");
             FileChannel lex2Channel = lex2File.getChannel();
             //for reading we use the pointers with the position method, so we need the offsets of the two files
             //offsets for reading the two files
@@ -462,29 +454,28 @@ public class SPIMI {
             long docOffset = 0; //offset of the docids list in the docids output file
             long tfOffset = 0; //offset of the tfs list in the tfs output file
             while(totalSize < lex1File.length() + lex2File.length()){
-                //System.out.println("Compare file: " + currDocs.get(i)+ ", " + currTfs.get(i) + ", " + currDocs.get(i+1) + ", " + currTfs.get(i+1));
-                readBuffers[i] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
-                readBuffers[i+1] = ByteBuffer.allocate(LEXICON_ENTRY_SIZE);
+                ByteBuffer readBuffer1 = ByteBuffer.allocate(entrySize);
+                ByteBuffer readBuffer2 = ByteBuffer.allocate(entrySize);
                 //we set the position in the files using the offsets
                 lex1Channel.position(offset1);
                 lex2Channel.position(offset2);
-                lex1Channel.read(readBuffers[i]);
-                lex2Channel.read(readBuffers[i+1]);
+                lex1Channel.read(readBuffer1);
+                lex2Channel.read(readBuffer2);
                 //place the pointers in the buffers at the beginning
-                readBuffers[i].position(0);
-                readBuffers[i+1].position(0);
+                readBuffer1.position(0);
+                readBuffer2.position(0);
                 //next steps:
-                //1)read the term in both buffers (first 22 bytes) and the lexicon statistics (remaining 44);
+                //read the term in both buffers (first 22 bytes) and the lexicon statistics (remaining 44);
                 //read first 22 bytes for the term
-                byte[] term1 = new byte[22];
-                byte[] term2 = new byte[22];
-                readBuffers[i].get(term1, 0, 22).array();
-                readBuffers[i+1].get(term2, 0, 22).array();
+                byte[] term1 = new byte[keySize];
+                byte[] term2 = new byte[keySize];
+                readBuffer1.get(term1, 0, keySize).array();
+                readBuffer2.get(term2, 0, keySize).array();
                 //read remaining bytes for the lexicon stats
-                ByteBuffer val1 = ByteBuffer.allocate(LEXICON_ENTRY_SIZE-22);
-                ByteBuffer val2 = ByteBuffer.allocate(LEXICON_ENTRY_SIZE-22);
-                readBuffers[i].get(val1.array(), 0, LEXICON_ENTRY_SIZE-22);
-                readBuffers[i+1].get(val2.array(), 0, LEXICON_ENTRY_SIZE-22);
+                ByteBuffer val1 = ByteBuffer.allocate(entrySize-keySize);
+                ByteBuffer val2 = ByteBuffer.allocate(entrySize-keySize);
+                readBuffer1.get(val1.array(), 0, entrySize-keySize);
+                readBuffer2.get(val2.array(), 0, entrySize-keySize);
                 //we use a method for reading the 36 bytes in a LexiconStats object
                 LexiconStats l1 = new LexiconStats(val1);
                 LexiconStats l2 = new LexiconStats(val2);
@@ -494,14 +485,18 @@ public class SPIMI {
                 //replace null characters
                 word1 = word1.replaceAll("\0", "");
                 word2 = word2.replaceAll("\0", "");
-                //2)compare terms to see what to merge in the result
-                //3)check:
-                //if the 1st term is greater than the second
-                //if the second is greater than the other
-                //if they are equal: in this case we merge them
-                //in the LexiconStats
+                //compare terms to see what to merge in the result
+                //check if the first term is greater than the second or if the second is greater than the other
+                //if they are equal we merge them in the LexiconStats
                 Compressor c = new Compressor();
+                int docLen = 0;
+                int tfLen = 0;
+                String word = "";
+                double idf = 0;
+                int df = 0;
+                long cF = 0;
                 if(word1.compareTo(word2) < 0){
+                    word = word1;
                     ByteBuffer docids = ByteBuffer.allocate(l1.getDocidsLen());
                     ByteBuffer tfs = ByteBuffer.allocate(l1.getTfLen());
                     doc1Channel.position(l1.getOffsetDocid());
@@ -512,28 +507,18 @@ public class SPIMI {
                     tempDocChannel.write(docids);
                     tfs.flip();
                     tempTfChannel.write(tfs);
-                    //System.out.println(word1 + ": " + c.variableByteDecode(docids.array()));
-                    byte[] lexiconBytes = Utils.getBytesFromString(word1);
                     //idf value
                     long nn = l1.getdF(); // number of documents that contain the term t among the data set
-                    double idf = Math.log((N/nn));
-                    int docLen = l1.getDocidsLen();
-                    int tfLen = l1.getTfLen();
-                    int df = l1.getdF();
-                    long cF = l1.getCf();
-                    lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(df, cF, docLen,tfLen, docOffset, tfOffset, idf, 0.0, 0.0, 0, 0));
-                    //write lexicon entry to disk
-                    ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
-                    bufferLex.put(lexiconBytes);
-                    bufferLex.flip();
-                    tempChannel.write(bufferLex); //write in lexicon file
-                    //update offsets
-                    docOffset+=l1.getDocidsLen();
-                    tfOffset+=l1.getTfLen();
-                    offset1+= LEXICON_ENTRY_SIZE;
-                    totalSize+=LEXICON_ENTRY_SIZE;
+                    idf = Math.log((N/nn));
+                    docLen = l1.getDocidsLen();
+                    tfLen = l1.getTfLen();
+                    df = l1.getdF();
+                    cF = l1.getCf();
+                    offset1+= entrySize;
+                    totalSize+=entrySize;
                 }
                 else if(word2.compareTo(word1) < 0){
+                    word = word2;
                     ByteBuffer docids = ByteBuffer.allocate(l2.getDocidsLen());
                     ByteBuffer tfs = ByteBuffer.allocate(l2.getTfLen());
                     doc2Channel.position(l2.getOffsetDocid());
@@ -544,29 +529,20 @@ public class SPIMI {
                     tempDocChannel.write(docids);
                     tfs.flip();
                     tempTfChannel.write(tfs);
-                    byte[] lexiconBytes = Utils.getBytesFromString(word2);
                     //idf value
                     long nn = l2.getdF(); // number of documents that contain the term t among the data set
-                    double idf = Math.log((N/nn));
-                    int docLen = l2.getDocidsLen();
-                    int tfLen = l2.getTfLen();
-                    int df = l2.getdF();
-                    long cF = l2.getCf();
-                    lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(df, cF, docLen,tfLen, docOffset, tfOffset, idf, 0.0, 0.0, 0, 0));
-                    //write lexicon entry to disk
-                    ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
-                    bufferLex.put(lexiconBytes);
-                    bufferLex.flip();
-                    tempChannel.write(bufferLex);
-                    //update offsets
-                    docOffset+=l2.getDocidsLen();
-                    tfOffset+=l2.getTfLen();
-                    offset2+=LEXICON_ENTRY_SIZE;
-                    totalSize+=LEXICON_ENTRY_SIZE;
+                    idf = Math.log((N/nn));
+                    docLen = l2.getDocidsLen();
+                    tfLen = l2.getTfLen();
+                    df = l2.getdF();
+                    cF = l2.getCf();
+                    offset2 += entrySize;
+                    totalSize+=entrySize;
                 }
                 else if (word1.compareTo(word2) == 0){
-                    //3.5) MERGE: we merge the docids, the tfs in the files; we merge the dF, cF, docidslen and tfslen
-                    //4) in the new merged files we need to write the term and the new lexicon stats with the
+                    word = word1;
+                    //MERGE: we merge the docids, the tfs in the files; we merge the dF, cF, docidslen and tfslen
+                    //in the new merged files we need to write the term and the new lexicon stats with the
                     //updated stats (offsets etc..)
                     ByteBuffer docids1 = ByteBuffer.allocate(l1.getDocidsLen());
                     ByteBuffer tfs1 = ByteBuffer.allocate(l1.getTfLen());
@@ -588,64 +564,148 @@ public class SPIMI {
                     tempDocChannel.write(docids2);
                     tfs2.flip();
                     tempTfChannel.write(tfs2);
-                    int docLen = l1.getDocidsLen()+l2.getDocidsLen();
-                    int tfLen = l1.getTfLen()+l2.getTfLen();
-                    byte[] lexiconBytes = Utils.getBytesFromString(word1);
+                    docLen = l1.getDocidsLen()+l2.getDocidsLen();
+                    tfLen = l1.getTfLen()+l2.getTfLen();
                     //idf value
                     long nn = l1.getdF()+l2.getdF(); // number of documents that contain the term t among the data set
-                    double idf = Math.log((N/nn));
-                    int df = l1.getdF()+l2.getdF();
-                    long cF = l1.getCf()+l2.getCf();
-                    lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(df, cF, docLen, tfLen, docOffset, tfOffset, idf, 0.0, 0.0, 0, 0));
-                    //write lexicon entry to disk
-                    ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
-                    bufferLex.put(lexiconBytes);
-                    bufferLex.flip();
-                    tempChannel.write(bufferLex);
-                    //update offsets
-                    docOffset+=docLen;
-                    tfOffset+=tfLen;
-                    offset1 += LEXICON_ENTRY_SIZE;
-                    offset2 += LEXICON_ENTRY_SIZE;
-                    totalSize+=LEXICON_ENTRY_SIZE*2; //we read two entries in total
+                    idf = Math.log((N/nn));
+                    df = l1.getdF()+l2.getdF();
+                    cF = l1.getCf()+l2.getCf();
+                    offset1 += entrySize;
+                    offset2 += entrySize;
+                    totalSize+=entrySize*2; //we read two entries in total
                 }
+                byte[] lexiconBytes = Utils.getBytesFromString(word);
+                lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(df, cF, docLen,tfLen, docOffset, tfOffset, idf, 0.0, 0.0, 0, 0));
+                //write lexicon entry to disk
+                ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
+                bufferLex.put(lexiconBytes);
+                bufferLex.flip();
+                tempChannel.write(bufferLex); //write in lexicon file
+                //update offsets
+                docOffset+=docLen;
+                tfOffset+=tfLen;
             }
             //add output files to paths
-            tempLex.add(lexPath);
-            tempDocs.add(docPath);
-            tempTfs.add(tfPath);
-            nFile++;
             //update file paths: first clear old paths, then update with new paths
-            currDocs.clear();
-            currTfs.clear();
-            currLex.clear();
-            currDocs = tempDocs;
-            currTfs = tempTfs;
-            currLex = tempLex;
+            currLex1 = lexPath;
+            currDocs1 = docPath;
+            currTf1 = tfPath;
             nFile++;
-            //nIndex = (int) Math.ceil((double)nIndex/2);
         }
         //Writing the output files
+        createFinalIndex(currLex1, currDocs1, currTf1);
+    }
+
+    public void createFinalIndex(String lexPath, String docsPath, String tfPath) throws IOException {
         File lexFile = new File("docs/lexicon.txt");
         File docFile = new File("docs/docids.txt");
         File tfFile = new File("docs/tfs.txt");
-        FileOutputStream streamLex = new FileOutputStream(lexFile);
-        FileOutputStream streamDocs = new FileOutputStream(docFile);
-        FileOutputStream streamTf = new FileOutputStream(tfFile);
-        WritableByteChannel lexChannel = streamLex.getChannel();
-        WritableByteChannel docChannel = streamDocs.getChannel();
-        WritableByteChannel tfChannel = streamTf.getChannel();
+        RandomAccessFile streamLex = new RandomAccessFile(lexFile, "rw");
+        RandomAccessFile streamDocs = new RandomAccessFile(docFile, "rw");
+        RandomAccessFile streamTf = new RandomAccessFile(tfFile, "rw");
+        RandomAccessFile skipInfoFile = new RandomAccessFile(new File("docs/skipInfo.txt"),"rw");
+        FileChannel lexChannel = streamLex.getChannel();
+        FileChannel docChannel = streamDocs.getChannel();
+        FileChannel tfChannel = streamTf.getChannel();
+        FileChannel skipInfoChannel = skipInfoFile.getChannel();
         //declare the input channels
-        FileInputStream inputDocFile = new FileInputStream(new File(currDocs.get(0)));
+        RandomAccessFile inputDocFile = new RandomAccessFile(new File(docsPath),"rw");
         FileChannel inputDocChannel = inputDocFile.getChannel();
-        FileInputStream inputTfFile = new FileInputStream(new File(currTfs.get(0)));
+        RandomAccessFile inputTfFile = new RandomAccessFile(new File(tfPath),"rw");
         FileChannel inputTfChannel = inputTfFile.getChannel();
-        FileInputStream inputLexFile = new FileInputStream(new File(currLex.get(0)));
+        RandomAccessFile inputLexFile = new RandomAccessFile(new File(lexPath),"rw");
         FileChannel inputLexChannel = inputLexFile.getChannel();
-        //we use the method transferTo to copy the file from a channel to another
-        inputDocChannel.transferTo(0, inputDocChannel.size(), docChannel);
-        inputTfChannel.transferTo(0, inputTfChannel.size(), tfChannel);
-        inputLexChannel.transferTo(0, inputLexChannel.size(), lexChannel);
+        Compressor compressor = new Compressor();
+        DocumentIndex documentIndex = new DocumentIndex();
+        HashMap<Integer, Integer> docIndex = documentIndex.getDocIndex();
+        int totLen = 0;
+        int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
+        int keySize = ConfigurationParameters.LEXICON_KEY_SIZE;
+        long lexOffset = 0; //ofset of the lexicon entry in the lexicon output file
+        long skipOffset = 0; //offset of the skip info entry in the skip info file
+        long docOffset = 0; //offset of the docids list in the docids output file
+        long tfOffset = 0; //offset of the tfs list in the tfs output file
+        while(totLen<inputLexFile.length()){
+            int skipLen = 0;
+            ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);
+            //we set the position in the files using the offsets
+            inputLexChannel.position(lexOffset);
+            inputLexChannel.read(readBuffer);
+            readBuffer.position(0);
+            //read first 22 bytes for the term
+            ByteBuffer term = ByteBuffer.allocate(entrySize);
+            readBuffer.get(term.array(), 0, keySize);
+            //read remaining bytes for the lexicon stats
+            ByteBuffer val = ByteBuffer.allocate(entrySize-keySize);
+            readBuffer.get(val.array(), 0, entrySize-keySize);
+            //we use a method for reading the 36 bytes in a LexiconStats object
+            LexiconStats l = new LexiconStats(val);
+            //convert the bytes to the String
+            String word = Text.decode(term.array());
+            //replace null characters
+            word = word.replaceAll("\0", "");
+            //now we read the inverted files and compute the scores
+            long offsetDoc = l.getOffsetDocid();
+            long offsetTf = l.getOffsetTf();
+            int docLen = l.getDocidsLen();
+            int tfLen = l.getTfLen();
+            inputDocChannel.position(offsetDoc);
+            ByteBuffer docids = ByteBuffer.allocate(docLen);
+            inputDocChannel.read(docids);
+            inputTfChannel.position(offsetTf);
+            ByteBuffer tfs = ByteBuffer.allocate(tfLen);
+            inputTfChannel.read(tfs);
+            List<Integer> decompressedDocids = new ArrayList<>();
+            List<Integer> decompressedTfs = new ArrayList<>();
+            int offDoc = 0;
+            int offTf = 0;
+            double maxscore = 0.0;
+            double tfidfMaxScore = 0.0;
+            int nBlocks = (int) Math.floor(Math.sqrt(l.getdF())); //number of posting for each block
+            int listSize =docLen/4;
+            int nBytes = 0;
+            int tfBytes = 0;
+            //TODO: add compression and update offsets and lengths of lists
+            for(int i = 0; i < listSize; i++){
+                docids.position(offDoc);
+                tfs.position(offTf);
+                int docId = docids.getInt();
+                int tf = tfs.getInt();
+                double idf = l.getIdf();
+                int documentLength = docIndex.get(docId);
+                maxscore = MaxScore.getMaxScoreBM25(maxscore,tf,documentLength,idf);
+                tfidfMaxScore = MaxScore.getMaxScoreBM25(tfidfMaxScore,tf,documentLength,idf);
+                decompressedDocids.add(docId);
+                decompressedTfs.add(tf);
+                nBytes += compressor.variableByteEncodeNumber(docId).length;
+                tfBytes += compressor.unaryEncode(tf).length;
+                if(i+1 == nBlocks || i+1 == listSize){ //we reached the end of a block
+                    byte[] skipBytes = Utils.createSkipInfoBlock(docId, nBytes, tfBytes);
+                    skipLen+=skipBytes.length;
+                    //write the skip blocks in the file
+                    ByteBuffer bufferSkips = ByteBuffer.allocate(skipBytes.length);
+                    bufferSkips.put(skipBytes);
+                    bufferSkips.flip();
+                    skipInfoChannel.write(bufferSkips);
+                    nBytes = 0;
+                    tfBytes = 0;
+                }
+                offDoc+=4;
+                offTf+=4;
+            }
+            //write the new lexicon entry
+            byte[] lexiconBytes = Utils.getBytesFromString(word);
+            lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(l.getdF(), l.getCf(), docLen, tfLen, l.getOffsetDocid(), l.getOffsetTf(), l.getIdf(), maxscore, tfidfMaxScore, skipOffset, skipLen));
+            //write lexicon entry to disk
+            ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
+            bufferLex.put(lexiconBytes);
+            bufferLex.flip();
+            lexChannel.write(bufferLex);
+            skipOffset+=skipLen; //update the offset on the skip info file
+            lexOffset+=entrySize; //update the offset on the lexicon file
+            totLen+=entrySize; //go to the next entry of the lexicon file
+        }
     }
 
 
@@ -671,13 +731,13 @@ public class SPIMI {
         FileChannel tfChannel = inTfFile.getChannel();
         RandomAccessFile inLexFile = new RandomAccessFile(new File("docs/lexicon.txt"),"rw");
         FileChannel lexChannel = inLexFile.getChannel();
+        //output file for the updated lexicon with the skip info pointers and term upper bound
+        RandomAccessFile outLexFile = new RandomAccessFile(new File("docs/lexiconTot.txt"),"rw");
+        FileChannel outLexChannel = outLexFile.getChannel();
         RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"),"rw");
         FileChannel docIndexChannel = docIndexFile.getChannel();
         RandomAccessFile skipInfoFile = new RandomAccessFile(new File("docs/skipInfo.txt"),"rw");
         FileChannel skipInfoChannel = skipInfoFile.getChannel();
-        //output file for the updated lexicon with the skip info pointers and term upper bound
-        RandomAccessFile outLexFile = new RandomAccessFile(new File("docs/lexiconTot.txt"),"rw");
-        FileChannel outLexChannel = outLexFile.getChannel();
         Compressor c = new Compressor();
         //for each term we read the posting list, decompress it and compute the max score
         int totLen = 0;
