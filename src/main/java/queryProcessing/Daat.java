@@ -254,6 +254,7 @@ public class Daat {
         int next;
         int did = getMinDocid(queryTerms);
         System.out.println(did);
+
         while (pivot < queryLen && did != maxDocID){
             next = maxDocID;
             double score = 0.0;
@@ -265,20 +266,22 @@ public class Daat {
                     int tf = lexicon.get(queryTerms[i]).getCurTf();
                     //int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
                     int docLen = 20;
-                    if(docLens.get(did) == null){
+                    /*if(docLens.get(did) == null){
                         docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
                         docLens.put(did, docLen);
                     }
                     else{
                         docLen = docLens.get(did);
-                    }
+                    }*/
                     double idf = lexicon.get(queryTerms[i]).getIdf();
                     //compute BM25 score from frequencies and other data
                     score += Scorer.bm25Weight(tf, docLen, idf);
-                    //current = nextGEQNew(queryTerms[i], did); //update the pointer to next docid
+                    current = nextGEQNew(queryTerms[i], did+1); //update the pointer to next docid
+                    //System.out.println("Updated to " + current);
                     //System.out.println("Partial score for " + queryTerms[i] + " " + did + ": " + score);
                 }
-                if((current < next && current > did)){
+                if((current < next)){
+                    //System.out.println("Updated from " + next + " to " + current);
                     next = current;
                 }
             }
@@ -294,20 +297,21 @@ public class Daat {
                     //System.out.println("Non essential: " + queryTerms[i] + " processed at " + did);
                     int tf = lexicon.get(queryTerms[i]).getCurTf();
                     //int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
-                    int docLen;
-                    if(docLens.get(did) == null){
+                    int docLen =20;
+                    /*if(docLens.get(did) == null){
                         docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
                         docLens.put(did, docLen);
                     }
                     else{
                         docLen = docLens.get(did);
-                    }
+                    }*/
                     double idf = lexicon.get(queryTerms[i]).getIdf();
                     //compute BM25 score from frequencies and other data
                     score += Scorer.bm25Weight(tf, docLen, idf);
                     //System.out.println("Partial score for " + queryTerms[i] + " " + did + ": " + score);
                 }
             }
+            //System.out.println("Partial score for " + " " + did + ": " + score);
             //update pivot
             //check if the new threshold is higher than previous one, in this case update the threshold
             Map.Entry<Integer, Double> minEntry = null;
@@ -333,10 +337,10 @@ public class Daat {
             //System.out.println("Score for " + did + ": " + score);
             if(scores.size() == k && minEntry.getValue() > threshold){
                 threshold = minEntry.getValue();
-                //System.out.println("updated threshold: " + threshold);
                 while(pivot < queryLen && documentUB[pivot]<= threshold){
                     pivot++;
                 }
+                //System.out.println("updated threshold: " + threshold + " " + pivot);
             }
             did = next;
             //System.out.println("Next did: " + did);
@@ -609,17 +613,43 @@ public class Daat {
         //check if we are in a new block
         Iterator<Integer> itDocs = docIdsIt[lexicon.get(term).getIndex()];
         Iterator<Integer> itTfs = tfsIt[lexicon.get(term).getIndex()];
-        //skipInfo.position(0);
         //System.out.println("NextGEQ: " + term + " " + value + " " + lexicon.get(term).getCurdoc() + " " + endDocids[lexicon.get(term).getIndex()]);
         //TODO: we have an error; if the docid is equal to the enddocid, we need to open a new block
         while(lexicon.get(term).getCurdoc() <= endDocids[lexicon.get(term).getIndex()]) { //we need to update the index; check if we are in the last block
             int prec = lexicon.get(term).getCurdoc();
+            if(prec >= value) {
+                /*if(prec == endDocids[lexicon.get(term).getIndex()]){
+                    //System.out.println("BLOCK ENDED!" + value + " " + docId + " " + prec);
+                    if(numPosting[lexicon.get(term).getIndex()]+ ConfigurationParameters.SKIP_BLOCK_SIZE >lexicon.get(term).getSkipLen()){
+                        //System.out.println("END IN LOOP");
+                        return maxDocID;
+                    }
+                    openListNew(docChannel, tfChannel, skipChannel, term);
+                    //itDocs = docIdsIt[lexicon.get(term).getIndex()];
+                    //itTfs = tfsIt[lexicon.get(term).getIndex()];
+                    int docId = prec;
+                    int tf = lexicon.get(term).getCurTf();
+                    if(itDocs.hasNext() && itTfs.hasNext()) {
+                        docId = itDocs.next();
+                        tf = itTfs.next();
+                    }
+                    lexicon.get(term).setCurdoc(docId);
+                    lexicon.get(term).setCurTf(tf);
+                }*/
+                //System.out.println("RETURNED DOCID: " + prec);
+                //System.out.println("NEXT DOCID: " + docId);
+                return prec;
+            }
             int docId = prec;
             int tf = lexicon.get(term).getCurTf();
             if(itDocs.hasNext() && itTfs.hasNext()) {
                 docId = itDocs.next();
                 tf = itTfs.next();
             }
+            lexicon.get(term).setCurdoc(docId);
+            lexicon.get(term).setCurTf(tf);
+            docIdsIt[lexicon.get(term).getIndex()] = itDocs; //update the iterator (non so se serve)
+            tfsIt[lexicon.get(term).getIndex()] = itTfs;
             if(value >= endDocids[lexicon.get(term).getIndex()] || docId == prec){
                 //System.out.println("BLOCK ENDED!" + value + " " + docId + " " + prec);
                 if(numPosting[lexicon.get(term).getIndex()]+ ConfigurationParameters.SKIP_BLOCK_SIZE >lexicon.get(term).getSkipLen()){
@@ -632,18 +662,10 @@ public class Daat {
                 //docId = itDocs.next();
                 //tf = itTfs.next();
             }
-            lexicon.get(term).setCurdoc(docId);
-            lexicon.get(term).setCurTf(tf);
-            docIdsIt[lexicon.get(term).getIndex()] = itDocs; //update the iterator (non so se serve)
-            tfsIt[lexicon.get(term).getIndex()] = itTfs;
             //System.out.println("DOCID: " + docId);
-            if(prec >= value) {
-                //System.out.println("RETURNED DOCID: " + prec);
-                //System.out.println("NEXT DOCID: " + docId);
-                return prec;
-            }
         }
         // If no such value was found, return a special value indicating that the search failed
+        //System.out.println("None found: " + term + " " + value + " " + lexicon.get(term).getCurdoc() + " " + endDocids[lexicon.get(term).getIndex()]);
         return maxDocID;
     }
     public void openListNew(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term) throws IOException {

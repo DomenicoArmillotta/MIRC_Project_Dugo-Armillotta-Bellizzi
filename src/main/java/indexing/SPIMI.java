@@ -152,7 +152,7 @@ public class SPIMI {
         List<String> currTfs = tfPaths;
         int nIndex = n;
         ConfigurationParameters cp = new ConfigurationParameters();
-        double N = totalLength; //take the total number of tokens in the collection
+        double N = numDocs; //take the total number of documents in the collection
         //in the case of multiple block to merge
         int nFile = 0;
         //TODO: modificare il ciclo, partiamo da nFile uguale a 1 e sommiamo uno, così mergiamo due e poi
