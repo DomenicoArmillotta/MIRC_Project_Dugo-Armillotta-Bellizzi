@@ -7,8 +7,17 @@ import java.util.Scanner;
 public class QueryProcessor {
 
     public static void main(String[] args) throws IOException {
+        System.out.println("LOADING DATA STRUCTURES");
         Daat d = new Daat();
-        while(true) {
+        System.out.println("PROGRAM STARTED");
+        long start = System.currentTimeMillis();
+        int k = 10;
+        String query = "bile acid stomach";
+        System.out.println(d.disjunctiveDaat(query, k));
+        long end = System.currentTimeMillis() - start;
+        double time = end/1000;
+        System.out.println("Result obtained in: " + time + " seconds");
+        /*while(true) {
             System.out.print("ENTER A QUERY OR 'END' TO END THE PROGRAM");
             System.out.print("mode: 0 for conjunctive, 1 for disjunctive");
             System.out.print("scoring_function: 0 for tfidf, 1 for bm25");
@@ -28,8 +37,8 @@ public class QueryProcessor {
                 System.out.println(d.conjunctiveDaat(query, k));
             }
             long end = System.currentTimeMillis() - start;
-            long time = end*1000;
+            long time = end/1000;
             System.out.println("Result obtained in: " + time + " seconds");
-        }
+        }*/
     }
 }

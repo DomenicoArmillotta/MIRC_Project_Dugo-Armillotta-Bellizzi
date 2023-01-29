@@ -16,7 +16,7 @@ public class DocumentIndex {
     public DocumentIndex() throws IOException {
         RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
         FileChannel docIndexChannel = docIndexFile.getChannel();
-        docIndex = getDocIndex(docIndexChannel);
+        docIndex = getDocumentIndex(docIndexChannel);
     }
 
     public HashMap<Integer, Integer> getDocIndex() {
@@ -27,7 +27,7 @@ public class DocumentIndex {
         this.docIndex = docIndex;
     }
 
-    public static HashMap<Integer,Integer> getDocIndex(FileChannel channel) throws IOException {
+    public static HashMap<Integer,Integer> getDocumentIndex(FileChannel channel) throws IOException {
         HashMap<Integer,Integer> docIndex = new HashMap<>();
         int entrySize = ConfigurationParameters.DOC_INDEX_ENTRY_SIZE;
         int keySize = ConfigurationParameters.DOC_INDEX_KEY_SIZE;

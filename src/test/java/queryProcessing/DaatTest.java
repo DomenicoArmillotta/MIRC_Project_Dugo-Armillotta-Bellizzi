@@ -7,6 +7,7 @@ import junit.framework.TestCase;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.thirdparty.org.checkerframework.checker.units.qual.C;
 import preprocessing.PreprocessDoc;
+import utility.Utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -72,7 +73,7 @@ public class DaatTest extends TestCase {
 
     public void testLexiconRead() throws IOException {
         //String lexiconPath = "docs/lexiconTot.txt";
-        String lexiconPath = "docs/lexiconTot.txt";
+        String lexiconPath = "docs/lexicon.txt";
         HashMap<String, LexiconStats> lexicon = new HashMap<>();
         PreprocessDoc preprocessing = new PreprocessDoc();
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
@@ -83,7 +84,46 @@ public class DaatTest extends TestCase {
         FileChannel tfChannel = inTfFile.getChannel();
         String query = "how often do american people eat";
         List<String> proQuery = preprocessing.preprocess_doc(query);
-        LexiconStats l1 = getPointer(lexChannel, "american");
+        LexiconStats l1 = getPointer(lexChannel, "bile");RandomAccessFile skipFile = new RandomAccessFile(new File("docs/skipInfo.txt"), "rw");
+        FileChannel skipChannel = skipFile.getChannel();
+        skipChannel.position(l1.getOffsetSkip());
+        ByteBuffer readBuffer = ByteBuffer.allocate(l1.getSkipLen());
+        skipChannel.read(readBuffer);
+        int tot = 0;
+        while(tot < l1.getSkipLen()) {
+            readBuffer.position(tot);
+            int endocid1 = readBuffer.getInt();
+            int skiplen1 = readBuffer.getInt();
+            int skiplen2 = readBuffer.getInt();
+            System.out.println(endocid1 + " " + skiplen1 + " " + skiplen2);
+            tot+=12;
+        }
+        /*long offsetDoc = l1.getOffsetDocid();
+        long offsetTf = l1.getOffsetTf();
+        int docLen = l1.getDocidsLen();
+        int tfLen = l1.getTfLen();
+        docChannel.position(offsetDoc);
+        ByteBuffer docids = ByteBuffer.allocate(docLen);
+        docChannel.read(docids);
+        tfChannel.position(offsetTf);
+        ByteBuffer tfs = ByteBuffer.allocate(tfLen);
+        tfChannel.read(tfs);
+        int offDoc = 0;
+        int offTf = 0;
+        int listSize =docLen/4;
+        for(int i = 0; i < listSize; i++){
+            docids.position(offDoc);
+            tfs.position(offTf);
+            int docId = docids.getInt();
+            int tf = tfs.getInt();
+            System.out.println(docId + " " +  tf);
+            offDoc+=4;
+            offTf+=4;
+        }*/
+        /*for(String term: proQuery){
+            LexiconStats l = getPointer(lexChannel, term);
+            lexicon.put(term, l);
+        }*/
         /*
         String query2 = "bile acid stomach american people table dratini";
         for(String term: query2.split(" ")){

@@ -31,7 +31,7 @@ public class SPIMI_InvertTest extends TestCase {
 
     public void testSpimi() throws IOException {
         SPIMI s = new SPIMI();
-        s.spimiInvertBlockMapped("docs/collection_test2.tsv");
+        s.spimiInvertBlockMapped("docs/collection.tsv");
         //s.spimiInvertBlockMapped("docs/collection.tsv");
     }
 
@@ -41,7 +41,21 @@ public class SPIMI_InvertTest extends TestCase {
         s.mergeBlocks(11);
     }
 
+    public void testFinalIndex() throws IOException {
+        SPIMI s = new SPIMI();
+        s.createFinalIndex("docs/tempL6.txt", "docs/tempD6.txt", "docs/tempT6.txt");
+    }
+
     public void testIndex() throws IOException {
+
+        DocumentIndex documentIndex = new DocumentIndex();
+        HashMap<Integer, Integer> docIndex = documentIndex.getDocIndex();
+        for(Map.Entry<Integer,Integer> entry: docIndex.entrySet()){
+            System.out.println(entry.getKey() + ": " + entry.getValue());
+        }
+    }
+
+    /*public void testIndex() throws IOException {
         RandomAccessFile inDocsFile = new RandomAccessFile(new File("docs/docidstest_0.txt"), "rw");
         FileChannel docChannel = inDocsFile.getChannel();
         RandomAccessFile inTfFile = new RandomAccessFile(new File("docs/tfstest_0.txt"), "rw");
@@ -117,6 +131,8 @@ public class SPIMI_InvertTest extends TestCase {
             System.out.println(entry.getKey() + ": " + entry.getValue());
         }
     }
+
+     */
 
     public void testMaxScores() throws IOException {
         //questo metodo legge il lexicon un termine alla volta; per ogni termine calcola la term upper bound leggendo la lista;

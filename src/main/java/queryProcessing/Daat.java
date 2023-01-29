@@ -2,6 +2,7 @@ package queryProcessing;
 
 import compression.Compressor;
 import fileManager.ConfigurationParameters;
+import indexing.DocumentIndex;
 import invertedIndex.CompressedList;
 import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconStats;
@@ -23,11 +24,12 @@ public class Daat {
     private int maxDocID;
 
     public HashMap<String, LexiconStats> lexicon;
+    private HashMap<Integer,Integer> docIndex;
     private int[] numPosting;
     private int[] endDocids;
     private Iterator<Integer>[] docIdsIt;
     private Iterator<Integer>[] tfsIt;
-    private String lexiconPath = "docs/lexiconTot.txt";
+    private String lexiconPath = "docs/lexicon.txt";
     private String docidsPath = "docs/docids.txt";
     private String tfsPath = "docs/tfs.txt";
     private String docIndexPath = "docs/docIndex.txt";
@@ -56,6 +58,8 @@ public class Daat {
         skipChannel = skipFile.getChannel();
         RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
         docIndexChannel = docIndexFile.getChannel();
+        DocumentIndex d = new DocumentIndex();
+        docIndex = d.getDocIndex();
     }
 
 
@@ -239,7 +243,6 @@ public class Daat {
             //postingLists[i] = openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
             //numPosting[i] = lexicon.get(queryTerms[i]).getdF();
         }
-        HashMap<Integer, Integer> docLens = new HashMap<>();
         int pivot = 0;
         double[] documentUB = new double[queryLen];
         double prec = 0.0;
@@ -253,7 +256,7 @@ public class Daat {
         double threshold = 0;
         int next;
         int did = getMinDocid(queryTerms);
-        System.out.println(did);
+        //System.out.println(did);
 
         while (pivot < queryLen && did != maxDocID){
             next = maxDocID;
@@ -265,14 +268,7 @@ public class Daat {
                 if(current == did){
                     int tf = lexicon.get(queryTerms[i]).getCurTf();
                     //int docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
-                    int docLen = 20;
-                    /*if(docLens.get(did) == null){
-                        docLen = Utils.getDocLen(docIndexChannel, String.valueOf(did));
-                        docLens.put(did, docLen);
-                    }
-                    else{
-                        docLen = docLens.get(did);
-                    }*/
+                    int docLen = docIndex.get(did);
                     double idf = lexicon.get(queryTerms[i]).getIdf();
                     //compute BM25 score from frequencies and other data
                     score += Scorer.bm25Weight(tf, docLen, idf);

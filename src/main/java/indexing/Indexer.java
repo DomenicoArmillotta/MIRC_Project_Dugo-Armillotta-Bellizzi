@@ -9,7 +9,7 @@ public class Indexer {
         long start = System.currentTimeMillis();
         s.spimiInvertBlockMapped("docs/collection.tsv");
         long end = System.currentTimeMillis() - start;
-        long time = end*1000;
+        long time = end/1000;
         System.out.println("Result obtained in: " + time + " seconds");
     }
 }
