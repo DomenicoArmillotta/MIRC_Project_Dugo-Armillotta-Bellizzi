@@ -38,7 +38,7 @@ public class SPIMI_InvertTest extends TestCase {
     public void testMerging() throws IOException {
         SPIMI s = new SPIMI();
         //s.spimiInvertBlockMapped("docs/collection_test3.tsv");
-        s.mergeBlocks(11);
+        s.mergeBlocks(6);
     }
 
     public void testFinalIndex() throws IOException {

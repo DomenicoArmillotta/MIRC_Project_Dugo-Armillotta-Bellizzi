@@ -15,7 +15,7 @@ public class QueryProcessor {
         String query = "bile acid stomach";
         System.out.println(d.disjunctiveDaat(query, k));
         long end = System.currentTimeMillis() - start;
-        double time = end/1000;
+        double time = (double)end/1000.0;
         System.out.println("Result obtained in: " + time + " seconds");
         /*while(true) {
             System.out.print("ENTER A QUERY OR 'END' TO END THE PROGRAM");

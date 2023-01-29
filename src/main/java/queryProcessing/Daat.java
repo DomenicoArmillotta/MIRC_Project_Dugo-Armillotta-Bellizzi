@@ -256,7 +256,7 @@ public class Daat {
         double threshold = 0;
         int next;
         int did = getMinDocid(queryTerms);
-        //System.out.println(did);
+        System.out.println(did);
 
         while (pivot < queryLen && did != maxDocID){
             next = maxDocID;
@@ -315,6 +315,7 @@ public class Daat {
                 scores.put(did, score);
             }
             else{
+                //TODO: non va bene, modificare, non prende correttamente il minimo
                 for (Map.Entry<Integer, Double> entry : scores.entrySet())
                 {
                     if (minEntry == null || entry.getValue().compareTo(minEntry.getValue()) < 0)

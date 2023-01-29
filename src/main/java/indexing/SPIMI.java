@@ -340,7 +340,7 @@ public class SPIMI {
         createFinalIndex(currLex1, currDocs1, currTf1);
     }
 
-    //TODO: error in skipInfo
+    //TODO: error in compression (to rerun)
 
     public void createFinalIndex(String lexPath, String docsPath, String tfPath) throws IOException {
         //declare output file and channels
@@ -440,8 +440,8 @@ public class SPIMI {
                 tfChannel.write(bufferFreq);
                 nBytes += compressedDocs.length;
                 tfBytes += compressedTF.length;
-                newDocLen+=nBytes;
-                newTfLen+=tfBytes;
+                newDocLen+=compressedDocs.length;
+                newTfLen+=compressedDocs.length;
                 if((i+1)%nBlocks == 0 || i+1 == listSize){ //we reached the end of a block
                     byte[] skipBytes = Utils.createSkipInfoBlock(docId, nBytes, tfBytes);
                     skipLen+=skipBytes.length;

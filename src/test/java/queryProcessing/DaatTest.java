@@ -98,6 +98,23 @@ public class DaatTest extends TestCase {
             System.out.println(endocid1 + " " + skiplen1 + " " + skiplen2);
             tot+=12;
         }
+        Compressor c = new Compressor();
+        long offsetDoc = l1.getOffsetDocid();
+        long offsetTf = l1.getOffsetTf();
+        int docLen = l1.getDocidsLen();
+        int tfLen = l1.getTfLen();
+        docChannel.position(offsetDoc);
+        ByteBuffer docids = ByteBuffer.allocate(docLen);
+        docChannel.read(docids);
+        List<Integer> decompressedDocids = c.variableByteDecode(docids.array());
+        tfChannel.position(offsetTf);
+        ByteBuffer tfs = ByteBuffer.allocate(tfLen);
+        tfChannel.read(tfs);
+        List<Integer> decompressedTfs = c.unaryDecode(tfs.array());
+        System.out.println("Docids: "  + decompressedDocids);
+        System.out.println(decompressedDocids.size());
+        //System.out.println("Tfs: " + decompressedTfs);
+        //System.out.println(decompressedTfs.size());
         /*long offsetDoc = l1.getOffsetDocid();
         long offsetTf = l1.getOffsetTf();
         int docLen = l1.getDocidsLen();
