@@ -48,8 +48,7 @@ public class SPIMI_InvertTest extends TestCase {
         RandomAccessFile inputLexFile = new RandomAccessFile(new File(lexPath),"rw");
         FileChannel inputLexChannel = inputLexFile.getChannel();
         Compressor compressor = new Compressor();
-        DocumentIndex documentIndex = new DocumentIndex();
-        HashMap<Integer, Integer> docIndex = documentIndex.getDocIndex();
+        HashMap<Integer, Integer> countTfs = new HashMap<>();
         int totLen = 0;
         int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
         int keySize = ConfigurationParameters.LEXICON_KEY_SIZE;
@@ -112,6 +111,14 @@ public class SPIMI_InvertTest extends TestCase {
                 tfs.position(offTf);
                 int docId = docids.getInt();
                 int tf = tfs.getInt();
+                if(countTfs.get(tf) == null){
+                    countTfs.put(tf,1);
+                }
+                else{
+                    int cont = countTfs.get(tf);
+                    cont++;
+                    countTfs.put(tf,cont);
+                }
                 dids.add(docId);
                 termf.add(tf);
                 //int documentLength = docIndex.get(docId);
@@ -170,6 +177,10 @@ public class SPIMI_InvertTest extends TestCase {
             totLen+=entrySize; //go to the next entry of the lexicon file
         }
         System.out.println("From " + totOld + " to " + totNew);
+        countTfs.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).limit(30)
+                .forEachOrdered(x -> System.out.println(x));
+        //System.out.println(Collections.max(countTfs.entrySet(), (entry1, entry2) -> entry1.getValue() - entry2.getValue()).getKey());
+        //System.out.println(Collections.max(countTfs.entrySet(), (entry1, entry2) -> entry1.getValue() - entry2.getValue()).getValue());
     }
 
     public void testFinalIndex() throws IOException {

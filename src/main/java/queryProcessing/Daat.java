@@ -56,6 +56,8 @@ public class Daat {
         docIndex = d.getDocIndex();
     }
 
+    //TODO: test these methods also with unfiltered preprocessing, make another method for both of them or add a flag
+
     public List<ScoreEntry> conjunctiveDaat(String query, int k, boolean mode) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocessDocument(query);
