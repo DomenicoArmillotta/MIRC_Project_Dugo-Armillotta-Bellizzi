@@ -432,7 +432,7 @@ public class SPIMI {
                 nBytes += compressedDocs.length;
                 tfBytes += compressedTF.length;
                 newDocLen+=compressedDocs.length;
-                newTfLen+=compressedDocs.length;
+                newTfLen+=compressedTF.length;
                 if((i+1)%nBlocks == 0 || i+1 == listSize){ //we reached the end of a block
                     byte[] skipBytes = Utils.createSkipInfoBlock(docId, nBytes, tfBytes);
                     skipLen+=skipBytes.length;
