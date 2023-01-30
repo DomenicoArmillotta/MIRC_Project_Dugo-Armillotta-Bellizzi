@@ -13,7 +13,7 @@ public class QueryProcessor {
         long start = System.currentTimeMillis();
         int k = 10;
         String query = "bile acid stomach";
-        System.out.println(d.disjunctiveDaat(query, k));
+        System.out.println(d.disjunctiveDaat(query, k, true));
         long end = System.currentTimeMillis() - start;
         double time = (double)end/1000.0;
         System.out.println("Result obtained in: " + time + " seconds");

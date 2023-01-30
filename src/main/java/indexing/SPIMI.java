@@ -1,6 +1,5 @@
 package indexing;
 
-
 import compression.Compressor;
 import fileManager.ConfigurationParameters;
 import invertedIndex.InvertedIndex;
@@ -9,21 +8,13 @@ import invertedIndex.LexiconStats;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.hadoop.io.Text;
-import org.jetbrains.annotations.NotNull;
-import org.mapdb.*;
 import preprocessing.PreprocessDoc;
 import queryProcessing.MaxScore;
-import queryProcessing.Scorer;
 import utility.Utils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.WritableByteChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 import static utility.Utils.addByteArray;
@@ -39,7 +30,7 @@ public class SPIMI {
 
 
     //creazione dei blocchi usando il limite su ram
-    public void spimiInvertBlockMapped(String readPath) throws IOException {
+    public void spimiInvertBlock(String readPath) throws IOException {
         File inputFile = new File(readPath);
         LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
         RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
@@ -55,7 +46,7 @@ public class SPIMI {
                 outPath = "index"+indexBlock+".txt";
                 while (it.hasNext()){
                     String line = it.nextLine();
-                    spimiInvertMapped(line);
+                    spimiInvert(line);
                     if(Runtime.getRuntime().totalMemory()*0.80 >
                             Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()){
                         //--> its the ram of jvm
@@ -92,8 +83,7 @@ public class SPIMI {
         mergeBlocks(indexBlock);
     }
 
-    public void spimiInvertMapped(String doc) throws IOException {
-        //initialize a new InvertedIndex
+    public void spimiInvert(String doc) throws IOException {
         PreprocessDoc preprocessDoc = new PreprocessDoc();
         String[] parts = doc.split("\t");
         String docno = parts[0];
@@ -108,6 +98,7 @@ public class SPIMI {
         }
         totalLength+=cont;
         numDocs++;
+        //write the document index entry
         Text key = new Text(docno);
         byte[] docIndexBytes;
         if (key.getLength() >= 9) {
@@ -424,7 +415,7 @@ public class SPIMI {
                 int tf = tfs.getInt();
                 int documentLength = docIndex.get(docId);
                 maxscore = MaxScore.getMaxScoreBM25(maxscore,tf,documentLength,idf);
-                tfidfMaxScore = MaxScore.getMaxScoreTFIDF(tfidfMaxScore,tf,documentLength,idf);
+                tfidfMaxScore = MaxScore.getMaxScoreTFIDF(tfidfMaxScore,tf,idf);
                 //write posting list into compressed file : for each posting compress and write on appropriate file
                 //compress the docid with variable byte
                 byte[] compressedDocs = compressor.variableByteEncodeNumber(docId);

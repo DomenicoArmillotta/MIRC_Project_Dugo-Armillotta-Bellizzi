@@ -56,8 +56,7 @@ public class Daat {
         docIndex = d.getDocIndex();
     }
 
-
-    public List<ScoreEntry> conjunctiveDaat(String query, int k) throws IOException {
+    public List<ScoreEntry> conjunctiveDaat(String query, int k, boolean mode) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocess_doc(query);
         int queryLen = proQuery.size();
@@ -80,14 +79,13 @@ public class Daat {
             queryTerms[i] = term;
             openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
         }
-        //TODO: sort query terms in lexicon by shortest list
         int did = getMinDocid(queryTerms);
         while (did <= maxDocID){
             double score = 0.0;
             did = nextGEQ(proQuery.get(0), did);
-            if(did == maxDocID){
+            /*if(did == maxDocID){
                 break;
-            }
+            }*/
             int d = 0;
             for (int i=1; (i<queryLen) && ((d=nextGEQ(proQuery.get(i), did)) == did); i++);
             if (d > did){
@@ -97,10 +95,16 @@ public class Daat {
                 //docID is in intersection; now get all frequencies
                 for (int i=0; i<proQuery.size(); i++){
                     int tf = lexicon.get(proQuery.get(i)).getCurTf();
-                    int docLen = docIndex.get(did);
                     double idf = lexicon.get(proQuery.get(i)).getIdf();
-                    //compute BM25 score from frequencies and other data
-                    score += Scorer.bm25Weight(tf, docLen, idf); //to modify after getFreq
+                    if(mode) {
+                        //compute BM25 score from frequencies and document length
+                        int docLen = docIndex.get(did);
+                        score += Scorer.bm25Weight(tf, docLen, idf);
+                    }
+                    else{
+                        //compute TFIDF score from frequencies
+                        score += Scorer.tfidf(tf, idf);
+                    }
                 }
                 scores.add(new ScoreEntry(did, score));
                 if(scores.size() > k){
@@ -113,7 +117,7 @@ public class Daat {
         return scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
     }
 
-    public List<ScoreEntry> disjunctiveDaat(String query, int k) throws IOException {
+    public List<ScoreEntry> disjunctiveDaat(String query, int k, boolean mode) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocess_doc(query);
         int queryLen = proQuery.size();
@@ -130,12 +134,23 @@ public class Daat {
             lexicon.put(term, l);
         }
         for(int i = 0; i < queryLen; i++){
-            termUB[i] = lexicon.get(proQuery.get(i)).getTermUpperBound();
+            if(mode) {
+                termUB[i] = lexicon.get(proQuery.get(i)).getTermUpperBound();
+            }
+            else{
+                termUB[i] = lexicon.get(proQuery.get(i)).getTermUpperBoundTf();
+            }
         }
         Arrays.sort(termUB);
         String [] queryTerms = new String[queryLen];
         for(String term: proQuery){
-            double ub = lexicon.get(term).getTermUpperBound();
+            double ub = 0.0;
+            if(mode) {
+                ub = lexicon.get(term).getTermUpperBound();
+            }
+            else{
+                ub = lexicon.get(term).getTermUpperBoundTf();
+            }
             int i = Arrays.binarySearch(termUB, ub);
             queryTerms[i] = term;
         }
@@ -164,10 +179,16 @@ public class Daat {
                 int current = nextGEQ(queryTerms[i], did);
                 if(current == did){
                     int tf = lexicon.get(queryTerms[i]).getCurTf();
-                    int docLen = docIndex.get(did);
                     double idf = lexicon.get(queryTerms[i]).getIdf();
-                    //compute BM25 score from frequencies and other data
-                    score += Scorer.bm25Weight(tf, docLen, idf);
+                    if(mode) {
+                        //compute BM25 score from frequencies and document length
+                        int docLen = docIndex.get(did);
+                        score += Scorer.bm25Weight(tf, docLen, idf);
+                    }
+                    else{
+                        //compute TFIDF score from frequencies
+                        score += Scorer.tfidf(tf, idf);
+                    }
                     current = nextGEQ(queryTerms[i], did+1); //update the pointer to next docid
                 }
                 if((current < next)){
@@ -183,10 +204,16 @@ public class Daat {
                 int current = nextGEQ(queryTerms[i], did);
                 if(current == did) {
                     int tf = lexicon.get(queryTerms[i]).getCurTf();
-                    int docLen = docIndex.get(did);
                     double idf = lexicon.get(queryTerms[i]).getIdf();
-                    //compute BM25 score from frequencies and other data
-                    score += Scorer.bm25Weight(tf, docLen, idf);
+                    if(mode) {
+                        //compute BM25 score from frequencies and document length
+                        int docLen = docIndex.get(did);
+                        score += Scorer.bm25Weight(tf, docLen, idf);
+                    }
+                    else{
+                        //compute TFIDF score from frequencies
+                        score += Scorer.tfidf(tf, idf);
+                    }
                 }
             }
             //update pivot

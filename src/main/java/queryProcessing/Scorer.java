@@ -9,24 +9,24 @@ import java.util.Map;
 public class Scorer {
     private static final double k1 = 1.2;
     private static final double b = 0.75;
-    private static double avg_len;
+    private static double avgLen;
 
     static {
         try {
-            avg_len = ConfigurationParameters.getAverageDocumentLength();
+            avgLen = ConfigurationParameters.getAverageDocumentLength();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     //tfidf scoring function for computing term frequency weights
-    public static double tfidf(int tf, int docLen, double idf){
+    public static double tfidf(int tf, double idf){
         //return (1.0 + Math.log(tf_d)*Math.log(htDocindex.keySet().size()/doc_freq));
         return (1.0 + Math.log(tf)*idf);
     }
 
     //normalized version of tfidf
-    private double tfidfNorm(int tf_d, int d_len, int doc_freq){
+    private double tfidfNorm(int tf_d, int d_len, int docFreq){
         double idf = 1.0; //da inizializzare
         //return (1.0 + Math.log(tf_d)*Math.log(htDocindex.keySet().size()/doc_freq))/(double)d_len;
         return (1.0 + Math.log(tf_d)*Math.log(idf))/(double)d_len;
@@ -36,7 +36,7 @@ public class Scorer {
     public static double bm25Weight(int tf, int docLen, double idf) throws IOException {
         //return (((double)tf_d/((k1*((1-b) + b * (d_len/avg_len)))+tf_d)))*Math.log(htDocindex.keySet().size()/doc_freq);
         //we already computed the logarithm for the computation of idf, so we don't apply it here!!!
-        return (((double)tf/((k1*((1-b) + b * (docLen/avg_len)))+tf)))*idf;
+        return (((double)tf/((k1*((1-b) + b * (docLen/ avgLen)))+tf)))*idf;
     }
 
     //method for normalizing the scores obtained with bm25
