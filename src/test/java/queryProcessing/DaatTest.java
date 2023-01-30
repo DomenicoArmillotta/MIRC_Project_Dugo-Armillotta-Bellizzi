@@ -207,7 +207,7 @@ public class DaatTest extends TestCase {
         query = "american people";
         //System.out.println(d.conjunctiveDaat(query,10));
         query = "france kidney";
-        System.out.println(d.conjunctiveDaat(query,10));
+        System.out.println(d.conjunctiveDaat(query,10, true));
     }
 
     public void testDisjunctiveDaat() throws IOException {
@@ -222,7 +222,7 @@ public class DaatTest extends TestCase {
         //[30426=8.283077691011705, 33136=8.151426009815147, 28819=8.11531806595153, 28817=8.01551599334571, 15218=7.734391511217466, 33137=7.499009903437889, 11601=7.451369281607839, 11598=7.197704376026827, 67384=7.107704678409375, 64=6.949409115587326]
         //query = "american people";
         long start = System.currentTimeMillis();
-        System.out.println(d.disjunctiveDaat(query,10));
+        System.out.println(d.disjunctiveDaat(query,10, true));
         long end = System.currentTimeMillis();
         long time = end - start;
         System.out.println("TIME: " + time + "ms");

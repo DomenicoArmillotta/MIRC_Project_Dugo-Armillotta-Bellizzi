@@ -12,7 +12,7 @@ public class QueryProcessor {
         System.out.println("PROGRAM STARTED");
         long start = System.currentTimeMillis();
         int k = 10;
-        String query = "bile acid stomach";
+        String query = "bile stomach acid";
         System.out.println(d.disjunctiveDaat(query, k, true));
         long end = System.currentTimeMillis() - start;
         double time = (double)end/1000.0;

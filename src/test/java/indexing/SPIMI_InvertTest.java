@@ -6,19 +6,15 @@ import fileManager.ConfigurationParameters;
 import invertedIndex.LexiconStats;
 import invertedIndex.Posting;
 import junit.framework.TestCase;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.LineIterator;
 import org.apache.hadoop.io.Text;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
-import preprocessing.PreprocessDoc;
 import queryProcessing.Scorer;
 import utility.Utils;
 
 import java.io.*;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -31,7 +27,7 @@ public class SPIMI_InvertTest extends TestCase {
 
     public void testSpimi() throws IOException {
         SPIMI s = new SPIMI();
-        s.spimiInvertBlockMapped("docs/collection.tsv");
+        s.spimiInvertBlock("docs/collection.tsv");
         //s.spimiInvertBlockMapped("docs/collection.tsv");
     }
 
@@ -224,7 +220,7 @@ public class SPIMI_InvertTest extends TestCase {
                 if(score>maxscore){
                     maxscore = score;
                 }
-                double scoreTfIdf = Scorer.tfidf(tf, documentLength, idf);
+                double scoreTfIdf = Scorer.tfidf(tf, idf);
                 if(scoreTfIdf>tfidfMaxScore){
                     tfidfMaxScore = scoreTfIdf;
                 }
@@ -410,7 +406,7 @@ public class SPIMI_InvertTest extends TestCase {
     public void testSpimiMapped() throws IOException {
         SPIMI spimi = new SPIMI();
         String path = "docs/collection_test.tsv";
-        spimi.spimiInvertBlockMapped(path);
+        spimi.spimiInvertBlock(path);
         DB readDb = DBMaker.fileDB("docs/index0.db").make();
         DB readDoc = DBMaker.fileDB("docs/testDB.db").make();
 

@@ -41,7 +41,7 @@ public class Daat {
 
     public Daat() throws IOException {
         lexicon = new HashMap<>();
-        maxDocID = (int)ConfigurationParameters.getNumberOfDocuments();
+        maxDocID = (int)ConfigurationParameters.getNumberOfDocuments() + 1;
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
         lexChannel = lexFile.getChannel();
         RandomAccessFile docFile = new RandomAccessFile(new File(docidsPath), "rw");
@@ -66,7 +66,7 @@ public class Daat {
         endDocids = new int[queryLen];
         docIdsIt = new Iterator[queryLen];
         tfsIt = new Iterator[queryLen];
-        PriorityQueue<ScoreEntry> scores = new PriorityQueue<>(); //to store partial scores results
+        TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         for(String term: proQuery){
             LexiconStats l = Utils.getPointer(lexChannel, term);
             lexicon.put(term, l);
@@ -80,12 +80,12 @@ public class Daat {
             openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
         }
         int did = getMinDocid(queryTerms);
-        while (did <= maxDocID){
+        while (did < maxDocID){
             double score = 0.0;
             did = nextGEQ(proQuery.get(0), did);
-            /*if(did == maxDocID){
+            if(did == maxDocID){
                 break;
-            }*/
+            }
             int d = 0;
             for (int i=1; (i<queryLen) && ((d=nextGEQ(proQuery.get(i), did)) == did); i++);
             if (d > did){
@@ -108,9 +108,9 @@ public class Daat {
                 }
                 scores.add(new ScoreEntry(did, score));
                 if(scores.size() > k){
-                    scores.poll(); //remove the minimum element
+                    scores.pollFirst(); //remove the minimum element
                 }
-                did++; //and increase did to search for next post
+                did++;
             }
         }
         // Return the result list
@@ -127,7 +127,7 @@ public class Daat {
         endDocids = new int[queryLen];
         docIdsIt = new Iterator[queryLen];
         tfsIt = new Iterator[queryLen];
-        PriorityQueue<ScoreEntry> scores = new PriorityQueue<>(); //to store partial scores results
+        TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         double[] termUB = new double[queryLen];
         for(String term: proQuery){
             LexiconStats l = Utils.getPointer(lexChannel, term);
@@ -220,9 +220,9 @@ public class Daat {
             //check if the new threshold is higher than previous one, in this case update the threshold
             scores.add(new ScoreEntry(did, score));
             if(scores.size() > k){
-                scores.poll(); //remove the minimum element
+                scores.pollFirst(); //remove the minimum element
             }
-            double min = scores.peek().getScore();
+            double min = scores.first().getScore();
             if(scores.size() == k && min > threshold) {
                 threshold = min;
                 while (pivot < queryLen && documentUB[pivot] <= threshold) {
