@@ -30,7 +30,7 @@ public class SPIMI {
 
 
     //creazione dei blocchi usando il limite su ram
-    public void spimiInvertBlock(String readPath) throws IOException {
+    public void spimiInvertBlock(String readPath, boolean mode) throws IOException {
         File inputFile = new File(readPath);
         LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
         RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
@@ -46,7 +46,7 @@ public class SPIMI {
                 outPath = "index"+indexBlock+".txt";
                 while (it.hasNext()){
                     String line = it.nextLine();
-                    spimiInvert(line);
+                    spimiInvert(line,mode);
                     if(Runtime.getRuntime().totalMemory()*0.80 >
                             Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()){
                         //--> its the ram of jvm
@@ -83,16 +83,22 @@ public class SPIMI {
         mergeBlocks(indexBlock);
     }
 
-    public void spimiInvert(String doc) throws IOException {
+    public void spimiInvert(String doc, boolean mode) throws IOException {
         PreprocessDoc preprocessDoc = new PreprocessDoc();
         String[] parts = doc.split("\t");
         String docno = parts[0];
         String corpus = parts[1];
-        List<String> pro_doc = preprocessDoc.preprocess_doc(corpus);
+        List<String> tokenizedDoc = new ArrayList<>();
+        if(mode){
+            tokenizedDoc = preprocessDoc.preprocessDocument(corpus);
+        }
+        else{
+            tokenizedDoc = preprocessDoc.preprocessDocumentUnfiltered(corpus);
+        }
         docid++;
         int cont = 0;
         //read the terms and generate postings
-        for (String term : pro_doc) {
+        for (String term : tokenizedDoc) {
             invertedIndex.addPosting(term, docid, 1);
             cont++;
         }

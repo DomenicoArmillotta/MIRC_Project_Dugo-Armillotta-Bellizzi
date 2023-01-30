@@ -38,7 +38,7 @@ public class CollectionParser {
                 String[] parts = doc.split("\t");
                 String docno = parts[0];
                 String doc_corpus = parts[1];
-                List<String> pro_doc = preprocessDoc.preprocess_doc(doc_corpus);
+                List<String> pro_doc = preprocessDoc.preprocessDocument(doc_corpus);
                 //read the terms and count the length of the document
                 for (String term : pro_doc) {
                     cont++;

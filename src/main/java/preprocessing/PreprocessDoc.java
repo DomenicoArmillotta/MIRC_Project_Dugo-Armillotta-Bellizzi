@@ -16,11 +16,11 @@ public class PreprocessDoc {
     /**
      * In this optimised preprocessing pipelining, an attempt was made to reduce the loop for processing.
      * normalisation and tokenization was done with regex, then in one cycle are made stop_words removal and stemming.
-     * @param s string in input , this is a document
+     * @param text string in input , this is a document
      * @return terms list of word of document pre-processed
      * @throws IOException
      */
-    public List<String> preprocess_doc(String s) throws IOException {
+    public List<String> preprocessDocument(String text) throws IOException {
         Normalizer normalizer = new Normalizer();
         Stemmer stemmer = new Stemmer();
         //stop words removal file
@@ -40,7 +40,7 @@ public class PreprocessDoc {
         }
         //START PIPELINE
         // 1. normalization
-        String output_normalizer = normalizer.normalize(s);
+        String output_normalizer = normalizer.normalize(text);
         // 2. tokenization with a regex
         String[] input = output_normalizer.split("\t");
         StringTokenizer st = new StringTokenizer(input[0]);
@@ -57,7 +57,7 @@ public class PreprocessDoc {
         }
         return  terms;
     }
-    public List<String> preprocessDocUnfiltered(String s) throws IOException {
+    public List<String> preprocessDocumentUnfiltered(String text) throws IOException {
         Normalizer normalizer = new Normalizer();
         //stop words removal file
         String path = "docs/stopwords_eng.txt";
@@ -76,7 +76,7 @@ public class PreprocessDoc {
         }
         //START PIPELINE
         // 1. normalization
-        String output_normalizer = normalizer.normalize(s);
+        String output_normalizer = normalizer.normalize(text);
         // 2. tokenization with a regex
         String[] input = output_normalizer.split("\t");
         StringTokenizer st = new StringTokenizer(input[0]);

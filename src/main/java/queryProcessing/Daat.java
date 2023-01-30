@@ -58,7 +58,7 @@ public class Daat {
 
     public List<ScoreEntry> conjunctiveDaat(String query, int k, boolean mode) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
-        List<String> proQuery = preprocessing.preprocess_doc(query);
+        List<String> proQuery = preprocessing.preprocessDocument(query);
         int queryLen = proQuery.size();
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
@@ -119,7 +119,7 @@ public class Daat {
 
     public List<ScoreEntry> disjunctiveDaat(String query, int k, boolean mode) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
-        List<String> proQuery = preprocessing.preprocess_doc(query);
+        List<String> proQuery = preprocessing.preprocessDocument(query);
         int queryLen = proQuery.size();
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];

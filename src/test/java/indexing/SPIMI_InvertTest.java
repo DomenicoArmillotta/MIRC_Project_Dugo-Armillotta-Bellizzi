@@ -3,6 +3,7 @@ package indexing;
 import compression.Compressor;
 import fileManager.CollectionParser;
 import fileManager.ConfigurationParameters;
+import invertedIndex.LexiconEntry;
 import invertedIndex.LexiconStats;
 import invertedIndex.Posting;
 import junit.framework.TestCase;
@@ -11,6 +12,7 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
+import queryProcessing.MaxScore;
 import queryProcessing.Scorer;
 import utility.Utils;
 
@@ -27,7 +29,7 @@ public class SPIMI_InvertTest extends TestCase {
 
     public void testSpimi() throws IOException {
         SPIMI s = new SPIMI();
-        s.spimiInvertBlock("docs/collection.tsv");
+        s.spimiInvertBlock("docs/collection.tsv", true);
         //s.spimiInvertBlockMapped("docs/collection.tsv");
     }
 
@@ -37,9 +39,144 @@ public class SPIMI_InvertTest extends TestCase {
         s.mergeBlocks(6);
     }
 
+    public void createFinalIndex(String lexPath, String docsPath, String tfPath) throws IOException {
+        //declare the input channels
+        RandomAccessFile inputDocFile = new RandomAccessFile(new File(docsPath),"rw");
+        FileChannel inputDocChannel = inputDocFile.getChannel();
+        RandomAccessFile inputTfFile = new RandomAccessFile(new File(tfPath),"rw");
+        FileChannel inputTfChannel = inputTfFile.getChannel();
+        RandomAccessFile inputLexFile = new RandomAccessFile(new File(lexPath),"rw");
+        FileChannel inputLexChannel = inputLexFile.getChannel();
+        Compressor compressor = new Compressor();
+        DocumentIndex documentIndex = new DocumentIndex();
+        HashMap<Integer, Integer> docIndex = documentIndex.getDocIndex();
+        int totLen = 0;
+        int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
+        int keySize = ConfigurationParameters.LEXICON_KEY_SIZE;
+        long lexOffset = 0; //ofset of the lexicon entry in the lexicon output file
+        long skipOffset = 0; //offset of the skip info entry in the skip info file
+        long docOffset = 0; //offset of the docids list in the docids output file
+        long tfOffset = 0; //offset of the tfs list in the tfs output file
+        long totOld = 0;
+        long totNew = 0;
+        double N = ConfigurationParameters.getNumberOfDocuments(); //take the total number of documents in the collection
+        while(totLen<inputLexFile.length()){
+            int skipLen = 0;
+            LexiconEntry entry = Utils.createLexiconEntry(inputLexChannel, lexOffset);
+            String word = entry.getTerm();
+            LexiconStats l = entry.getLexiconStats();
+            /*ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);
+            //we set the position in the files using the offsets
+            inputLexChannel.position(lexOffset);
+            inputLexChannel.read(readBuffer);
+            readBuffer.position(0);
+            //read first 22 bytes for the term
+            ByteBuffer term = ByteBuffer.allocate(entrySize);
+            readBuffer.get(term.array(), 0, keySize);
+            //read remaining bytes for the lexicon stats
+            ByteBuffer val = ByteBuffer.allocate(entrySize-keySize);
+            readBuffer.get(val.array(), 0, entrySize-keySize);
+            //we use a method for reading the 36 bytes in a LexiconStats object
+            LexiconStats l = new LexiconStats(val);
+            //convert the bytes to the String
+            String word = Text.decode(term.array());
+            //replace null characters
+            word = word.replaceAll("\0", "");*/
+            //now we read the inverted files and compute the scores
+            long offsetDoc = l.getOffsetDocid();
+            long offsetTf = l.getOffsetTf();
+            int docLen = l.getDocidsLen();
+            int tfLen = l.getTfLen();
+            inputDocChannel.position(offsetDoc);
+            ByteBuffer docids = ByteBuffer.allocate(docLen);
+            inputDocChannel.read(docids);
+            inputTfChannel.position(offsetTf);
+            ByteBuffer tfs = ByteBuffer.allocate(tfLen);
+            inputTfChannel.read(tfs);
+            int offDoc = 0;
+            int offTf = 0;
+            int newDocLen = 0;
+            int newTfLen = 0;
+            double maxscore = 0.0;
+            double tfidfMaxScore = 0.0;
+            int nBlocks = (int) Math.floor(Math.sqrt(l.getdF())); //number of posting for each block
+            int listSize = docLen/4;
+            int nBytes = 0;
+            int tfBytes = 0;
+            List<Integer> dids = new ArrayList<>();
+            List<Integer> termf = new ArrayList<>();
+            List<Integer> compressedtf = new ArrayList<>();
+            double idf = Math.log(N/l.getdF());
+            for(int i = 0; i < listSize; i++){
+                docids.position(offDoc);
+                tfs.position(offTf);
+                int docId = docids.getInt();
+                int tf = tfs.getInt();
+                dids.add(docId);
+                termf.add(tf);
+                //int documentLength = docIndex.get(docId);
+                //maxscore = MaxScore.getMaxScoreBM25(maxscore,tf,documentLength,idf);
+                //tfidfMaxScore = MaxScore.getMaxScoreTFIDF(tfidfMaxScore,tf,idf);
+                //write posting list into compressed file : for each posting compress and write on appropriate file
+                //compress the docid with variable byte
+                byte[] compressedDocs = compressor.variableByteEncodeNumber(docId);
+                ByteBuffer bufferValue = ByteBuffer.allocate(compressedDocs.length);
+                bufferValue.put(compressedDocs);
+                bufferValue.flip();
+                //docChannel.write(bufferValue);
+                //compress the TermFreq with unary
+                byte[] compressedTF = compressor.unaryEncode(tf); //compress the term frequency with unary
+                ByteBuffer bufferFreq = ByteBuffer.allocate(compressedTF.length);
+                bufferFreq.put(compressedTF);
+                bufferFreq.flip();
+                //tfChannel.write(bufferFreq);
+                nBytes += compressedDocs.length;
+                tfBytes += compressedTF.length;
+                newDocLen+=compressedDocs.length;
+                newTfLen+=compressedTF.length;
+                /*if((i+1)%nBlocks == 0 || i+1 == listSize){ //we reached the end of a block
+                    byte[] skipBytes = Utils.createSkipInfoBlock(docId, nBytes, tfBytes);
+                    skipLen+=skipBytes.length;
+                    //write the skip blocks in the file
+                    ByteBuffer bufferSkips = ByteBuffer.allocate(skipBytes.length);
+                    bufferSkips.put(skipBytes);
+                    bufferSkips.flip();
+                    skipInfoChannel.write(bufferSkips);
+                    nBytes = 0;
+                    tfBytes = 0;
+                }*/
+                offDoc+=4;
+                offTf+=4;
+            }
+            if(word.equals("bile")){
+                System.out.println(dids + " " + offDoc + " " + newDocLen);
+                System.out.println(termf + " " + offTf + " " + newTfLen);
+            }
+            totOld+=offDoc;
+            totNew+=newDocLen;
+            //System.out.println(word + ": " + idf + " " + maxscore + " " + tfidfMaxScore);
+            //write the new lexicon entry
+            /*byte[] lexiconBytes = Utils.getBytesFromString(word);
+            lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(l.getdF(), l.getCf(), newDocLen, newTfLen, docOffset, tfOffset, idf, maxscore, tfidfMaxScore, skipOffset, skipLen));
+            //write lexicon entry to disk
+            ByteBuffer bufferLex = ByteBuffer.allocate(lexiconBytes.length);
+            bufferLex.put(lexiconBytes);
+            bufferLex.flip();
+            lexChannel.write(bufferLex);*/
+            skipOffset+=skipLen; //update the offset on the skip info file
+            lexOffset+=entrySize; //update the offset on the lexicon file
+            docOffset+=newDocLen; //update the offset on the docIds file
+            tfOffset+=newTfLen; //update the offset on the tf file
+            totLen+=entrySize; //go to the next entry of the lexicon file
+        }
+        System.out.println("From " + totOld + " to " + totNew);
+    }
+
     public void testFinalIndex() throws IOException {
-        SPIMI s = new SPIMI();
+        /*SPIMI s = new SPIMI();
         s.createFinalIndex("docs/tempL6.txt", "docs/tempD6.txt", "docs/tempT6.txt");
+         */
+        createFinalIndex("docs/tempL6.txt", "docs/tempD6.txt", "docs/tempT6.txt");
     }
 
     public void testIndex() throws IOException {
@@ -406,7 +543,7 @@ public class SPIMI_InvertTest extends TestCase {
     public void testSpimiMapped() throws IOException {
         SPIMI spimi = new SPIMI();
         String path = "docs/collection_test.tsv";
-        spimi.spimiInvertBlock(path);
+        spimi.spimiInvertBlock(path, true);
         DB readDb = DBMaker.fileDB("docs/index0.db").make();
         DB readDoc = DBMaker.fileDB("docs/testDB.db").make();
 
