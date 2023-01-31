@@ -3,15 +3,20 @@ package indexing;
 import compression.Compressor;
 import fileManager.CollectionParser;
 import fileManager.ConfigurationParameters;
+import fileManager.FileOpener;
+import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconEntry;
 import invertedIndex.LexiconStats;
 import invertedIndex.Posting;
 import junit.framework.TestCase;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import org.apache.hadoop.io.Text;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
+import preprocessing.PreprocessDoc;
 import queryProcessing.MaxScore;
 import queryProcessing.Scorer;
 import utility.Utils;
@@ -37,6 +42,52 @@ public class SPIMI_InvertTest extends TestCase {
         SPIMI s = new SPIMI();
         //s.spimiInvertBlockMapped("docs/collection_test3.tsv");
         s.mergeBlocks(6);
+    }
+
+    public void spimiInvert(String doc, boolean mode) throws IOException {
+        PreprocessDoc preprocessDoc = new PreprocessDoc();
+        String[] parts = doc.split("\t");
+        String docno = parts[0];
+        String corpus = parts[1];
+        List<String> tokenizedDoc = new ArrayList<>();
+        if(mode){
+            tokenizedDoc = preprocessDoc.preprocessDocument(corpus);
+        }
+        else{
+            tokenizedDoc = preprocessDoc.preprocessDocumentUnfiltered(corpus);
+        }
+        System.out.println(docno + " " + tokenizedDoc);
+    }
+    public void testRead() throws IOException {
+        boolean mode = true;
+        String path = "docs/collection.zip";
+        InputStream stream = FileOpener.extractFromZip(path);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
+        int indexBlock = 0;
+        //int cont = 0;
+        try {
+            String line="";
+            //create chunk of data , splitting in n different block
+            while (line!=null){
+                System.out.println("Block: " + indexBlock);
+                //instantiate a new Inverted Index and Lexicon per block
+                while ((line = reader.readLine())!=null){
+                    spimiInvert(line,mode);
+                    if(Runtime.getRuntime().totalMemory()*0.80 >
+                            Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()){
+                        //--> its the ram of jvm
+                        break;
+                    }
+                }
+                indexBlock++;
+                System.gc();
+            }
+        } finally {
+            reader.close();
+            stream.close();
+        }
+
     }
 
     public void createFinalIndex(String lexPath, String docsPath, String tfPath) throws IOException {

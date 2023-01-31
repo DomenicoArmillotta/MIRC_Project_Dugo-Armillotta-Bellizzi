@@ -5,7 +5,10 @@ import invertedIndex.LexiconEntry;
 import invertedIndex.LexiconStats;
 import org.apache.hadoop.io.Text;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -130,6 +133,27 @@ public class Utils {
         //replace null characters
         word = word.replaceAll("\0", "");
         return new LexiconEntry(word, lexiconStats);
+    }
+
+    public static void createDocumentStatistics(double totalLength, double numDocs) throws IOException {
+        double averageDocLen = totalLength/numDocs;
+        RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
+        FileChannel outChannel = outFile.getChannel();
+        //System.out.println(averageDocLen + " " + totalLength + " " + numDocs);
+        byte[] avgLenBytes = ByteBuffer.allocate(8).putDouble(averageDocLen).array();
+        //take the offset of docids
+        byte[] totLenBytes = ByteBuffer.allocate(8).putDouble(totalLength).array();
+        //take the offset of tfs
+        byte[] numDocsBytes = ByteBuffer.allocate(8).putDouble(numDocs).array();
+        //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
+        avgLenBytes = addByteArray(avgLenBytes,totLenBytes);
+        avgLenBytes = addByteArray(avgLenBytes,numDocsBytes);
+        //write statistics to disk
+        ByteBuffer outBuf = ByteBuffer.allocate(avgLenBytes.length);
+        outBuf.put(avgLenBytes);
+        outBuf.flip();
+        outChannel.write(outBuf);
+        outChannel.close();
     }
 
 

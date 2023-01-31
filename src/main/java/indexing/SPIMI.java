@@ -2,6 +2,7 @@ package indexing;
 
 import compression.Compressor;
 import fileManager.ConfigurationParameters;
+import fileManager.FileOpener;
 import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconEntry;
 import invertedIndex.LexiconStats;
@@ -27,10 +28,44 @@ public class SPIMI {
     private static double numDocs = 0;
     private FileChannel docIndexChannel;
 
-
-
-    //creazione dei blocchi usando il limite su ram
     public void spimiInvertBlock(String readPath, boolean mode) throws IOException {
+        InputStream stream = FileOpener.extractFromZip(readPath);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+        RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
+        docIndexChannel = docIndexFile.getChannel();
+        int indexBlock = 0;
+        //int cont = 0;
+        try {
+            String line="";
+            //create chunk of data , splitting in n different block
+            while (line!=null){
+                System.out.println("Block: " + indexBlock + " " + docid + " " + line);
+                //instantiate a new Inverted Index and Lexicon per block
+                invertedIndex = new InvertedIndex(indexBlock);
+                outPath = "index"+indexBlock+".txt";
+                while ((line = reader.readLine())!=null){
+                    spimiInvert(line,mode);
+                    if(Runtime.getRuntime().totalMemory()*0.80 >
+                            Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()){
+                        //--> its the ram of jvm
+                        break;
+                    }
+                }
+                invertedIndex.sortTerms();
+                invertedIndex.writePostings();
+                indexBlock++;
+                System.gc();
+            }
+        } finally {
+            reader.close();
+            stream.close();
+        }
+        //compute the average document length
+        Utils.createDocumentStatistics(totalLength, numDocs);
+        mergeBlocks(indexBlock);
+    }
+
+    public void spimiInvertBlockUncompressed(String readPath, boolean mode) throws IOException {
         File inputFile = new File(readPath);
         LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
         RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
@@ -62,24 +97,7 @@ public class SPIMI {
             LineIterator.closeQuietly(it);
         }
         //compute the average document length
-        double averageDocLen = totalLength/numDocs;
-        RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
-        FileChannel outChannel = outFile.getChannel();
-        //System.out.println(averageDocLen + " " + totalLength + " " + numDocs);
-        byte[] avgLenBytes = ByteBuffer.allocate(8).putDouble(averageDocLen).array();
-        //take the offset of docids
-        byte[] totLenBytes = ByteBuffer.allocate(8).putDouble(totalLength).array();
-        //take the offset of tfs
-        byte[] numDocsBytes = ByteBuffer.allocate(8).putDouble(numDocs).array();
-        //concatenate all the byte arrays in order: key df cf docLen tfLen docOffset tfOffset
-        avgLenBytes = addByteArray(avgLenBytes,totLenBytes);
-        avgLenBytes = addByteArray(avgLenBytes,numDocsBytes);
-        //write lexicon entry to disk
-        ByteBuffer outBuf = ByteBuffer.allocate(avgLenBytes.length);
-        outBuf.put(avgLenBytes);
-        outBuf.flip();
-        outChannel.write(outBuf);
-        outChannel.close();
+        Utils.createDocumentStatistics(totalLength, numDocs);
         mergeBlocks(indexBlock);
     }
 
@@ -143,7 +161,6 @@ public class SPIMI {
         //take the entry size of the lexicon from the configuration parameters
         int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
         int keySize = ConfigurationParameters.LEXICON_KEY_SIZE;
-        //Buffer per leggere ogni termine con annesse statistiche
         String currLex1 = lexPaths.get(0);
         String currDocs1 = docPaths.get(0);
         String currTf1 = tfPaths.get(0);
@@ -335,7 +352,7 @@ public class SPIMI {
         }
         long end = System.currentTimeMillis();
         System.out.println("END MERGING");
-        long time = ((end-start)/1000)*60;
+        long time = ((end-start)/1000)/60;
         System.out.println("Time for merging the files: " + time + " minutes");
         //Writing the output files
         createFinalIndex(currLex1, currDocs1, currTf1);
