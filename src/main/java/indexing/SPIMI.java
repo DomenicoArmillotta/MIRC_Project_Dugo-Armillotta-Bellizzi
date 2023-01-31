@@ -214,37 +214,6 @@ public class SPIMI {
                 String word2 = entry2.getTerm();
                 LexiconStats l1 = entry1.getLexiconStats();
                 LexiconStats l2 = entry2.getLexiconStats();
-                /*ByteBuffer readBuffer1 = ByteBuffer.allocate(entrySize);
-                ByteBuffer readBuffer2 = ByteBuffer.allocate(entrySize);
-                //we set the position in the files using the offsets
-                lex1Channel.position(offset1);
-                lex2Channel.position(offset2);
-                lex1Channel.read(readBuffer1);
-                lex2Channel.read(readBuffer2);
-                //place the pointers in the buffers at the beginning
-                readBuffer1.position(0);
-                readBuffer2.position(0);
-                //next steps:
-                //read the term in both buffers (first 22 bytes) and the lexicon statistics (remaining 44);
-                //read first 22 bytes for the term
-                byte[] term1 = new byte[keySize];
-                byte[] term2 = new byte[keySize];
-                readBuffer1.get(term1, 0, keySize).array();
-                readBuffer2.get(term2, 0, keySize).array();
-                //read remaining bytes for the lexicon stats
-                ByteBuffer val1 = ByteBuffer.allocate(entrySize-keySize);
-                ByteBuffer val2 = ByteBuffer.allocate(entrySize-keySize);
-                readBuffer1.get(val1.array(), 0, entrySize-keySize);
-                readBuffer2.get(val2.array(), 0, entrySize-keySize);
-                //we use a method for reading the 36 bytes in a LexiconStats object
-                LexiconStats l1 = new LexiconStats(val1);
-                LexiconStats l2 = new LexiconStats(val2);
-                //convert the bytes to the String
-                String word1 = Text.decode(term1);
-                String word2 = Text.decode(term2);
-                //replace null characters
-                word1 = word1.replaceAll("\0", "");
-                word2 = word2.replaceAll("\0", "");*/
                 //compare terms to see what to merge in the result
                 //check if the first term is greater than the second or if the second is greater than the other
                 //if they are equal we merge them in the LexiconStats
@@ -254,6 +223,7 @@ public class SPIMI {
                 double idf = 0;
                 int df = 0;
                 long cF = 0;
+                //we also have to check if the other file is finished, in that case the compare doesn't work
                 if(word1.compareTo(word2) < 0 || totalSize2==lex2Channel.size()){
                     word = word1;
                     ByteBuffer docids = ByteBuffer.allocate(l1.getDocidsLen());
@@ -401,23 +371,6 @@ public class SPIMI {
             LexiconEntry entry = Utils.getLexiconEntry(inputLexChannel, lexOffset);
             String word = entry.getTerm();
             LexiconStats l = entry.getLexiconStats();
-            /*ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);
-            //we set the position in the files using the offsets
-            inputLexChannel.position(lexOffset);
-            inputLexChannel.read(readBuffer);
-            readBuffer.position(0);
-            //read first 22 bytes for the term
-            ByteBuffer term = ByteBuffer.allocate(entrySize);
-            readBuffer.get(term.array(), 0, keySize);
-            //read remaining bytes for the lexicon stats
-            ByteBuffer val = ByteBuffer.allocate(entrySize-keySize);
-            readBuffer.get(val.array(), 0, entrySize-keySize);
-            //we use a method for reading the 36 bytes in a LexiconStats object
-            LexiconStats l = new LexiconStats(val);
-            //convert the bytes to the String
-            String word = Text.decode(term.array());
-            //replace null characters
-            word = word.replaceAll("\0", "");*/
             //now we read the inverted files and compute the scores
             long offsetDoc = l.getOffsetDocid();
             long offsetTf = l.getOffsetTf();

@@ -37,15 +37,6 @@ public class Normalizer {
         formattedLine = formattedLine.replaceAll(urlPattern, " ");
         //remove punctuation
         formattedLine = formattedLine.replaceAll("\\p{Punct}", " ");
-        //replace consecutive character
-        //consecutive characters inside words (max two)
-        //TODO: comment these next five lines lines and rerun
-        formattedLine = formattedLine.replaceAll("(\\p{L})\\1+", "$1$1");
-        formattedLine = formattedLine.replaceAll("(\\w)\\1+", "$1$1");
-        //consecutive characters between spaces (collapsed to one)
-        formattedLine = formattedLine.replaceAll("\\s+(\\w)\\1+\\s+", "$1");
-        formattedLine = formattedLine.replaceAll("\\s+(\\w)\\1+", "$1");
-        formattedLine = formattedLine.replaceAll("^(\\w)\\1+\\s+", "$1");
         //replace digits
         formattedLine = formattedLine.replaceAll("\\d", " ");
         //replace all single characters
@@ -58,4 +49,13 @@ public class Normalizer {
         return formattedLine;
     }
 
+    //old:
+    //replace consecutive character
+    //consecutive characters inside words (max two)
+    //formattedLine = formattedLine.replaceAll("(\\p{L})\\1+", "$1$1");
+    //formattedLine = formattedLine.replaceAll("(\\w)\\1+", "$1$1");
+    //consecutive characters between spaces (collapsed to one)
+    //formattedLine = formattedLine.replaceAll("\\s+(\\w)\\1+\\s+", "$1");
+    //formattedLine = formattedLine.replaceAll("\\s+(\\w)\\1+", "$1");
+    //formattedLine = formattedLine.replaceAll("^(\\w)\\1+\\s+", "$1");
 }
