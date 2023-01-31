@@ -1,8 +1,6 @@
 package invertedIndex;
 
 import compression.Compressor;
-import fileManager.ConfigurationParameters;
-import org.apache.hadoop.io.Text;
 import utility.Utils;
 
 import java.io.*;

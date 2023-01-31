@@ -5,9 +5,7 @@ import fileManager.ConfigurationParameters;
 import invertedIndex.LexiconStats;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.thirdparty.org.checkerframework.checker.units.qual.C;
 import preprocessing.PreprocessDoc;
-import utility.Utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,11 +62,55 @@ public class DaatTest extends TestCase {
                 break;
             } else if (key.compareTo(value) < 0) {
                 upperBound = midpoint - entrySize;
-            } else {
+            } else if(value.equals("") || (key.compareTo(value) > 0)) {
                 lowerBound = midpoint + entrySize;
             }
         }
         return l;
+    }
+
+    public void testFullRead() throws IOException {
+        String lexiconPath = "docs/lexicon.txt";
+        RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
+        FileChannel channel = lexFile.getChannel();
+        LexiconStats l = new LexiconStats();
+        int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
+        MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, channel.size());
+        int lowerBound = 0;
+        int upperBound = (int) channel.size()-entrySize;
+        while(lowerBound!=channel.size()){
+            buffer.position(lowerBound);
+            ByteBuffer ba = ByteBuffer.allocate(22);
+            buffer.get(ba.array(), 0, 22);
+            if(ba.hasArray()) {
+                byte[] term = new byte[22];
+                term = ba.array();
+                String value = Text.decode(term).toString();
+                value = value.replaceAll("\0", "");
+                System.out.println("-"+value);
+                ByteBuffer bf1 = ByteBuffer.allocate(entrySize-22);
+                buffer.get(bf1.array(), 0, entrySize-22);
+                l = new LexiconStats(bf1);
+                /*System.out.println(l.getCf() + " " + l.getdF() + " " + l.getOffsetDocid() + " " + l.getDocidsLen()
+                        + " " + l.getTermUpperBound() + " " + l.getOffsetSkip() + " " + l.getSkipLen());*/
+            }
+            lowerBound+=entrySize;
+        }
+    }
+
+    public void testLexTermRead() throws IOException {
+        //String lexiconPath = "docs/lexiconTot.txt";
+        String lexiconPath = "docs/lexicon.txt";
+        HashMap<String, LexiconStats> lexicon = new HashMap<>();
+        PreprocessDoc preprocessing = new PreprocessDoc();
+        RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
+        FileChannel lexChannel = lexFile.getChannel();
+        String query = "president zzz";
+        List<String> proQuery = preprocessing.preprocessDocument(query);
+        for(String term: proQuery){
+            System.out.println(term);
+            LexiconStats l1 = getPointer(lexChannel, term);
+        }
     }
 
     public void testLexiconRead() throws IOException {
@@ -82,9 +124,10 @@ public class DaatTest extends TestCase {
         FileChannel docChannel = inDocsFile.getChannel();
         RandomAccessFile inTfFile = new RandomAccessFile(new File("docs/tfs.txt"),"rw");
         FileChannel tfChannel = inTfFile.getChannel();
-        String query = "how often do american people eat";
-        List<String> proQuery = preprocessing.preprocess_doc(query);
-        LexiconStats l1 = getPointer(lexChannel, "bile");RandomAccessFile skipFile = new RandomAccessFile(new File("docs/skipInfo.txt"), "rw");
+        String query = "bile";
+        List<String> proQuery = preprocessing.preprocessDocument(query);
+        LexiconStats l1 = getPointer(lexChannel, proQuery.get(0));
+        RandomAccessFile skipFile = new RandomAccessFile(new File("docs/skipInfo.txt"), "rw");
         FileChannel skipChannel = skipFile.getChannel();
         skipChannel.position(l1.getOffsetSkip());
         ByteBuffer readBuffer = ByteBuffer.allocate(l1.getSkipLen());
@@ -113,8 +156,8 @@ public class DaatTest extends TestCase {
         List<Integer> decompressedTfs = c.unaryDecode(tfs.array());
         System.out.println("Docids: "  + decompressedDocids);
         System.out.println(decompressedDocids.size());
-        //System.out.println("Tfs: " + decompressedTfs);
-        //System.out.println(decompressedTfs.size());
+        System.out.println("Tfs: " + decompressedTfs);
+        System.out.println(decompressedTfs.size());
         /*long offsetDoc = l1.getOffsetDocid();
         long offsetTf = l1.getOffsetTf();
         int docLen = l1.getDocidsLen();
@@ -137,7 +180,8 @@ public class DaatTest extends TestCase {
             offDoc+=4;
             offTf+=4;
         }*/
-        /*for(String term: proQuery){
+        /*
+        for(String term: proQuery){
             LexiconStats l = getPointer(lexChannel, term);
             lexicon.put(term, l);
         }*/

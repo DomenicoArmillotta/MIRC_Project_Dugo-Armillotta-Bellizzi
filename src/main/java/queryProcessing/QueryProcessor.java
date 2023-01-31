@@ -12,10 +12,12 @@ public class QueryProcessor {
         System.out.println("PROGRAM STARTED");
         long start = System.currentTimeMillis();
         int k = 10;
-        String query = "what is stomach bile";
+        //String query = "who is the president of the usa";
+        String query = "what is stomach bile acid";
         /*Results should be:
         [[docid=7443188, score=9.99322227476917], [docid=8474001, score=9.066945143488162], [docid=4024545, score=9.056948903998137], [docid=4326254, score=8.994563026789095], [docid=4024550, score=8.951834637529897], [docid=7039968, score=8.933425154704048], [docid=2332849, score=8.920170660835113], [docid=7659697, score=8.903379989877958], [docid=7510642, score=8.863646998525159], [docid=1001113, score=8.780602504235764]]
          */
+        System.out.println(query);
         System.out.println(d.disjunctiveDaat(query, k, true));
         long end = System.currentTimeMillis() - start;
         double time = (double)end/1000.0;

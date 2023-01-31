@@ -39,6 +39,7 @@ public class Normalizer {
         formattedLine = formattedLine.replaceAll("\\p{Punct}", " ");
         //replace consecutive character
         //consecutive characters inside words (max two)
+        //TODO: comment these next five lines lines and rerun
         formattedLine = formattedLine.replaceAll("(\\p{L})\\1+", "$1$1");
         formattedLine = formattedLine.replaceAll("(\\w)\\1+", "$1$1");
         //consecutive characters between spaces (collapsed to one)

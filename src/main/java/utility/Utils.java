@@ -6,7 +6,6 @@ import invertedIndex.LexiconStats;
 import org.apache.hadoop.io.Text;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -112,7 +111,7 @@ public class Utils {
         return endDocidBytes;
     }
 
-    public static LexiconEntry createLexiconEntry(FileChannel channel, long offset) throws IOException {
+    public static LexiconEntry getLexiconEntry(FileChannel channel, long offset) throws IOException {
         int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
         int keySize = ConfigurationParameters.LEXICON_KEY_SIZE;
         ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);

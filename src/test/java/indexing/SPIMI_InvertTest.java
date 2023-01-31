@@ -4,20 +4,16 @@ import compression.Compressor;
 import fileManager.CollectionParser;
 import fileManager.ConfigurationParameters;
 import fileManager.FileOpener;
-import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconEntry;
 import invertedIndex.LexiconStats;
 import invertedIndex.Posting;
 import junit.framework.TestCase;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.LineIterator;
 import org.apache.hadoop.io.Text;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import preprocessing.PreprocessDoc;
-import queryProcessing.MaxScore;
 import queryProcessing.Scorer;
 import utility.Utils;
 
@@ -41,7 +37,7 @@ public class SPIMI_InvertTest extends TestCase {
     public void testMerging() throws IOException {
         SPIMI s = new SPIMI();
         //s.spimiInvertBlockMapped("docs/collection_test3.tsv");
-        s.mergeBlocks(6);
+        s.mergeBlocks(7);
     }
 
     public void spimiInvert(String doc, boolean mode) throws IOException {
@@ -112,7 +108,7 @@ public class SPIMI_InvertTest extends TestCase {
         double N = ConfigurationParameters.getNumberOfDocuments(); //take the total number of documents in the collection
         while(totLen<inputLexFile.length()){
             int skipLen = 0;
-            LexiconEntry entry = Utils.createLexiconEntry(inputLexChannel, lexOffset);
+            LexiconEntry entry = Utils.getLexiconEntry(inputLexChannel, lexOffset);
             String word = entry.getTerm();
             LexiconStats l = entry.getLexiconStats();
             /*ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);

@@ -16,6 +16,7 @@ import utility.Utils;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static utility.Utils.addByteArray;
@@ -30,7 +31,7 @@ public class SPIMI {
 
     public void spimiInvertBlock(String readPath, boolean mode) throws IOException {
         InputStream stream = FileOpener.extractFromZip(readPath);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
         RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
         docIndexChannel = docIndexFile.getChannel();
         int indexBlock = 0;
@@ -173,7 +174,8 @@ public class SPIMI {
             String currDocs2 = docPaths.get(nFile);
             String currTf2 =tfPaths.get(nFile);
             //when total_size is equal to the sum of the lengths of the files, we have finished to read
-            long totalSize = 0; //we need to keep track of the total length of the file(s) to merge;
+            long totalSize1 = 0; //we need to keep track of the total length of the file(s) to merge;
+            long totalSize2 = 0;
             //output files
             String docPath = "docs/tempD"+nFile+".txt";
             String tfPath = "docs/tempT"+nFile+".txt";
@@ -205,9 +207,9 @@ public class SPIMI {
             long offset2 = 0;
             long docOffset = 0; //offset of the docids list in the docids output file
             long tfOffset = 0; //offset of the tfs list in the tfs output file
-            while(totalSize < lex1File.length() + lex2File.length()){
-                LexiconEntry entry1 = Utils.createLexiconEntry(lex1Channel, offset1);
-                LexiconEntry entry2 = Utils.createLexiconEntry(lex2Channel, offset2);
+            while(totalSize1 +totalSize2 < lex1Channel.size() + lex2Channel.size()){
+                LexiconEntry entry1 = Utils.getLexiconEntry(lex1Channel, offset1);
+                LexiconEntry entry2 = Utils.getLexiconEntry(lex2Channel, offset2);
                 String word1 = entry1.getTerm();
                 String word2 = entry2.getTerm();
                 LexiconStats l1 = entry1.getLexiconStats();
@@ -252,7 +254,7 @@ public class SPIMI {
                 double idf = 0;
                 int df = 0;
                 long cF = 0;
-                if(word1.compareTo(word2) < 0){
+                if(word1.compareTo(word2) < 0 || totalSize2==lex2Channel.size()){
                     word = word1;
                     ByteBuffer docids = ByteBuffer.allocate(l1.getDocidsLen());
                     ByteBuffer tfs = ByteBuffer.allocate(l1.getTfLen());
@@ -272,9 +274,9 @@ public class SPIMI {
                     df = l1.getdF();
                     cF = l1.getCf();
                     offset1+= entrySize;
-                    totalSize+=entrySize;
+                    totalSize1+=entrySize;
                 }
-                else if(word2.compareTo(word1) < 0){
+                else if(word2.compareTo(word1) < 0 || totalSize1 == lex1Channel.size()){
                     word = word2;
                     ByteBuffer docids = ByteBuffer.allocate(l2.getDocidsLen());
                     ByteBuffer tfs = ByteBuffer.allocate(l2.getTfLen());
@@ -294,7 +296,7 @@ public class SPIMI {
                     df = l2.getdF();
                     cF = l2.getCf();
                     offset2 += entrySize;
-                    totalSize+=entrySize;
+                    totalSize2+=entrySize;
                 }
                 else if (word1.compareTo(word2) == 0){
                     word = word1;
@@ -330,7 +332,8 @@ public class SPIMI {
                     cF = l1.getCf()+l2.getCf();
                     offset1 += entrySize;
                     offset2 += entrySize;
-                    totalSize+=entrySize*2; //we read two entries in total
+                    totalSize1+=entrySize;
+                    totalSize2+=entrySize;
                 }
                 byte[] lexiconBytes = Utils.getBytesFromString(word);
                 lexiconBytes = addByteArray(lexiconBytes, Utils.createLexiconEntry(df, cF, docLen,tfLen, docOffset, tfOffset, idf, 0.0, 0.0, 0, 0));
@@ -395,7 +398,7 @@ public class SPIMI {
         double N = ConfigurationParameters.getNumberOfDocuments(); //take the total number of documents in the collection
         while(totLen<inputLexFile.length()){
             int skipLen = 0;
-            LexiconEntry entry = Utils.createLexiconEntry(inputLexChannel, lexOffset);
+            LexiconEntry entry = Utils.getLexiconEntry(inputLexChannel, lexOffset);
             String word = entry.getTerm();
             LexiconStats l = entry.getLexiconStats();
             /*ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);
