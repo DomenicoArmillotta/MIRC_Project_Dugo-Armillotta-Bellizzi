@@ -129,6 +129,7 @@ public class SPIMI {
     }
 
     public void mergeBlocks(int n) throws IOException {
+        long start = System.currentTimeMillis();
         System.out.println("START MERGING");
         //per lettura
         List<String> lexPaths = new ArrayList<>();
@@ -332,12 +333,13 @@ public class SPIMI {
             currTf1 = tfPath;
             nFile++;
         }
+        long end = System.currentTimeMillis();
         System.out.println("END MERGING");
+        long time = ((end-start)/1000)*60;
+        System.out.println("Time for merging the files: " + time + " minutes");
         //Writing the output files
         createFinalIndex(currLex1, currDocs1, currTf1);
     }
-
-    //TODO: error in compression (to rerun)
 
     public void createFinalIndex(String lexPath, String docsPath, String tfPath) throws IOException {
         //declare output file and channels
@@ -362,13 +364,17 @@ public class SPIMI {
         Compressor compressor = new Compressor();
         DocumentIndex documentIndex = new DocumentIndex();
         HashMap<Integer, Integer> docIndex = documentIndex.getDocIndex();
-        int totLen = 0;
+        int totLen = 0; // to keep track of the total length of the file
         int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
         int keySize = ConfigurationParameters.LEXICON_KEY_SIZE;
         long lexOffset = 0; //ofset of the lexicon entry in the lexicon output file
         long skipOffset = 0; //offset of the skip info entry in the skip info file
         long docOffset = 0; //offset of the docids list in the docids output file
         long tfOffset = 0; //offset of the tfs list in the tfs output file
+        long totDocIdsOld = 0; //to keep track of the length of the uncompressed docIds file
+        long totDocIdsNew = 0; //to keep track of the length of the compressed docIds file
+        long totTfsOld = 0; //to keep track of the length of the uncompressed tfs file
+        long totTfsNew = 0; //to keep track of the length of the compressed tfs file
         double N = ConfigurationParameters.getNumberOfDocuments(); //take the total number of documents in the collection
         while(totLen<inputLexFile.length()){
             int skipLen = 0;
@@ -453,6 +459,11 @@ public class SPIMI {
                 offDoc+=4;
                 offTf+=4;
             }
+            //update lengths of the files
+            totDocIdsOld+=offDoc;
+            totDocIdsNew+=newDocLen;
+            totTfsOld+=offTf;
+            totTfsNew+=newTfLen;
             //System.out.println(word + ": " + idf + " " + maxscore + " " + tfidfMaxScore);
             //write the new lexicon entry
             byte[] lexiconBytes = Utils.getBytesFromString(word);
@@ -468,6 +479,10 @@ public class SPIMI {
             tfOffset+=newTfLen; //update the offset on the tf file
             totLen+=entrySize; //go to the next entry of the lexicon file
         }
+        System.out.println("Total bytes of the uncompressed docIds file: " + totDocIdsOld);
+        System.out.println("Total bytes of the compressed docIds file: " + totDocIdsNew);
+        System.out.println("Total bytes of the uncompressed term frequencies file: " + totTfsOld);
+        System.out.println("Total bytes of the compressed term frequencies file: " + totTfsNew);
     }
 
 
@@ -496,7 +511,6 @@ public class SPIMI {
         double N = numDocs; //take the total number of documents in the collection
         //in the case of multiple block to merge
         int nFile = 0;
-        //TODO: modificare il ciclo, partiamo da nFile uguale a 1 e sommiamo uno, così mergiamo due e poi
         // il risultato con il successivo, fino a quando nfile non raggiunge il numero di file da mergiare
         while(nIndex>1){
             System.out.println("HERE " + nIndex);

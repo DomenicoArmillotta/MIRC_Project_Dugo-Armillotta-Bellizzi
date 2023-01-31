@@ -5,6 +5,7 @@ import fileManager.ConfigurationParameters;
 import indexing.DocumentIndex;
 import invertedIndex.LexiconStats;
 import preprocessing.PreprocessDoc;
+import utility.Cache;
 import utility.Utils;
 
 import java.io.File;
@@ -19,9 +20,9 @@ import java.util.stream.Collectors;
 public class Daat {
 
     private int maxDocID;
-
-    public HashMap<String, LexiconStats> lexicon;
+    private HashMap<String, LexiconStats> lexicon;
     private HashMap<Integer,Integer> docIndex;
+    private Cache<String,ScoreEntry> cache = new Cache<>(5000);
     private int[] numPosting;
     private int[] endDocids;
     private Iterator<Integer>[] docIdsIt;
@@ -40,7 +41,6 @@ public class Daat {
     private FileChannel docIndexChannel;
 
     public Daat() throws IOException {
-        lexicon = new HashMap<>();
         maxDocID = (int)ConfigurationParameters.getNumberOfDocuments() + 1;
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
         lexChannel = lexFile.getChannel();
@@ -62,6 +62,7 @@ public class Daat {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocessDocument(query);
         int queryLen = proQuery.size();
+        lexicon = new HashMap<>();
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
         numPosting = new int[queryLen];
@@ -115,6 +116,8 @@ public class Daat {
                 did++;
             }
         }
+        //Put the results in cache
+        cache.put(query, scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0));
         // Return the result list
         return scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
     }
@@ -123,6 +126,7 @@ public class Daat {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocessDocument(query);
         int queryLen = proQuery.size();
+        lexicon = new HashMap<>();
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
         numPosting = new int[queryLen];
@@ -233,19 +237,23 @@ public class Daat {
             }
             did = next;
         }
+        //Put the results in cache
+        cache.put(query, scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0));
         return scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
     }
 
     private int getMinDocid(String[] queryTerms) throws IOException {
-        int did = nextGEQ(queryTerms[0], 1);
+        int did = nextGEQ(queryTerms[0], 1); //start from 1, the first possible docId
         for (int i=1; (i<queryTerms.length); i++){
             int d= nextGEQ(queryTerms[i], did);
-            if(d<did){
+            if(d<did){ //take the lowest docId as a starting point
                 did = d;
             }
+            //reset iterators
             docIdsIt[lexicon.get(queryTerms[i]).getIndex()] = decompressedDocIds[lexicon.get(queryTerms[i]).getIndex()].iterator();
             tfsIt[lexicon.get(queryTerms[i]).getIndex()] = decompressedTfs[lexicon.get(queryTerms[i]).getIndex()].iterator();
         }
+        //reset iterators for the first list
         docIdsIt[lexicon.get(queryTerms[0]).getIndex()] = decompressedDocIds[lexicon.get(queryTerms[0]).getIndex()].iterator();
         tfsIt[lexicon.get(queryTerms[0]).getIndex()] = decompressedTfs[lexicon.get(queryTerms[0]).getIndex()].iterator();
         return did;
