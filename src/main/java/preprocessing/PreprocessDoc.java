@@ -59,21 +59,6 @@ public class PreprocessDoc {
     }
     public List<String> preprocessDocumentUnfiltered(String text) throws IOException {
         Normalizer normalizer = new Normalizer();
-        //stop words removal file
-        String path = "docs/stopwords_eng.txt";
-        File file_stopwords = new File("docs/stopwords_eng.txt");
-        Path p = Paths.get(path);
-        List<String> list_stopwords = new ArrayList<>();
-        // to not read all the documents in memory we use a LineIterator to improve memory efficency
-        LineIterator it = FileUtils.lineIterator(file_stopwords, "UTF-8");
-        try {
-            while (it.hasNext()) {
-                String line = it.nextLine();
-                list_stopwords.add(line);
-            }
-        } finally {
-            LineIterator.closeQuietly(it);
-        }
         //START PIPELINE
         // 1. normalization
         String output_normalizer = normalizer.normalize(text);
@@ -84,6 +69,7 @@ public class PreprocessDoc {
         // iteration through all terms of document
         while (st.hasMoreTokens()) {
             String term = st.nextToken();
+            terms.add(term);
         }
         return  terms;
     }

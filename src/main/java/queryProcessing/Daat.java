@@ -61,7 +61,9 @@ public class Daat {
     public List<ScoreEntry> conjunctiveDaat(String query, int k, boolean mode) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocessDocument(query);
-        int queryLen = proQuery.size();
+        //duplicate filtering
+        List<String> terms = new ArrayList<>(new HashSet<>(proQuery));
+        int queryLen = terms.size();
         lexicon = new HashMap<>();
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
@@ -70,13 +72,13 @@ public class Daat {
         docIdsIt = new Iterator[queryLen];
         tfsIt = new Iterator[queryLen];
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
-        for(String term: proQuery){
+        for(String term: terms){
             LexiconStats l = Utils.getPointer(lexChannel, term);
             lexicon.put(term, l);
         }
         String[] queryTerms = new String[queryLen];
         for(int i = 0; i < queryLen; i++){
-            String term = proQuery.get(i);
+            String term = terms.get(i);
             lexicon.get(term).setIndex(i);
             lexicon.get(term).setCurdoc(0);
             queryTerms[i] = term;
@@ -85,20 +87,20 @@ public class Daat {
         int did = getMinDocid(queryTerms);
         while (did < maxDocID){
             double score = 0.0;
-            did = nextGEQ(proQuery.get(0), did);
+            did = nextGEQ(terms.get(0), did);
             if(did == maxDocID){
                 break;
             }
             int d = 0;
-            for (int i=1; (i<queryLen) && ((d=nextGEQ(proQuery.get(i), did)) == did); i++);
+            for (int i=1; (i<queryLen) && ((d=nextGEQ(terms.get(i), did)) == did); i++);
             if (d > did){
                 did = d; // not in intersection
             }
             else {
                 //docID is in intersection; now get all frequencies
-                for (int i=0; i<proQuery.size(); i++){
-                    int tf = lexicon.get(proQuery.get(i)).getCurTf();
-                    double idf = lexicon.get(proQuery.get(i)).getIdf();
+                for (int i=0; i<terms.size(); i++){
+                    int tf = lexicon.get(terms.get(i)).getCurTf();
+                    double idf = lexicon.get(terms.get(i)).getIdf();
                     if(mode) {
                         //compute BM25 score from frequencies and document length
                         int docLen = docIndex.get(did);
@@ -125,7 +127,9 @@ public class Daat {
     public List<ScoreEntry> disjunctiveDaat(String query, int k, boolean mode) throws IOException {
         PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocessDocument(query);
-        int queryLen = proQuery.size();
+        //duplicate filtering
+        List<String> terms = new ArrayList<>(new HashSet<>(proQuery));
+        int queryLen = terms.size();
         lexicon = new HashMap<>();
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
@@ -135,21 +139,21 @@ public class Daat {
         tfsIt = new Iterator[queryLen];
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         double[] termUB = new double[queryLen];
-        for(String term: proQuery){
+        for(String term: terms){
             LexiconStats l = Utils.getPointer(lexChannel, term);
             lexicon.put(term, l);
         }
         for(int i = 0; i < queryLen; i++){
             if(mode) {
-                termUB[i] = lexicon.get(proQuery.get(i)).getTermUpperBound();
+                termUB[i] = lexicon.get(terms.get(i)).getTermUpperBound();
             }
             else{
-                termUB[i] = lexicon.get(proQuery.get(i)).getTermUpperBoundTf();
+                termUB[i] = lexicon.get(terms.get(i)).getTermUpperBoundTf();
             }
         }
         Arrays.sort(termUB);
         String [] queryTerms = new String[queryLen];
-        for(String term: proQuery){
+        for(String term: terms){
             double ub = 0.0;
             if(mode) {
                 ub = lexicon.get(term).getTermUpperBound();
