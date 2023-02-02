@@ -184,8 +184,6 @@ public class Utils {
                 ByteBuffer bf1 = ByteBuffer.allocate(entrySize-22);
                 buffer.get(bf1.array(), 0, entrySize-22); //take the bytes with the information we are searching
                 l = new LexiconStats(bf1);
-                /*System.out.println(l.getCf() + " " + l.getdF() + " " + l.getOffsetDocid() + " " + l.getDocidsLen()
-                        + " " + l.getTermUpperBound() + " " + l.getOffsetSkip() + " " + l.getSkipLen());*/
                 break;
             } else if (key.compareTo(value) < 0) {
                 upperBound = midpoint - entrySize; //we move up if the word comes before

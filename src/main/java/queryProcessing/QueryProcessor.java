@@ -1,18 +1,52 @@
 package queryProcessing;
 
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 public class QueryProcessor {
 
     public static void main(String[] args) throws IOException {
         System.out.println("LOADING DATA STRUCTURES");
+        File queryFile = new File("docs/queries.eval.tsv");
+        String resultsPath = "docs/results_file";
+        FileWriter file = new FileWriter(resultsPath);
+        BufferedWriter buffer = new BufferedWriter(file);
         Daat d = new Daat();
         System.out.println("PROGRAM STARTED");
         long start = System.currentTimeMillis();
-        int k = 10;
+        // to not read all the documents in memory we use a LineIterator to improve memory efficiency
+        LineIterator it = FileUtils.lineIterator(queryFile, "UTF-8");
+        try {
+            int cont = 0;
+            while (it.hasNext() && cont<30) {
+                String line = it.nextLine();
+                //System.out.println(line);
+                String[] inputs = line.split("\t");
+                String id = inputs[0];
+                String query = inputs[1];
+                ScoreEntry entry = d.disjunctiveDaatEval(id, query, 1, true);
+                int docno = entry.getDocID()-1;
+                buffer.write(id+"\tQ0\t"+docno+"\t1\t"+entry.getScore()+"\tSTANDARD");
+                buffer.newLine();
+                cont++;
+            }
+        } finally {
+            buffer.close();
+            LineIterator.closeQuietly(it);
+        }
+        /*int k = 10;
         String query = "what is stomach bile";
-        System.out.println(d.disjunctiveDaat(query, k, true));
+        System.out.println(d.disjunctiveDaat("0", query, k, true));*/
         long end = System.currentTimeMillis() - start;
         double time = (double)end/1000.0;
         System.out.println("Result obtained in: " + time + " seconds");
@@ -39,6 +73,10 @@ public class QueryProcessor {
             long end = System.currentTimeMillis() - start;
             long time = end/1000;
             System.out.println("Result obtained in: " + time + " seconds");
-        }*/
+        }
+
+[[docid=7443188, score=9.99460140426369], [docid=8474001, score=9.069019164423922], [docid=4024545, score=9.059309251704772], [docid=4326254, score=8.996953836126837], [docid=4024550, score=8.954260676830543], [docid=7039968, score=8.93573677814313], [docid=2332849, score=8.922280263405527], [docid=7659697, score=8.905726515313644], [docid=7510642, score=8.865987516251808], [docid=1001113, score=8.782835741968295]]
+Result obtained in: 0.142 seconds
+        */
     }
 }
