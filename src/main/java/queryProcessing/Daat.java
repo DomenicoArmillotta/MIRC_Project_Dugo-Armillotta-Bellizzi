@@ -32,7 +32,6 @@ public class Daat {
     private String lexiconPath = "docs/lexicon.txt";
     private String docidsPath = "docs/docids.txt";
     private String tfsPath = "docs/tfs.txt";
-    private String docIndexPath = "docs/docIndex.txt";
     private String skipsPath = "docs/skipInfo.txt";
     private List<Integer>[] decompressedDocIds; //to keep the current block of docids for each term of the query
     private List<Integer>[] decompressedTfs; //to keep the current block of tfs for each term of the query
@@ -73,14 +72,14 @@ public class Daat {
         tfsIt = new Iterator[queryLen];
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         for(String term: terms){
-            LexiconStats l;
-            if(cacheTerms.get(term)!=null){
+            LexiconStats l = Utils.getPointer(lexChannel, term);
+            /*if(cacheTerms.get(term)!=null){
                 l = cacheTerms.get(term);
             }
             else{
                 l = Utils.getPointer(lexChannel, term);
                 cacheTerms.put(term,l);
-            }
+            }*/
             lexicon.put(term, l);
         }
         String[] queryTerms = new String[queryLen];
@@ -146,14 +145,14 @@ public class Daat {
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         double[] termUB = new double[queryLen];
         for(String term: terms){
-            LexiconStats l;
-            if(cacheTerms.get(term)!=null){
+            LexiconStats l = Utils.getPointer(lexChannel, term);
+            /*if(cacheTerms.get(term)!=null){
                 l = cacheTerms.get(term);
             }
             else{
                 l = Utils.getPointer(lexChannel, term);
                 cacheTerms.put(term,l);
-            }
+            }*/
             lexicon.put(term, l);
         }
         for(int i = 0; i < queryLen; i++){
@@ -257,6 +256,147 @@ public class Daat {
         //Put the results in cache
         cache.put(query, scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0));
         return scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
+    }
+
+    public ScoreEntry disjunctiveDaatEval(String id, String query, int k, boolean mode) throws IOException {
+        if(cache.get(id)!=null){
+            return cache.get(id);
+        }
+        List<String> proQuery = preprocessing.preprocessDocument(query);
+        //duplicate filtering
+        List<String> terms = new ArrayList<>(new HashSet<>(proQuery));
+        int queryLen = terms.size();
+        lexicon = new HashMap<>();
+        decompressedDocIds = new ArrayList[queryLen];
+        decompressedTfs = new ArrayList[queryLen];
+        numBlocks = new int[queryLen];
+        endDocids = new int[queryLen];
+        docIdsIt = new Iterator[queryLen];
+        tfsIt = new Iterator[queryLen];
+        TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
+        double[] termUB = new double[queryLen];
+        for(String term: terms){
+            LexiconStats l = Utils.getPointer(lexChannel, term);
+            /*if(cacheTerms.get(term)!=null){
+                l = cacheTerms.get(term);
+            }
+            else{
+                l = Utils.getPointer(lexChannel, term);
+                cacheTerms.put(term,l);
+            }*/
+            if(l.getdF()!=0){
+                lexicon.put(term, l);
+            }
+            else{
+                queryLen--;
+            }
+        }
+        if(queryLen==0){
+            return new ScoreEntry(maxDocID, 0);
+        }
+        for(int i = 0; i < queryLen; i++){
+            if(mode) {
+                termUB[i] = lexicon.get(terms.get(i)).getTermUpperBound();
+            }
+            else{
+                termUB[i] = lexicon.get(terms.get(i)).getTermUpperBoundTfIdf();
+            }
+        }
+        Arrays.sort(termUB);
+        String [] queryTerms = new String[queryLen];
+        for(String term: terms){
+            double ub = 0.0;
+            if(mode) {
+                ub = lexicon.get(term).getTermUpperBound();
+            }
+            else{
+                ub = lexicon.get(term).getTermUpperBoundTfIdf();
+            }
+            int i = Arrays.binarySearch(termUB, ub);
+            queryTerms[i] = term;
+        }
+        for(int i = 0; i < queryLen; i++){
+            lexicon.get(queryTerms[i]).setIndex(i);
+            lexicon.get(queryTerms[i]).setCurdoc(0);
+            openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
+        }
+        int pivot = 0;
+        double[] documentUB = new double[queryLen];
+        double prec = 0.0;
+        int index = 0;
+        for(double maxScore: termUB){
+            documentUB[index] = maxScore + prec;
+            prec = documentUB[index];
+            index++;
+        }
+        double threshold = 0.0;
+        int next;
+        int did = getMinDocid(queryTerms);
+        while (pivot < queryLen && did != maxDocID){
+            next = maxDocID;
+            double score = 0.0;
+            //process essential lists
+            for (int i=pivot; i<queryLen; i++){
+                int current = nextGEQ(queryTerms[i], did);
+                if(current == did){
+                    int tf = lexicon.get(queryTerms[i]).getCurTf();
+                    double idf = lexicon.get(queryTerms[i]).getIdf();
+                    if(mode) {
+                        //compute BM25 score from frequencies and document length
+                        int docLen = docIndex.get(did);
+                        score += Scorer.bm25Weight(tf, docLen, idf);
+                    }
+                    else{
+                        //compute TFIDF score from frequencies
+                        score += Scorer.tfidf(tf, idf);
+                    }
+                    current = nextGEQ(queryTerms[i], did+1); //update the pointer to next docid
+                }
+                if((current < next)){
+                    next = current;
+                }
+            }
+            //process non essential lists
+            for (int i=pivot-1; i>=0; i--){
+                //check document upper bound
+                if(documentUB[i] + score <= threshold){
+                    break;
+                }
+                int current = nextGEQ(queryTerms[i], did);
+                if(current == did) {
+                    int tf = lexicon.get(queryTerms[i]).getCurTf();
+                    double idf = lexicon.get(queryTerms[i]).getIdf();
+                    if(mode) {
+                        //compute BM25 score from frequencies and document length
+                        int docLen = docIndex.get(did);
+                        score += Scorer.bm25Weight(tf, docLen, idf);
+                    }
+                    else{
+                        //compute TFIDF score from frequencies
+                        score += Scorer.tfidf(tf, idf);
+                    }
+                }
+            }
+            //check if the new threshold is higher than previous one, in this case update the threshold
+            scores.add(new ScoreEntry(did, score));
+            if(scores.size() > k){
+                scores.pollFirst(); //remove the minimum element
+            }
+            double min = scores.first().getScore();
+            if(scores.size() == k && min > threshold) {
+                threshold = min;
+                //update pivot
+                while (pivot < queryLen && documentUB[pivot] <= threshold) {
+                    pivot++;
+                }
+            }
+            did = next;
+        }
+        //Put the results in cache
+        //System.out.println(scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()));
+        ScoreEntry result = scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0);
+        cache.put(id, result);
+        return result;
     }
 
     private int getMinDocid(String[] queryTerms) throws IOException {
