@@ -6,6 +6,7 @@ import indexing.DocumentIndex;
 import invertedIndex.LexiconStats;
 import preprocessing.Preprocessor;
 import utility.Cache;
+import utility.CacheTerms;
 import utility.Utils;
 
 import java.io.File;
@@ -23,6 +24,7 @@ public class Daat {
     private HashMap<String, LexiconStats> lexicon; //map the terms of the query to the pointers of the lists
     private HashMap<Integer,Integer> docIndex; //to map in memory the document index
     private Cache<String,ScoreEntry> cache = new Cache<>(5000); //to cache the query results
+    private CacheTerms<String,LexiconStats> cacheTerms = new CacheTerms<>(5000); //to cache the terms and pointers
     private int[] numBlocks; // counts for each term how much of the blocks have been processed
     private int[] endDocids; //store the current end docIds of the current blocks for each term
     private Iterator<Integer>[] docIdsIt; //iterators over the docIds block list
@@ -71,7 +73,14 @@ public class Daat {
         tfsIt = new Iterator[queryLen];
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         for(String term: terms){
-            LexiconStats l = Utils.getPointer(lexChannel, term);
+            LexiconStats l;
+            if(cacheTerms.get(term)!=null){
+                l = cacheTerms.get(term);
+            }
+            else{
+                l = Utils.getPointer(lexChannel, term);
+                cacheTerms.put(term,l);
+            }
             lexicon.put(term, l);
         }
         String[] queryTerms = new String[queryLen];
@@ -137,7 +146,14 @@ public class Daat {
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         double[] termUB = new double[queryLen];
         for(String term: terms){
-            LexiconStats l = Utils.getPointer(lexChannel, term);
+            LexiconStats l;
+            if(cacheTerms.get(term)!=null){
+                l = cacheTerms.get(term);
+            }
+            else{
+                l = Utils.getPointer(lexChannel, term);
+                cacheTerms.put(term,l);
+            }
             lexicon.put(term, l);
         }
         for(int i = 0; i < queryLen; i++){
