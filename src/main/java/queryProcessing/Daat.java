@@ -4,7 +4,7 @@ import compression.Compressor;
 import fileManager.ConfigurationParameters;
 import indexing.DocumentIndex;
 import invertedIndex.LexiconStats;
-import preprocessing.PreprocessDoc;
+import preprocessing.Preprocessor;
 import utility.Cache;
 import utility.Utils;
 
@@ -19,14 +19,14 @@ import java.util.stream.Collectors;
 
 public class Daat {
 
-    private int maxDocID;
-    private HashMap<String, LexiconStats> lexicon;
-    private HashMap<Integer,Integer> docIndex;
-    private Cache<String,ScoreEntry> cache = new Cache<>(5000);
-    private int[] numPosting;
-    private int[] endDocids;
-    private Iterator<Integer>[] docIdsIt;
-    private Iterator<Integer>[] tfsIt;
+    private int maxDocID; //keep the upper bound for the docIds
+    private HashMap<String, LexiconStats> lexicon; //map the terms of the query to the pointers of the lists
+    private HashMap<Integer,Integer> docIndex; //to map in memory the document index
+    private Cache<String,ScoreEntry> cache = new Cache<>(5000); //to cache the query results
+    private int[] numBlocks; // counts for each term how much of the blocks have been processed
+    private int[] endDocids; //store the current end docIds of the current blocks for each term
+    private Iterator<Integer>[] docIdsIt; //iterators over the docIds block list
+    private Iterator<Integer>[] tfsIt; //iterators over the tf block lists
     private String lexiconPath = "docs/lexicon.txt";
     private String docidsPath = "docs/docids.txt";
     private String tfsPath = "docs/tfs.txt";
@@ -38,9 +38,10 @@ public class Daat {
     private FileChannel docChannel;
     private FileChannel tfChannel;
     private FileChannel skipChannel;
-    private FileChannel docIndexChannel;
+    private Preprocessor preprocessing;
 
     public Daat() throws IOException {
+        preprocessing = new Preprocessor();
         maxDocID = (int)ConfigurationParameters.getNumberOfDocuments() + 1;
         RandomAccessFile lexFile = new RandomAccessFile(new File(lexiconPath), "rw");
         lexChannel = lexFile.getChannel();
@@ -50,8 +51,6 @@ public class Daat {
         tfChannel = tfFile.getChannel();
         RandomAccessFile skipFile = new RandomAccessFile(new File(skipsPath), "rw");
         skipChannel = skipFile.getChannel();
-        RandomAccessFile docIndexFile = new RandomAccessFile(new File(docIndexPath), "rw");
-        docIndexChannel = docIndexFile.getChannel();
         DocumentIndex d = new DocumentIndex();
         docIndex = d.getDocIndex();
     }
@@ -59,7 +58,6 @@ public class Daat {
     //TODO: test these methods also with unfiltered preprocessing, make another method for both of them or add a flag
 
     public List<ScoreEntry> conjunctiveDaat(String query, int k, boolean mode) throws IOException {
-        PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocessDocument(query);
         //duplicate filtering
         List<String> terms = new ArrayList<>(new HashSet<>(proQuery));
@@ -67,7 +65,7 @@ public class Daat {
         lexicon = new HashMap<>();
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
-        numPosting = new int[queryLen];
+        numBlocks = new int[queryLen];
         endDocids = new int[queryLen];
         docIdsIt = new Iterator[queryLen];
         tfsIt = new Iterator[queryLen];
@@ -125,7 +123,6 @@ public class Daat {
     }
 
     public List<ScoreEntry> disjunctiveDaat(String query, int k, boolean mode) throws IOException {
-        PreprocessDoc preprocessing = new PreprocessDoc();
         List<String> proQuery = preprocessing.preprocessDocument(query);
         //duplicate filtering
         List<String> terms = new ArrayList<>(new HashSet<>(proQuery));
@@ -133,7 +130,7 @@ public class Daat {
         lexicon = new HashMap<>();
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
-        numPosting = new int[queryLen];
+        numBlocks = new int[queryLen];
         endDocids = new int[queryLen];
         docIdsIt = new Iterator[queryLen];
         tfsIt = new Iterator[queryLen];
@@ -148,7 +145,7 @@ public class Daat {
                 termUB[i] = lexicon.get(terms.get(i)).getTermUpperBound();
             }
             else{
-                termUB[i] = lexicon.get(terms.get(i)).getTermUpperBoundTf();
+                termUB[i] = lexicon.get(terms.get(i)).getTermUpperBoundTfIdf();
             }
         }
         Arrays.sort(termUB);
@@ -159,7 +156,7 @@ public class Daat {
                 ub = lexicon.get(term).getTermUpperBound();
             }
             else{
-                ub = lexicon.get(term).getTermUpperBoundTf();
+                ub = lexicon.get(term).getTermUpperBoundTfIdf();
             }
             int i = Arrays.binarySearch(termUB, ub);
             queryTerms[i] = term;
@@ -226,7 +223,6 @@ public class Daat {
                     }
                 }
             }
-            //update pivot
             //check if the new threshold is higher than previous one, in this case update the threshold
             scores.add(new ScoreEntry(did, score));
             if(scores.size() > k){
@@ -235,6 +231,7 @@ public class Daat {
             double min = scores.first().getScore();
             if(scores.size() == k && min > threshold) {
                 threshold = min;
+                //update pivot
                 while (pivot < queryLen && documentUB[pivot] <= threshold) {
                     pivot++;
                 }
@@ -268,7 +265,6 @@ public class Daat {
     private int nextGEQ(String term, int value) throws IOException {
         Iterator<Integer> itDocs = docIdsIt[lexicon.get(term).getIndex()];
         Iterator<Integer> itTfs = tfsIt[lexicon.get(term).getIndex()];
-        //System.out.println("NextGEQ: " + term + " " + value + " " + lexicon.get(term).getCurdoc() + " " + endDocids[lexicon.get(term).getIndex()]);
         while(lexicon.get(term).getCurdoc() <= endDocids[lexicon.get(term).getIndex()]) { //we need to update the index; check if we are in the last block
             int prec = lexicon.get(term).getCurdoc();
             if(prec >= value) {
@@ -286,9 +282,7 @@ public class Daat {
             tfsIt[lexicon.get(term).getIndex()] = itTfs;
             //check if we are in a new block
             if(value >= endDocids[lexicon.get(term).getIndex()] || docId == prec){
-                //System.out.println("BLOCK ENDED!" + value + " " + docId + " " + prec);
-                if(numPosting[lexicon.get(term).getIndex()]+ ConfigurationParameters.SKIP_BLOCK_SIZE >lexicon.get(term).getSkipLen()){
-                    //System.out.println("END IN LOOP");
+                if(numBlocks[lexicon.get(term).getIndex()]+ ConfigurationParameters.SKIP_BLOCK_SIZE >lexicon.get(term).getSkipLen()){
                     return maxDocID;
                 }
                 openList(docChannel, tfChannel, skipChannel, term);
@@ -304,8 +298,8 @@ public class Daat {
     public void openList(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term) throws IOException {
         // Read the posting list block data from the file
         Compressor compressor = new Compressor();
-        skips.position(lexicon.get(term).getOffsetSkip() + numPosting[lexicon.get(term).getIndex()]);
-        ByteBuffer skipInfo = ByteBuffer.allocate(lexicon.get(term).getSkipLen() - numPosting[lexicon.get(term).getIndex()]);
+        skips.position(lexicon.get(term).getOffsetSkip() + numBlocks[lexicon.get(term).getIndex()]);
+        ByteBuffer skipInfo = ByteBuffer.allocate(lexicon.get(term).getSkipLen() - numBlocks[lexicon.get(term).getIndex()]);
         skips.read(skipInfo);
         skipInfo.position(0);
         int endocid = skipInfo.getInt();
@@ -326,7 +320,7 @@ public class Daat {
         decompressedDocIds[lexicon.get(term).getIndex()] = compressor.variableByteDecodeBlock(docIds.array(),n);
         decompressedTfs[lexicon.get(term).getIndex()] = compressor.unaryDecodeBlock(tfs.array(),n);
         //update the skip blocks read so far
-        numPosting[lexicon.get(term).getIndex()] += ConfigurationParameters.SKIP_BLOCK_SIZE;
+        numBlocks[lexicon.get(term).getIndex()] += ConfigurationParameters.SKIP_BLOCK_SIZE;
         //instantiate the iterators
         docIdsIt[lexicon.get(term).getIndex()] = decompressedDocIds[lexicon.get(term).getIndex()].iterator();
         tfsIt[lexicon.get(term).getIndex()] = decompressedTfs[lexicon.get(term).getIndex()].iterator();

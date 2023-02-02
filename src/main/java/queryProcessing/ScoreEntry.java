@@ -1,6 +1,5 @@
 package queryProcessing;
 
-import org.jetbrains.annotations.NotNull;
 
 public class ScoreEntry implements Comparable<ScoreEntry> {
 

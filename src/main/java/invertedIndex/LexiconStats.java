@@ -5,25 +5,23 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.List;
 
 public class LexiconStats implements Serializable {
 
     private int dF; //document frequency
     private long cf; //collection frequency
-    private long offsetDocid; //offset of the posting list of the term
-    private long offsetTf;
-    private int docidsLen;
-    private int tfLen;
-    private int index;
-    private int curdoc;
-    private int curTf;
-    private double idf;
-    private double termUpperBound;
-    private double termUpperBoundTf;
-    private long offsetSkip;
-    private int skipLen;
+    private long offsetDocid; //offset of the docIds posting list of the term
+    private long offsetTf; //offset of the term frequencies posting list
+    private int docidsLen; //length of the docIds posting list
+    private int tfLen; //length of the term frequencies posting list
+    private int index; //used to map a list to the term
+    private int curdoc; //used to keep the current docID during processing
+    private int curTf; //used to keep the current Tf during processing
+    private double idf; //the idf of the term
+    private double termUpperBound; //the term upperbound computed with bm25
+    private double termUpperBoundTfIdf; //the term upperbound computed with tfidf
+    private long offsetSkip; //offset of the skipping information for this term
+    private int skipLen; //length of the skipping information for this term
 
     public LexiconStats(){
         this.dF = 0;
@@ -34,7 +32,7 @@ public class LexiconStats implements Serializable {
     }
 
     public LexiconStats(ByteBuffer b){
-        //use the getInt/getLong method of ByteBuffer to read the value at the correct position
+        //use the getInt/getLong/getDouble method of ByteBuffer to read the value at the correct position
         this.dF = b.getInt(); //read first int
         this.cf = b.getLong(4); //read second value, a long
         this.docidsLen = b.getInt(12); //read third value, an int
@@ -43,7 +41,7 @@ public class LexiconStats implements Serializable {
         this.offsetTf = b.getLong(28); //read sixth value, a long
         this.idf = b.getDouble(36); //read seventh value, a double
         this.termUpperBound = b.getDouble(44);
-        this.termUpperBoundTf = b.getDouble(52);
+        this.termUpperBoundTfIdf = b.getDouble(52);
         this.offsetSkip = b.getLong(60);
         this.skipLen = b.getInt(68);
     }
@@ -137,9 +135,9 @@ public class LexiconStats implements Serializable {
         this.termUpperBound = termUpperBound;
     }
 
-    public double getTermUpperBoundTf() { return termUpperBoundTf;}
+    public double getTermUpperBoundTfIdf() { return termUpperBoundTfIdf;}
 
-    public void setTermUpperBoundTf(double termUpperBoundTf) { this.termUpperBoundTf = termUpperBoundTf; }
+    public void setTermUpperBoundTfIdf(double termUpperBoundTfIdf) { this.termUpperBoundTfIdf = termUpperBoundTfIdf; }
 
     public long getOffsetSkip() {
         return offsetSkip;

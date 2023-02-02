@@ -126,19 +126,7 @@ public class InvertedIndex {
             ByteBuffer tfs = tfChannel.map(FileChannel.MapMode.READ_WRITE, offsetTfs, 4L * postingList.size());
             //iterate over the posting of the term
             for(Posting p: postingList){ //take the posting list
-                //write posting list into compressed file : for each posting compress and write on appropriate file
-                //compress the docid with variable byte
-                /*byte[] compressedDocs = compressor.variableByteEncodeNumber(p.getDocid());
-                ByteBuffer bufferValue = ByteBuffer.allocate(compressedDocs.length);
-                bufferValue.put(compressedDocs);
-                bufferValue.flip();
-                docChannel.write(bufferValue);*/
-                //compress the TermFreq with unary
-                /*byte[] compressedTF = compressor.unaryEncode(p.getTf()); //compress the term frequency with unary
-                ByteBuffer bufferFreq = ByteBuffer.allocate(compressedTF.length);
-                bufferFreq.put(compressedTF);
-                bufferFreq.flip();
-                tfChannel.write(bufferFreq);*/
+                //write the postings in the buffers and update the lengths
                 docs.putInt(p.getDocid());
                 tfs.putInt(p.getTf());
                 docLen+= 4;

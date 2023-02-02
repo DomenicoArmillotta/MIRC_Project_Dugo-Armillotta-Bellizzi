@@ -1,7 +1,6 @@
 package preprocessing;
 //we use the standard library 'snowball' for porter stemming of eng, to use it we imported the dependency
 import smile.nlp.stemmer.PorterStemmer;
-import weka.core.stemmers.SnowballStemmer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,7 +31,7 @@ public class Stemmer {
      * @return word output
      * @throws IOException
      */
-    public String stemming_word (String word) throws IOException {
+    public String stemWord(String word) throws IOException {
         PorterStemmer stemmer = new PorterStemmer();
         word = stemmer.stripPluralParticiple(word);
         word = stemmer.stem(word);

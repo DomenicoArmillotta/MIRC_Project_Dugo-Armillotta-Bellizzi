@@ -7,7 +7,6 @@ import java.io.Serializable;
  */
 public class Posting implements Comparable<Posting>, Serializable {
     private int docid;
-    //term frequency
     private int tf;
 
     public Posting(int docid, int tf){

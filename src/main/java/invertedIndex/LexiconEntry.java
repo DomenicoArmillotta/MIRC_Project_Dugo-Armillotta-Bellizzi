@@ -3,8 +3,8 @@ package invertedIndex;
 import java.nio.ByteBuffer;
 
 public class LexiconEntry {
-    private String term;
-    private LexiconStats lexiconStats;
+    private String term; //term of the lexicon
+    private LexiconStats lexiconStats; //pointers for that term
 
     public LexiconEntry(String term, LexiconStats lexiconStats){
         this.term = term;
