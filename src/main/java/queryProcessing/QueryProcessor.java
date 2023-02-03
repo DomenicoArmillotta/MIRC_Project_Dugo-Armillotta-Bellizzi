@@ -24,32 +24,45 @@ public class QueryProcessor {
         Daat d = new Daat();
         System.out.println("PROGRAM STARTED");
         long start = System.currentTimeMillis();
-        // to not read all the documents in memory we use a LineIterator to improve memory efficiency
+        /*String query = "___________ are formed at divergent and converging boundaries.a.plateausc.land fillsb.volcanoesd.mountain ranges";
+        query = "what is stomach bile";
+        int k = 10;
+        System.out.println(d.disjunctiveDaat(query, k, true));
+        long end = System.currentTimeMillis() - start;
+        double time = (double)end/1000.0;
+        System.out.println("Result obtained in: " + time + " seconds");*/
         LineIterator it = FileUtils.lineIterator(queryFile, "UTF-8");
         try {
             int cont = 0;
-            while (it.hasNext() && cont<30) {
+            while (it.hasNext()) {
                 String line = it.nextLine();
                 //System.out.println(line);
                 String[] inputs = line.split("\t");
                 String id = inputs[0];
                 String query = inputs[1];
+                //long start = System.currentTimeMillis();
                 ScoreEntry entry = d.disjunctiveDaatEval(id, query, 1, true);
                 int docno = entry.getDocID()-1;
                 buffer.write(id+"\tQ0\t"+docno+"\t1\t"+entry.getScore()+"\tSTANDARD");
                 buffer.newLine();
                 cont++;
+                if(cont%1000 == 0){
+                    System.out.println(cont);
+                }
+                //long end = System.currentTimeMillis() - start;
+                //double time = (double)end/1000.0;
+                //System.out.println("Result for query " + query + " obtained in: " + time + " seconds");
             }
         } finally {
             buffer.close();
             LineIterator.closeQuietly(it);
         }
-        /*int k = 10;
-        String query = "what is stomach bile";
-        System.out.println(d.disjunctiveDaat("0", query, k, true));*/
         long end = System.currentTimeMillis() - start;
         double time = (double)end/1000.0;
         System.out.println("Result obtained in: " + time + " seconds");
+        /*int k = 10;
+        String query = "what is stomach bile";
+        System.out.println(d.disjunctiveDaat("0", query, k, true));*/
         /*while(true) {
             //DA RIFARE PER BENE
             System.out.print("ENTER A QUERY OR 'END' TO END THE PROGRAM");

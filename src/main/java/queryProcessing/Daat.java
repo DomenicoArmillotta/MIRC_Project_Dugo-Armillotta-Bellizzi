@@ -138,7 +138,6 @@ public class Daat {
         int queryLen = terms.size();
         lexicon = new HashMap<>();
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
-        double[] termUB = new double[queryLen];
         for(String term: terms){
             LexiconStats l = Utils.getPointer(lexChannel, term);
             if(l.getdF()!=0){
@@ -149,7 +148,7 @@ public class Daat {
             }
         }
         if(queryLen==0) return null;
-        System.out.println(lexicon.keySet());
+        double[] termUB = new double[queryLen];
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
         numBlocks = new int[queryLen];
@@ -177,8 +176,13 @@ public class Daat {
                 ub = lexicon.get(term).getTermUpperBoundTfIdf();
             }
             int i = Arrays.binarySearch(termUB, ub);
-            if(queryTerms[i]!=null)
-                queryTerms[i+1] = term;
+            //check if the term upper bound is the same for a previous term, in that case increase the index
+            if(queryTerms[i]!=null) {
+                while(queryTerms[i] != null){
+                    i++;
+                }
+                queryTerms[i] = term;
+            }
             else queryTerms[i] = term;
         }
         for(int i = 0; i < queryLen; i++){
@@ -321,8 +325,13 @@ public class Daat {
                 ub = lexicon.get(term).getTermUpperBoundTfIdf();
             }
             int i = Arrays.binarySearch(termUB, ub);
-            if(queryTerms[i]!=null)
-                queryTerms[i+1] = term;
+            //check if the term upper bound is the same for a previous term, in that case increase the index
+            if(queryTerms[i]!=null) {
+                while(queryTerms[i] != null){
+                    i++;
+                }
+                queryTerms[i] = term;
+            }
             else queryTerms[i] = term;
         }
         for(int i = 0; i < queryLen; i++){
