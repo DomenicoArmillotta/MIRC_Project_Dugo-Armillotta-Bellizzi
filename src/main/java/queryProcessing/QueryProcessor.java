@@ -24,19 +24,20 @@ public class QueryProcessor {
         Daat d = new Daat();
         System.out.println("PROGRAM STARTED");
         long start = System.currentTimeMillis();
-        /*String query = "___________ are formed at divergent and converging boundaries.a.plateausc.land fillsb.volcanoesd.mountain ranges";
+        String query = "___________ are formed at divergent and converging boundaries.a.plateausc.land fillsb.volcanoesd.mountain ranges";
+        query = "why did neruda go to machu picchu";
         query = "what is stomach bile";
         int k = 10;
         System.out.println(d.disjunctiveDaat(query, k, true));
         long end = System.currentTimeMillis() - start;
         double time = (double)end/1000.0;
-        System.out.println("Result obtained in: " + time + " seconds");*/
-        LineIterator it = FileUtils.lineIterator(queryFile, "UTF-8");
+        System.out.println("Result obtained in: " + time + " seconds");
+        /*LineIterator it = FileUtils.lineIterator(queryFile, "UTF-8");
         try {
             int cont = 0;
             while (it.hasNext()) {
                 String line = it.nextLine();
-                //System.out.println(line);
+                if(cont>4000)System.out.println(line);
                 String[] inputs = line.split("\t");
                 String id = inputs[0];
                 String query = inputs[1];

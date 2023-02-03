@@ -148,56 +148,37 @@ public class Daat {
             }
         }
         if(queryLen==0) return null;
-        double[] termUB = new double[queryLen];
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
         numBlocks = new int[queryLen];
         endDocids = new int[queryLen];
         docIdsIt = new Iterator[queryLen];
         tfsIt = new Iterator[queryLen];
-        int index = 0;
+        List<TermUB> termUBs = new ArrayList<>();
         for(String term: lexicon.keySet()){
             if(mode) {
-                termUB[index] = lexicon.get(term).getTermUpperBound();
+                termUBs.add(new TermUB(term, lexicon.get(term).getTermUpperBound()));
             }
             else{
-                termUB[index] = lexicon.get(term).getTermUpperBoundTfIdf();
+                termUBs.add(new TermUB(term, lexicon.get(term).getTermUpperBoundTfIdf()));
             }
-            index++;
         }
-        Arrays.sort(termUB);
+        Collections.sort(termUBs);
         String [] queryTerms = new String[queryLen];
-        for(String term: lexicon.keySet()){
-            double ub = 0.0;
-            if(mode) {
-                ub = lexicon.get(term).getTermUpperBound();
-            }
-            else{
-                ub = lexicon.get(term).getTermUpperBoundTfIdf();
-            }
-            int i = Arrays.binarySearch(termUB, ub);
-            //check if the term upper bound is the same for a previous term, in that case increase the index
-            if(queryTerms[i]!=null) {
-                while(queryTerms[i] != null){
-                    i++;
-                }
-                queryTerms[i] = term;
-            }
-            else queryTerms[i] = term;
+        int pivot = 0;
+        double[] documentUB = new double[queryLen];
+        double prec = 0.0;
+        int index = 0;
+        for (TermUB tub: termUBs){
+            documentUB[index] = tub.getMaxScore() + prec;
+            prec = documentUB[index];
+            queryTerms[index] = tub.getTerm();
+            index++;
         }
         for(int i = 0; i < queryLen; i++){
             lexicon.get(queryTerms[i]).setIndex(i);
             lexicon.get(queryTerms[i]).setCurdoc(0);
             openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
-        }
-        int pivot = 0;
-        double[] documentUB = new double[queryLen];
-        double prec = 0.0;
-        index = 0;
-        for(double maxScore: termUB){
-            documentUB[index] = maxScore + prec;
-            prec = documentUB[index];
-            index++;
         }
         double threshold = 0.0;
         int next;
@@ -276,7 +257,6 @@ public class Daat {
         List<String> terms = new ArrayList<>(new HashSet<>(proQuery));
         int queryLen = terms.size();
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
-        List<String> foundTerms = new ArrayList<>();
         lexicon = new HashMap<>();
         for(String term: terms){
             LexiconStats l = Utils.getPointer(lexChannel, term);
@@ -303,50 +283,31 @@ public class Daat {
         endDocids = new int[queryLen];
         docIdsIt = new Iterator[queryLen];
         tfsIt = new Iterator[queryLen];
-        double[] termUB = new double[queryLen];
-        int index = 0;
+        List<TermUB> termUBs = new ArrayList<>();
         for(String term: lexicon.keySet()){
             if(mode) {
-                termUB[index] = lexicon.get(term).getTermUpperBound();
+                termUBs.add(new TermUB(term, lexicon.get(term).getTermUpperBound()));
             }
             else{
-                termUB[index] = lexicon.get(term).getTermUpperBoundTfIdf();
+                termUBs.add(new TermUB(term, lexicon.get(term).getTermUpperBoundTfIdf()));
             }
-            index++;
         }
-        Arrays.sort(termUB);
+        Collections.sort(termUBs);
         String [] queryTerms = new String[queryLen];
-        for(String term: lexicon.keySet()){
-            double ub = 0.0;
-            if(mode) {
-                ub = lexicon.get(term).getTermUpperBound();
-            }
-            else{
-                ub = lexicon.get(term).getTermUpperBoundTfIdf();
-            }
-            int i = Arrays.binarySearch(termUB, ub);
-            //check if the term upper bound is the same for a previous term, in that case increase the index
-            if(queryTerms[i]!=null) {
-                while(queryTerms[i] != null){
-                    i++;
-                }
-                queryTerms[i] = term;
-            }
-            else queryTerms[i] = term;
+        int pivot = 0;
+        double[] documentUB = new double[queryLen];
+        double prec = 0.0;
+        int index = 0;
+        for (TermUB tub: termUBs){
+            documentUB[index] = tub.getMaxScore() + prec;
+            prec = documentUB[index];
+            queryTerms[index] = tub.getTerm();
+            index++;
         }
         for(int i = 0; i < queryLen; i++){
             lexicon.get(queryTerms[i]).setIndex(i);
             lexicon.get(queryTerms[i]).setCurdoc(0);
             openList(docChannel, tfChannel, skipChannel, queryTerms[i]);
-        }
-        int pivot = 0;
-        double[] documentUB = new double[queryLen];
-        double prec = 0.0;
-        index = 0;
-        for(double maxScore: termUB){
-            documentUB[index] = maxScore + prec;
-            prec = documentUB[index];
-            index++;
         }
         double threshold = 0.0;
         int next;
