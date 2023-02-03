@@ -131,41 +131,44 @@ public class Daat {
     }
 
     public List<ScoreEntry> disjunctiveDaat(String query, int k, boolean mode) throws IOException {
+        if(k==0) return null;
         List<String> proQuery = preprocessing.preprocessDocument(query);
         //duplicate filtering
         List<String> terms = new ArrayList<>(new HashSet<>(proQuery));
         int queryLen = terms.size();
         lexicon = new HashMap<>();
+        TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
+        double[] termUB = new double[queryLen];
+        for(String term: terms){
+            LexiconStats l = Utils.getPointer(lexChannel, term);
+            if(l.getdF()!=0){
+                lexicon.put(term, l);
+            }
+            else{
+                queryLen--;
+            }
+        }
+        if(queryLen==0) return null;
+        System.out.println(lexicon.keySet());
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
         numBlocks = new int[queryLen];
         endDocids = new int[queryLen];
         docIdsIt = new Iterator[queryLen];
         tfsIt = new Iterator[queryLen];
-        TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
-        double[] termUB = new double[queryLen];
-        for(String term: terms){
-            LexiconStats l = Utils.getPointer(lexChannel, term);
-            /*if(cacheTerms.get(term)!=null){
-                l = cacheTerms.get(term);
-            }
-            else{
-                l = Utils.getPointer(lexChannel, term);
-                cacheTerms.put(term,l);
-            }*/
-            lexicon.put(term, l);
-        }
-        for(int i = 0; i < queryLen; i++){
+        int index = 0;
+        for(String term: lexicon.keySet()){
             if(mode) {
-                termUB[i] = lexicon.get(terms.get(i)).getTermUpperBound();
+                termUB[index] = lexicon.get(term).getTermUpperBound();
             }
             else{
-                termUB[i] = lexicon.get(terms.get(i)).getTermUpperBoundTfIdf();
+                termUB[index] = lexicon.get(term).getTermUpperBoundTfIdf();
             }
+            index++;
         }
         Arrays.sort(termUB);
         String [] queryTerms = new String[queryLen];
-        for(String term: terms){
+        for(String term: lexicon.keySet()){
             double ub = 0.0;
             if(mode) {
                 ub = lexicon.get(term).getTermUpperBound();
@@ -174,7 +177,9 @@ public class Daat {
                 ub = lexicon.get(term).getTermUpperBoundTfIdf();
             }
             int i = Arrays.binarySearch(termUB, ub);
-            queryTerms[i] = term;
+            if(queryTerms[i]!=null)
+                queryTerms[i+1] = term;
+            else queryTerms[i] = term;
         }
         for(int i = 0; i < queryLen; i++){
             lexicon.get(queryTerms[i]).setIndex(i);
@@ -184,7 +189,7 @@ public class Daat {
         int pivot = 0;
         double[] documentUB = new double[queryLen];
         double prec = 0.0;
-        int index = 0;
+        index = 0;
         for(double maxScore: termUB){
             documentUB[index] = maxScore + prec;
             prec = documentUB[index];
@@ -266,15 +271,9 @@ public class Daat {
         //duplicate filtering
         List<String> terms = new ArrayList<>(new HashSet<>(proQuery));
         int queryLen = terms.size();
-        lexicon = new HashMap<>();
-        decompressedDocIds = new ArrayList[queryLen];
-        decompressedTfs = new ArrayList[queryLen];
-        numBlocks = new int[queryLen];
-        endDocids = new int[queryLen];
-        docIdsIt = new Iterator[queryLen];
-        tfsIt = new Iterator[queryLen];
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
-        double[] termUB = new double[queryLen];
+        List<String> foundTerms = new ArrayList<>();
+        lexicon = new HashMap<>();
         for(String term: terms){
             LexiconStats l = Utils.getPointer(lexChannel, term);
             /*if(cacheTerms.get(term)!=null){
@@ -294,17 +293,26 @@ public class Daat {
         if(queryLen==0){
             return new ScoreEntry(maxDocID, 0);
         }
-        for(int i = 0; i < queryLen; i++){
+        decompressedDocIds = new ArrayList[queryLen];
+        decompressedTfs = new ArrayList[queryLen];
+        numBlocks = new int[queryLen];
+        endDocids = new int[queryLen];
+        docIdsIt = new Iterator[queryLen];
+        tfsIt = new Iterator[queryLen];
+        double[] termUB = new double[queryLen];
+        int index = 0;
+        for(String term: lexicon.keySet()){
             if(mode) {
-                termUB[i] = lexicon.get(terms.get(i)).getTermUpperBound();
+                termUB[index] = lexicon.get(term).getTermUpperBound();
             }
             else{
-                termUB[i] = lexicon.get(terms.get(i)).getTermUpperBoundTfIdf();
+                termUB[index] = lexicon.get(term).getTermUpperBoundTfIdf();
             }
+            index++;
         }
         Arrays.sort(termUB);
         String [] queryTerms = new String[queryLen];
-        for(String term: terms){
+        for(String term: lexicon.keySet()){
             double ub = 0.0;
             if(mode) {
                 ub = lexicon.get(term).getTermUpperBound();
@@ -313,7 +321,9 @@ public class Daat {
                 ub = lexicon.get(term).getTermUpperBoundTfIdf();
             }
             int i = Arrays.binarySearch(termUB, ub);
-            queryTerms[i] = term;
+            if(queryTerms[i]!=null)
+                queryTerms[i+1] = term;
+            else queryTerms[i] = term;
         }
         for(int i = 0; i < queryLen; i++){
             lexicon.get(queryTerms[i]).setIndex(i);
@@ -323,7 +333,7 @@ public class Daat {
         int pivot = 0;
         double[] documentUB = new double[queryLen];
         double prec = 0.0;
-        int index = 0;
+        index = 0;
         for(double maxScore: termUB){
             documentUB[index] = maxScore + prec;
             prec = documentUB[index];
