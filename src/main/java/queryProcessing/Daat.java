@@ -450,9 +450,8 @@ public class Daat {
         docIds.position(0);
         tfs.position(0);
         //uncompress the blocks from the disk
-        int n = lexicon.get(term).getdF();
-        decompressedDocIds[lexicon.get(term).getIndex()] = compressor.variableByteDecodeBlock(docIds.array(),n);
-        decompressedTfs[lexicon.get(term).getIndex()] = compressor.unaryDecodeBlock(tfs.array(),n);
+        decompressedDocIds[lexicon.get(term).getIndex()] = compressor.variableByteDecode(docIds.array());
+        decompressedTfs[lexicon.get(term).getIndex()] = compressor.unaryDecode(tfs.array());
         //update the skip blocks read so far
         numBlocks[lexicon.get(term).getIndex()] += ConfigurationParameters.SKIP_BLOCK_SIZE;
         //instantiate the iterators
