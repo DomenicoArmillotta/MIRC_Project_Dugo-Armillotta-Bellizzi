@@ -124,7 +124,7 @@ public class SPIMI {
         Text key = new Text(docno);
         byte[] docIndexBytes;
         if (key.getLength() >= 9) {
-            Text truncKey = new Text(corpus.substring(0, 8));
+            Text truncKey = new Text(docno.substring(0, 8));
             docIndexBytes = truncKey.getBytes();
         } else { //we allocate 10 bytes for the Text object, which is a string of 20 chars
             docIndexBytes = ByteBuffer.allocate(10).put(key.getBytes()).array();
