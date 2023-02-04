@@ -71,15 +71,14 @@ public class Daat {
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         for(String term: terms){
             LexiconStats l = Utils.getPointer(lexChannel, term);
-            /*if(cacheTerms.get(term)!=null){
-                l = cacheTerms.get(term);
+            if(l.getdF()!=0){
+                lexicon.put(term, l);
             }
             else{
-                l = Utils.getPointer(lexChannel, term);
-                cacheTerms.put(term,l);
-            }*/
-            lexicon.put(term, l);
+                queryLen--;
+            }
         }
+        if(queryLen==0) return null;
         String[] queryTerms = new String[queryLen];
         for(int i = 0; i < queryLen; i++){
             String term = terms.get(i);
@@ -96,15 +95,15 @@ public class Daat {
                 break;
             }
             int d = 0;
-            for (int i=1; (i<queryLen) && ((d=nextGEQ(terms.get(i), did)) == did); i++);
+            for (int i=1; (i<queryLen) && ((d=nextGEQ(queryTerms[i], did)) == did); i++);
             if (d > did){
                 did = d; // not in intersection
             }
             else {
                 //docID is in intersection; now get all frequencies
-                for (int i=0; i<terms.size(); i++){
-                    int tf = lexicon.get(terms.get(i)).getCurTf();
-                    double idf = lexicon.get(terms.get(i)).getIdf();
+                for (int i=0; i<queryTerms.length; i++){
+                    int tf = lexicon.get(queryTerms[i]).getCurTf();
+                    double idf = lexicon.get(queryTerms[i]).getIdf();
                     if(mode) {
                         //compute BM25 score from frequencies and document length
                         int docLen = docIndex.get(did);
@@ -123,7 +122,8 @@ public class Daat {
             }
         }
         //Put the results in cache
-        cache.put(query, scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0));
+        if(scores.size()>0)
+            cache.put(query, scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0));
         // Return the result list
         return scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
     }
