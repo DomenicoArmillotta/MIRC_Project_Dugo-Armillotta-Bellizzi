@@ -6,6 +6,9 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 
+/**
+ * Information with which each term in the lexicon is associated
+ */
 public class LexiconStats implements Serializable {
 
     private int dF; //document frequency

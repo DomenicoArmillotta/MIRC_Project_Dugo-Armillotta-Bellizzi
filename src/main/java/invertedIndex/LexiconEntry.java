@@ -1,7 +1,9 @@
 package invertedIndex;
 
-import java.nio.ByteBuffer;
-
+/**
+ * Single lexicon entry, there is an entry for each term in our collection.
+ * Each entry consists of the Term-LexiconStats tuple
+ */
 public class LexiconEntry {
     private String term; //term of the lexicon
     private LexiconStats lexiconStats; //pointers for that term

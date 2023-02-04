@@ -11,6 +11,10 @@ import java.util.stream.Collectors;
 
 import static utility.Utils.addByteArray;
 
+/**
+ * Class used to aggregate and manipulate the data structures we use to organise our data in the Spimi algorithm
+ * Inverted Index and Lexicon  for each block in the spimi algorithm
+ */
 public class InvertedIndex {
     private String outPath;
     //map for the lexicon: the entry are the term + the statistics for each term
