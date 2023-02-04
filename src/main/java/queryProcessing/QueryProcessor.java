@@ -12,32 +12,64 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 public class QueryProcessor {
 
     public static void main(String[] args) throws IOException {
         System.out.println("LOADING DATA STRUCTURES");
-        File queryFile = new File("docs/queries.eval.tsv");
-        String resultsPath = "docs/results_file";
-        FileWriter file = new FileWriter(resultsPath);
-        BufferedWriter buffer = new BufferedWriter(file);
         Daat d = new Daat();
         System.out.println("PROGRAM STARTED");
+        while(true) {
+            Scanner sc = new Scanner(System.in); //System.in is a standard input stream
+            System.out.println("mode: 0 for conjunctive, 1 for disjunctive\n");
+            String line = sc.nextLine();
+            int mode = Integer.parseInt(line);
+            if(mode>1)continue;
+            System.out.println("scoring function: 0 for tfidf, 1 for bm25\n");
+            line = sc.nextLine();
+            int score = Integer.parseInt(line);
+            if(score>1)continue;
+            System.out.println("Insert rank (greater than 0)\n");
+            line = sc.nextLine();
+            int k = Integer.parseInt(line);
+            if(k<1) continue;
+            System.out.println("Enter a query or END to end the program\n");
+            line = sc.nextLine();
+            if(line.equals("END")) break;
+            String query = line;
+            System.out.println(query + " " + mode + " " + score + " " + k);
+            long start = System.currentTimeMillis();
+            if (mode == 1) {
+                System.out.println(d.disjunctiveDaat(query, k, score));
+            } else {
+                System.out.println(d.conjunctiveDaat(query, k, score));
+            }
+            long end = System.currentTimeMillis() - start;
+            double time = end/1000.0;
+            System.out.println("Result obtained in: " + time + " seconds");
+        }
+        /*
         long start = System.currentTimeMillis();
         String query = "___________ are formed at divergent and converging boundaries.a.plateausc.land fillsb.volcanoesd.mountain ranges";
         query = "why did neruda go to machu picchu";
         query = "what is stomach bile";
+        //query = "capital of the USA";
         int k = 10;
         System.out.println(d.disjunctiveDaat(query, k, true));
         long end = System.currentTimeMillis() - start;
         double time = (double)end/1000.0;
-        System.out.println("Result obtained in: " + time + " seconds");
+        System.out.println("Result obtained in: " + time + " seconds");*/
+        //File queryFile = new File("docs/queries.eval.tsv");
+        //String resultsPath = "docs/results_file";
+        //FileWriter file = new FileWriter(resultsPath);
+        //BufferedWriter buffer = new BufferedWriter(file);
         /*LineIterator it = FileUtils.lineIterator(queryFile, "UTF-8");
         try {
             int cont = 0;
             while (it.hasNext()) {
                 String line = it.nextLine();
-                if(cont>4000)System.out.println(line);
+                //if(cont>4000)System.out.println(line);
                 String[] inputs = line.split("\t");
                 String id = inputs[0];
                 String query = inputs[1];
@@ -53,6 +85,7 @@ public class QueryProcessor {
                 //long end = System.currentTimeMillis() - start;
                 //double time = (double)end/1000.0;
                 //System.out.println("Result for query " + query + " obtained in: " + time + " seconds");
+                //Result obtained in: 3370.874 seconds
             }
         } finally {
             buffer.close();
@@ -60,7 +93,7 @@ public class QueryProcessor {
         }
         long end = System.currentTimeMillis() - start;
         double time = (double)end/1000.0;
-        System.out.println("Result obtained in: " + time + " seconds");
+        System.out.println("Result obtained in: " + time + " seconds");*/
         /*int k = 10;
         String query = "what is stomach bile";
         System.out.println(d.disjunctiveDaat("0", query, k, true));*/

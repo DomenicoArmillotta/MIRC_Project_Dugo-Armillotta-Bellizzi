@@ -56,7 +56,7 @@ public class Daat {
         docIndex = d.getDocIndex();
     }
 
-    public List<ScoreEntry> conjunctiveDaat(String query, int k, boolean mode) throws IOException {
+    public List<ScoreEntry> conjunctiveDaat(String query, int k, int mode) throws IOException {
         List<String> proQuery = preprocessing.preprocessDocument(query);
         //duplicate filtering
         List<String> terms = new ArrayList<>(new HashSet<>(proQuery));
@@ -104,7 +104,7 @@ public class Daat {
                 for (int i=0; i<queryTerms.length; i++){
                     int tf = lexicon.get(queryTerms[i]).getCurTf();
                     double idf = lexicon.get(queryTerms[i]).getIdf();
-                    if(mode) {
+                    if(mode == 1) {
                         //compute BM25 score from frequencies and document length
                         int docLen = docIndex.get(did);
                         score += Scorer.bm25Weight(tf, docLen, idf);
@@ -128,7 +128,7 @@ public class Daat {
         return scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
     }
 
-    public List<ScoreEntry> disjunctiveDaat(String query, int k, boolean mode) throws IOException {
+    public List<ScoreEntry> disjunctiveDaat(String query, int k, int mode) throws IOException {
         if(k==0) return null;
         List<String> proQuery = preprocessing.preprocessDocument(query);
         //duplicate filtering
@@ -146,6 +146,7 @@ public class Daat {
             }
         }
         if(queryLen==0) return null;
+        System.out.println(lexicon.keySet());
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
         numBlocks = new int[queryLen];
@@ -154,7 +155,7 @@ public class Daat {
         tfsIt = new Iterator[queryLen];
         List<TermUB> termUBs = new ArrayList<>();
         for(String term: lexicon.keySet()){
-            if(mode) {
+            if(mode == 1) {
                 termUBs.add(new TermUB(term, lexicon.get(term).getTermUpperBound()));
             }
             else{
@@ -190,7 +191,7 @@ public class Daat {
                 if(current == did){
                     int tf = lexicon.get(queryTerms[i]).getCurTf();
                     double idf = lexicon.get(queryTerms[i]).getIdf();
-                    if(mode) {
+                    if(mode == 1) {
                         //compute BM25 score from frequencies and document length
                         int docLen = docIndex.get(did);
                         score += Scorer.bm25Weight(tf, docLen, idf);
@@ -215,7 +216,7 @@ public class Daat {
                 if(current == did) {
                     int tf = lexicon.get(queryTerms[i]).getCurTf();
                     double idf = lexicon.get(queryTerms[i]).getIdf();
-                    if(mode) {
+                    if(mode == 1) {
                         //compute BM25 score from frequencies and document length
                         int docLen = docIndex.get(did);
                         score += Scorer.bm25Weight(tf, docLen, idf);
