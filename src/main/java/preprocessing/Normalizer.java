@@ -3,16 +3,12 @@ package preprocessing;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.StringTokenizer;
 
+/**
+ * used in the normalization phase in the pre-processing step executed for each document in the collection
+ */
 public class Normalizer {
     /**
      * first step of preprocessing, regexes are used for:
@@ -49,13 +45,4 @@ public class Normalizer {
         return formattedLine;
     }
 
-    //old:
-    //replace consecutive character
-    //consecutive characters inside words (max two)
-    //formattedLine = formattedLine.replaceAll("(\\p{L})\\1+", "$1$1");
-    //formattedLine = formattedLine.replaceAll("(\\w)\\1+", "$1$1");
-    //consecutive characters between spaces (collapsed to one)
-    //formattedLine = formattedLine.replaceAll("\\s+(\\w)\\1+\\s+", "$1");
-    //formattedLine = formattedLine.replaceAll("\\s+(\\w)\\1+", "$1");
-    //formattedLine = formattedLine.replaceAll("^(\\w)\\1+\\s+", "$1");
 }

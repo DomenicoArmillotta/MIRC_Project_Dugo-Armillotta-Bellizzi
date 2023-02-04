@@ -1,11 +1,13 @@
 package preprocessing;
-//we use the standard library 'snowball' for porter stemming of eng, to use it we imported the dependency
 import smile.nlp.stemmer.PorterStemmer;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Used for the stemming phase of each word in each document
+ * The standard library "snowball" that implement the Porter stemmer for the english dictionary was used
+ */
 public class Stemmer {
     /**
      * takes an already tokenized word list as input and returns the stemmed word list

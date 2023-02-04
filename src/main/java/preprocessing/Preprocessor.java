@@ -2,7 +2,6 @@ package preprocessing;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,10 +9,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.StringTokenizer;
 
+/**
+ * Used for the pre-processing phase of each document in the collection
+ */
 public class Preprocessor {
 
     private HashSet<String> stopwords;
 
+    /**
+     * Stop words are loaded into a hashmap in order to make access and removal of stop words from documents faster
+     * @throws IOException
+     */
     public Preprocessor() throws IOException {
         stopwords = new HashSet<>();
         //stop words removal file
@@ -30,6 +36,7 @@ public class Preprocessor {
     }
 
     /**
+     * Preprocessing with Stop-words removal
      * In this optimised preprocessing pipelining, an attempt was made to reduce the loop for processing.
      * normalisation and tokenization was done with regex, then in one cycle are made stop_words removal and stemming.
      * @param text string in input , this is a document
@@ -39,19 +46,6 @@ public class Preprocessor {
     public List<String> preprocessDocument(String text) throws IOException {
         Normalizer normalizer = new Normalizer();
         Stemmer stemmer = new Stemmer();
-        //stop words removal file
-        /*File file_stopwords = new File("docs/stopwords_eng.txt");
-        List<String> list_stopwords = new ArrayList<>();
-        // to not read all the documents in memory we use a LineIterator to improve memory efficiency
-        LineIterator it = FileUtils.lineIterator(file_stopwords, "UTF-8");
-        try {
-            while (it.hasNext()) {
-                String line = it.nextLine();
-                list_stopwords.add(line);
-            }
-        } finally {
-            LineIterator.closeQuietly(it);
-        }*/
         //START PIPELINE
         // 1. normalization
         String outputNormalizer = normalizer.normalize(text);
@@ -71,6 +65,14 @@ public class Preprocessor {
         }
         return terms;
     }
+
+    /**
+     * Preprocessing without Stop-words removal
+     * Same pipeline of standard preprocessing but without step for stopwords removal.
+     * @param text text string in input , this is a document
+     * @return terms list of word of document pre-processed
+     * @throws IOException
+     */
     public List<String> preprocessDocumentUnfiltered(String text) throws IOException {
         Normalizer normalizer = new Normalizer();
         //START PIPELINE
@@ -87,6 +89,5 @@ public class Preprocessor {
         }
         return terms;
     }
-
 
 }
