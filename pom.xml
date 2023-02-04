@@ -43,7 +43,12 @@
         </exclusion>
       </exclusions>
     </dependency>
-
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
+      <version>1.6.1</version>
+    </dependency>
+    <!-- Thanks for using https://jar-download.com -->
 
     <dependency>
       <groupId>junit</groupId>

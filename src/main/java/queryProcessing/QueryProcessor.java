@@ -60,11 +60,12 @@ public class QueryProcessor {
         long end = System.currentTimeMillis() - start;
         double time = (double)end/1000.0;
         System.out.println("Result obtained in: " + time + " seconds");*/
-        //File queryFile = new File("docs/queries.eval.tsv");
-        //String resultsPath = "docs/results_file";
-        //FileWriter file = new FileWriter(resultsPath);
-        //BufferedWriter buffer = new BufferedWriter(file);
-        /*LineIterator it = FileUtils.lineIterator(queryFile, "UTF-8");
+        /*long start = System.currentTimeMillis();
+        File queryFile = new File("docs/queries.eval.tsv");
+        String resultsPath = "docs/results_file.tsv";
+        FileWriter file = new FileWriter(resultsPath);
+        BufferedWriter buffer = new BufferedWriter(file);
+        LineIterator it = FileUtils.lineIterator(queryFile, "UTF-8");
         try {
             int cont = 0;
             while (it.hasNext()) {

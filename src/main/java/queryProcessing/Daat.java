@@ -4,6 +4,7 @@ import compression.Compressor;
 import fileManager.ConfigurationParameters;
 import indexing.DocumentIndex;
 import invertedIndex.LexiconStats;
+import org.junit.platform.commons.util.LruCache;
 import preprocessing.Preprocessor;
 import utility.Cache;
 import utility.CacheTerms;
@@ -23,8 +24,8 @@ public class Daat {
     private int maxDocID; //keep the upper bound for the docIds
     private HashMap<String, LexiconStats> lexicon; //map the terms of the query to the pointers of the lists
     private HashMap<Integer,Integer> docIndex; //to map in memory the document index
-    private Cache<String,ScoreEntry> cache = new Cache<>(5000); //to cache the query results
-    private CacheTerms<String,LexiconStats> cacheTerms = new CacheTerms<>(5000); //to cache the terms and pointers
+    private LruCache<String,ScoreEntry> cache = new LruCache<>(5000); //to cache the query results
+    private LruCache<String,LexiconStats> cacheTerms = new LruCache<>(5000); //to cache the terms and pointers
     private int[] numBlocks; // counts for each term how much of the blocks have been processed
     private int[] endDocids; //store the current end docIds of the current blocks for each term
     private Iterator<Integer>[] docIdsIt; //iterators over the docIds block list
@@ -372,7 +373,6 @@ public class Daat {
             did = next;
         }
         //Put the results in cache
-        //System.out.println(scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()));
         ScoreEntry result = scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0);
         cache.put(id, result);
         return result;
