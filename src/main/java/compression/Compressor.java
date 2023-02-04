@@ -8,6 +8,11 @@ import java.util.List;
 
 import static utility.Utils.addByteArray;
 
+/**
+ * Used for data compression.
+ * Unary is used for tf compression
+ * Variable byte is used for doc_id compression
+ */
 public class Compressor {
 
 
@@ -58,33 +63,6 @@ public class Compressor {
     }
 
 
-    public List<Integer> unaryDecodeBlock(byte[] b, int num){
-        List<Integer> numbers = new ArrayList<>();
-        int n = 0;
-        int cont = 0;
-        for(int i = 0; i < b.length; i++) {
-            if(cont == num) break;
-            if(b[i] == 0x00){
-                numbers.add(1);
-                cont++;
-                n=0;
-            }
-            else if(b[i]!= 0xFF && ((b[i] & 0x01) == 0)){
-                BitSet bs = BitSet.valueOf(new byte[]{b[i]});
-                numbers.add(bs.length()+n);
-                cont++;
-                n=0;
-            }
-            else if(b[i] == 0xFF){
-                n+= 8;
-            }
-            else{
-                BitSet bs = BitSet.valueOf(new byte[]{b[i]});
-                n+=bs.length();
-            }
-        }
-        return numbers;
-    }
 
 
     /**
@@ -130,23 +108,4 @@ public class Compressor {
         return numbers;
     }
 
-    public List<Integer> variableByteDecodeBlock(byte[] bs, int num){
-        List<Integer> numbers = new ArrayList<>();
-        int n = 0;
-        int cont = 0;
-        for(int i = 0; i < bs.length; i++){
-            if(cont == num) break;
-            if((bs[i] & 0x80) < 128){ //we check if the leftmost bit is not set
-                n = 128*n + bs[i];
-            }
-            else{
-                n = 128*n + (256+bs[i]) - 128; //shift because the value is negative
-                numbers.add(n);
-                n = 0;
-                cont++;
-            }
-
-        }
-        return numbers;
-    }
 }
