@@ -6,8 +6,6 @@ import fileManager.FileOpener;
 import invertedIndex.InvertedIndex;
 import invertedIndex.LexiconEntry;
 import invertedIndex.LexiconStats;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.LineIterator;
 import org.apache.hadoop.io.Text;
 import preprocessing.Preprocessor;
 import queryProcessing.MaxScore;
@@ -21,6 +19,11 @@ import java.util.*;
 
 import static utility.Utils.addByteArray;
 
+/**
+ * implementation of the SPIMI algorithm to create all the structure to manage the data
+ * was used a merging step to merge intermediate result.
+ * We have different file with different compression type , unary for tf , variable byte for doc_id.
+ */
 public class SPIMI {
     private InvertedIndex invertedIndex;
     private int docid = 0;
@@ -29,6 +32,13 @@ public class SPIMI {
     private FileChannel docIndexChannel;
     private Preprocessor preprocessor;
 
+    /**
+     * divide the input file in different block
+     * for each block create the inverted index and write on file
+     * @param readPath input path file
+     * @param mode decides how to preprocess 1= with stop word removal 0 = without stop word removal
+     * @throws IOException
+     */
     public void spimiInvertBlock(String readPath, boolean mode) throws IOException {
         preprocessor = new Preprocessor();
         InputStream stream = FileOpener.extractFromZip(readPath);
@@ -44,14 +54,18 @@ public class SPIMI {
                 //instantiate a new Inverted Index and Lexicon per block
                 invertedIndex = new InvertedIndex(indexBlock);
                 while ((line = reader.readLine())!=null){
+                    //populate invertedIndex with posting list of document
                     spimiInvert(line,mode);
+                    //end of block when jvm is out of memory
                     if(Runtime.getRuntime().totalMemory()*0.80 >
+                            //it's the ram of jvm
                             Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()){
-                        //--> its the ram of jvm
+
                         break;
                     }
                 }
                 invertedIndex.sortTerms();
+                //write the inverted on file
                 invertedIndex.writePostings();
                 indexBlock++;
                 System.gc();
@@ -65,50 +79,72 @@ public class SPIMI {
         mergeBlocks(indexBlock);
     }
 
+    /**
+     * method to generate posting after pre-processing phases and write entry on docIndex file
+     * @param doc input document string format
+     * @param mode decides how to preprocess 1= with stop word removal 0 = without stop word removal
+     * @throws IOException
+     */
     public void spimiInvert(String doc, boolean mode) throws IOException {
         String[] parts = doc.split("\t");
         String docno = parts[0];
         String corpus = parts[1];
         List<String> tokenizedDoc;
+        //1 = with stop word removal phase
         if(mode){
+            //preprocess document using the pipeline
             tokenizedDoc = preprocessor.preprocessDocument(corpus);
         }
+        //0 = without stop word removal phase
         else{
             tokenizedDoc = preprocessor.preprocessDocumentUnfiltered(corpus);
         }
         docid++;
         int cont = 0;
-        //read the terms and generate postings
+        //iterate over the term in the doc , and populate the invertedIndex with posting
         for (String term : tokenizedDoc) {
             invertedIndex.addPosting(term, docid, 1);
             cont++;
         }
         totalLength+=cont;
         numDocs++;
+
         //write the document index entry
         Text key = new Text(docno);
         byte[] docIndexBytes;
         if (key.getLength() >= 9) {
+            //take the docno
             Text truncKey = new Text(docno.substring(0, 8));
             docIndexBytes = truncKey.getBytes();
         } else { //we allocate 10 bytes for the Text object, which is a string of 20 chars
             docIndexBytes = ByteBuffer.allocate(10).put(key.getBytes()).array();
         }
-        //take the docid
+        //take the doc_id
         byte[] docidBytes = ByteBuffer.allocate(4).putInt(docid).array();
-        //take the document frequency
+        //take the df
         byte[] dfBytes = ByteBuffer.allocate(4).putInt(cont).array();
-        //concatenate all the byte arrays in order
+        //concatenate all the byte arrays in order docno-doc_id-df
         docIndexBytes = addByteArray(docIndexBytes, docidBytes);
         docIndexBytes = addByteArray(docIndexBytes, dfBytes);
-        //write lexicon entry to disk
         ByteBuffer bufferDoc = ByteBuffer.allocate(docIndexBytes.length);
         bufferDoc.put(docIndexBytes);
         bufferDoc.flip();
+        //write in docIndex.txt file
         docIndexChannel.write(bufferDoc);
         bufferDoc.clear();
     }
 
+
+    /**
+     * for each block there are : doc_id file , lexicon file , tf file and the goal is the merging
+     *  is adopted a two-way merging for the inverted index, merging the blocks in pairs, until all the files of the blocks are merged.
+     *  the lexicon for both files are scanned and checked if one word comes lexically before the other or not, or if they are the same and the posting lists need to be merged.
+     *  All the intermediate step are without compression.
+     *  At the end of the inverted indexing merging a method is called  to create the final inverted index with compression and skip info block file
+     *  to access to file are used fileChannel
+     * @param n number of blocks to merge
+     * @throws IOException
+     */
     public void mergeBlocks(int n) throws IOException {
         long start = System.currentTimeMillis();
         System.out.println("START MERGING");
@@ -291,6 +327,16 @@ public class SPIMI {
         createFinalIndex(currLex1, currDocs1, currTf1);
     }
 
+    /**
+     * performs compression of the final doc_id file in variable byte and tf in unary ,
+     * meanwhile write the skip info file with skip info blocks
+     * for the fast retrieve.
+     * create the final lexicon
+     * @param lexPath path of the lexicon final file
+     * @param docsPath path of the doc_id final file
+     * @param tfPath path of the tf final file
+     * @throws IOException
+     */
     public void createFinalIndex(String lexPath, String docsPath, String tfPath) throws IOException {
         //declare output file and channels
         File lexFile = new File("docs/lexicon.txt");
@@ -313,6 +359,7 @@ public class SPIMI {
         FileChannel inputLexChannel = inputLexFile.getChannel();
         Compressor compressor = new Compressor();
         DocumentIndex documentIndex = new DocumentIndex();
+        //document index is located in the main memory
         HashMap<Integer, Integer> docIndex = documentIndex.getDocIndex();
         int totLen = 0; // to keep track of the total length of the file
         int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
