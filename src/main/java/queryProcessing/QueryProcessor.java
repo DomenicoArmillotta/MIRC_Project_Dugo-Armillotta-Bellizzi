@@ -14,8 +14,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * Second phase of the engine , query processing menu
+ */
 public class QueryProcessor {
 
+    /**
+     * main to start the query processing of the engine
+     * @param args
+     * @throws IOException
+     */
     public static void main(String[] args) throws IOException {
         System.out.println("LOADING DATA STRUCTURES");
         Daat d = new Daat();
@@ -49,28 +57,16 @@ public class QueryProcessor {
             double time = end/1000.0;
             System.out.println("Result obtained in: " + time + " seconds");
         }
+
+        //USED TO TEST TREC EVAL
         /*long start = System.currentTimeMillis();
         File queryFile = new File("docs/queries.eval.tsv");
         String resultsPath = "docs/results_file.tsv";
         FileWriter file = new FileWriter(resultsPath);
         BufferedWriter buffer = new BufferedWriter(file);
         LineIterator it = FileUtils.lineIterator(queryFile, "UTF-8");
-        /*
-        long start = System.currentTimeMillis();
-        String query = "___________ are formed at divergent and converging boundaries.a.plateausc.land fillsb.volcanoesd.mountain ranges";
-        query = "why did neruda go to machu picchu";
-        query = "what is stomach bile";
-        //query = "capital of the USA";
-        int k = 10;
-        System.out.println(d.disjunctiveDaat(query, k, true));
-        long end = System.currentTimeMillis() - start;
-        double time = (double)end/1000.0;
-        System.out.println("Result obtained in: " + time + " seconds");*/
-        //File queryFile = new File("docs/queries.eval.tsv");
-        //String resultsPath = "docs/results_file";
-        //FileWriter file = new FileWriter(resultsPath);
-        //BufferedWriter buffer = new BufferedWriter(file);
-        /*LineIterator it = FileUtils.lineIterator(queryFile, "UTF-8");
+
+
         try {
             int cont = 0;
             while (it.hasNext()) {
