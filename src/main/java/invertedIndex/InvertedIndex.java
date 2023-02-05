@@ -12,8 +12,8 @@ import java.util.stream.Collectors;
 import static utility.Utils.addByteArray;
 
 /**
- * Class used to aggregate and manipulate the data structures we use to organise our data in the Spimi algorithm
- * Inverted Index and Lexicon  for each block in the spimi algorithm
+ * Class used to aggregate and manipulate the data structures we use to organise our data in the SPIMI algorithm
+ * Inverted Index and Lexicon  for each block in the SPIMI algorithm
  */
 public class InvertedIndex {
     private String outPath;
@@ -32,8 +32,8 @@ public class InvertedIndex {
     }
 
     /**
-     * case 1 : term does not exist, adds the posting to the inverted index and in the lexicon
-     * case 2 : term exists, update the posting in the inverted index (tf) and lexicon (tf)
+     * case 1 : term does not exist, adds the posting to a new posting list to the inverted index and in the lexicon
+     * case 2 : term exists, update the posting list in the inverted index and lexicon
      * @param term of the corresponding posting list
      * @param docid
      * @param freq to assign to posting

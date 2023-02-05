@@ -39,6 +39,10 @@ public class Daat {
     private FileChannel skipChannel;
     private Preprocessor preprocessing;
 
+    /**
+     * constructor of the query processing algorithm: initializes the file channels and the data structures required for query processing
+     * @throws IOException
+     */
     public Daat() throws IOException {
         preprocessing = new Preprocessor();
         maxDocID = (int)ConfigurationParameters.getNumberOfDocuments() + 1;
@@ -54,21 +58,25 @@ public class Daat {
         docIndex = d.getDocIndex();
     }
 
+    /**
+     * query processing algorithm to process a query in conjunctive mode: for each document checks if it's present in all the lists
+     * in that case it computes for each term in the query the score of the document
+     * @param query: query given in input to be processed
+     * @param k: number of top documents to retrieve
+     * @param mode: 0 if the scoring function is TFIDF, 1 if it's BM25
+     * @throws IOException
+     * @return the list of top k documents ordered by decreasing score
+     */
     public List<ScoreEntry> conjunctiveDaat(String query, int k, int mode) throws IOException {
         List<String> proQuery = preprocessing.preprocessDocument(query);
         //duplicate filtering
         List<String> terms = new ArrayList<>(new HashSet<>(proQuery));
         int queryLen = terms.size();
         lexicon = new HashMap<>();
-        decompressedDocIds = new ArrayList[queryLen];
-        decompressedTfs = new ArrayList[queryLen];
-        numBlocks = new int[queryLen];
-        endDocids = new int[queryLen];
-        docIdsIt = new Iterator[queryLen];
-        tfsIt = new Iterator[queryLen];
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         for(String term: terms){
             LexiconStats l;
+            //if the term is in cache we retrieve the pointer from it, otherwise we do binary search on the lexicon file
             if(cacheTerms.get(term)!=null){
                 l = new LexiconStats(cacheTerms.get(term));
             }
@@ -77,6 +85,7 @@ public class Daat {
                 LexiconStats cachedLex = new LexiconStats(l);
                 cacheTerms.put(term,cachedLex);
             }
+            //check if the term was present in the lexicon or not
             if(l.getdF()!=0){
                 lexicon.put(term, l);
             }
@@ -84,7 +93,14 @@ public class Daat {
                 queryLen--;
             }
         }
-        if(queryLen==0) return null;
+        if(queryLen==0) return null; //if no query term was in the lexicon
+        //initialize data structures
+        decompressedDocIds = new ArrayList[queryLen];
+        decompressedTfs = new ArrayList[queryLen];
+        numBlocks = new int[queryLen];
+        endDocids = new int[queryLen];
+        docIdsIt = new Iterator[queryLen];
+        tfsIt = new Iterator[queryLen];
         String[] queryTerms = new String[queryLen];
         for(int i = 0; i < queryLen; i++){
             String term = terms.get(i);
@@ -131,6 +147,18 @@ public class Daat {
         return scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
     }
 
+    /**
+     * query processing algorithm to process a query in disjunctive mode: it's implemented with a MaxScore dynamic pruning algorithm
+     * for each term the document upper bounds are computed and the posting lists are divided in essential and non-essential through
+     * a pivot variable, which marks the beginning of essential lists (terms are ordered by increasing term upper bound)
+     * the list is essential if the document upper bound is above the threshold, otherwise is non-essential
+     * the threshold is the smallest value in the priority queue of top k scores, if the number of scores is less than k is equal to 0
+     * @param query: query given in input to be processed
+     * @param k: number of top documents to retrieve
+     * @param mode: 0 if the scoring function is TFIDF, 1 if it's BM25
+     * @throws IOException
+     * @return the list of top k documents ordered by decreasing score
+     */
     public List<ScoreEntry> disjunctiveDaat(String query, int k, int mode) throws IOException {
         if(k==0) return null;
         List<String> proQuery = preprocessing.preprocessDocument(query);
@@ -141,6 +169,7 @@ public class Daat {
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         for(String term: terms){
             LexiconStats l;
+            //if the term is in cache we retrieve the pointers from it; otherwise we do binary search on the lexicon file
             if(cacheTerms.get(term)!=null){
                 l = new LexiconStats(cacheTerms.get(term));
             }
@@ -151,6 +180,7 @@ public class Daat {
                     cacheTerms.put(term, cachedLex);
                 }
             }
+            //check if the term was present in the lexicon or not
             if(l.getdF()!=0){
                 lexicon.put(term, l);
             }
@@ -158,13 +188,15 @@ public class Daat {
                 queryLen--;
             }
         }
-        if(queryLen==0) return null;
+        if(queryLen==0) return null; //if no query term was present in the lexicon
+        //initialize data structures
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
         numBlocks = new int[queryLen];
         endDocids = new int[queryLen];
         docIdsIt = new Iterator[queryLen];
         tfsIt = new Iterator[queryLen];
+        //take the term upper bounds, ordered in increasing order
         List<TermUB> termUBs = new ArrayList<>();
         for(String term: lexicon.keySet()){
             if(mode == 1) {
@@ -180,6 +212,7 @@ public class Daat {
         double[] documentUB = new double[queryLen];
         double prec = 0.0;
         int index = 0;
+        //order query terms by increasing term upper bound
         for (TermUB tub: termUBs){
             documentUB[index] = tub.getMaxScore() + prec;
             prec = documentUB[index];
@@ -193,7 +226,7 @@ public class Daat {
         }
         double threshold = 0.0;
         int next;
-        int did = getMinDocid(queryTerms);
+        int did = getMinDocid(queryTerms); //take the first docID
         while (pivot < queryLen && did != maxDocID){
             next = maxDocID;
             double score = 0.0;
@@ -257,6 +290,14 @@ public class Daat {
         return scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
     }
 
+    /**
+     * query processing algorithm to process a query in disjunctive mode, used to test trec_eval
+     * @param query: query given in inptu to be processed
+     * @param k: number of top documents to retrieve
+     * @param mode: false if the scoring function is TFIDF, true if it's BM25
+     * @throws IOException
+     * @return the top document of the list of top k documents
+     */
     public ScoreEntry disjunctiveDaatEval(String query, int k, boolean mode) throws IOException {
         List<String> proQuery = preprocessing.preprocessDocument(query);
         //duplicate filtering
@@ -383,6 +424,12 @@ public class Daat {
         return new ScoreEntry(maxDocID, 0.0);
     }
 
+    /**
+     * function that returns the first docID to process among the docIDs of the posting lists of the terms of the query
+     * @param queryTerms: array containing the query terms
+     * @throws IOException
+     * @return the first docID to process
+     */
     private int getMinDocid(String[] queryTerms) throws IOException {
         int did = nextGEQ(queryTerms[0], 1); //start from 1, the first possible docId
         for (int i=1; (i<queryTerms.length); i++){
@@ -400,6 +447,14 @@ public class Daat {
         return did;
     }
 
+    /**
+     * method that takes in input the current docID we are processing and returns the first docID greater or equal to the input value
+     * if the value is not present in the block, we open the next one, if there is a next block to process
+     * @param term: term of the query for which we are looking for the next docID to process
+     * @param value: current docID we are processing
+     * @throws IOException
+     * @return the next docID to process
+     */
     private int nextGEQ(String term, int value) throws IOException {
         Iterator<Integer> itDocs = docIdsIt[lexicon.get(term).getIndex()];
         Iterator<Integer> itTfs = tfsIt[lexicon.get(term).getIndex()];
@@ -416,7 +471,7 @@ public class Daat {
             }
             lexicon.get(term).setCurdoc(docId);
             lexicon.get(term).setCurTf(tf);
-            docIdsIt[lexicon.get(term).getIndex()] = itDocs; //update the iterator (non so se serve)
+            docIdsIt[lexicon.get(term).getIndex()] = itDocs; //update the iterator
             tfsIt[lexicon.get(term).getIndex()] = itTfs;
             //check if we are in a new block
             if(value >= endDocids[lexicon.get(term).getIndex()] || docId == prec){
@@ -426,13 +481,21 @@ public class Daat {
                 openList(docChannel, tfChannel, skipChannel, term);
                 itDocs = docIdsIt[lexicon.get(term).getIndex()];
                 itTfs = tfsIt[lexicon.get(term).getIndex()];
-                //docId = itDocs.next();
-                //tf = itTfs.next();
             }
         }
         // If no such value was found, return a special value indicating that the search failed
         return maxDocID;
     }
+
+    /**
+     * method that open the decompressed block that we currently need to process, taking it from the docIDs and term frequencies file
+     * using the skip information and the data structures that need to be updated after opening the new block
+     * @param docChannel: file channel of the docIDs file
+     * @param tfChannel: file channel of the term frequencies file
+     * @param skips: file channel of the skip information file
+     * @param term:
+     * @throws IOException
+     */
     public void openList(FileChannel docChannel, FileChannel tfChannel, FileChannel skips, String term) throws IOException {
         // Read the posting list block data from the file
         Compressor compressor = new Compressor();
