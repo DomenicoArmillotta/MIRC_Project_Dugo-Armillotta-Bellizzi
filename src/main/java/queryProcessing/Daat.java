@@ -72,7 +72,7 @@ public class Daat {
         for(String term: terms){
             LexiconStats l;
             if(cacheTerms.get(term)!=null){
-                l = cacheTerms.get(term);
+                l = new LexiconStats(cacheTerms.get(term));
             }
             else{
                 l = Utils.getPointer(lexChannel, term);
@@ -144,7 +144,7 @@ public class Daat {
         for(String term: terms){
             LexiconStats l;
             if(cacheTerms.get(term)!=null){
-                l = cacheTerms.get(term);
+                l = new LexiconStats(cacheTerms.get(term));
             }
             else{
                 l = Utils.getPointer(lexChannel, term);
@@ -269,7 +269,7 @@ public class Daat {
         for(String term: terms){
             LexiconStats l;
             if(cacheTerms.get(term)!=null){
-                l = cacheTerms.get(term);
+                l = new LexiconStats(cacheTerms.get(term));
             }
             else{
                 l = Utils.getPointer(lexChannel, term);
