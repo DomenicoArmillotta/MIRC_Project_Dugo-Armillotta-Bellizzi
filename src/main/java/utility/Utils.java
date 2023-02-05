@@ -33,7 +33,7 @@ public class Utils {
     /**
      * Method to take out bytes from string
      * @param term term from which byte are taken
-     * @return
+     * @return lexicon Byte
      */
     public static byte[] getBytesFromString(String term){
         Text key = new Text(term);
@@ -51,19 +51,19 @@ public class Utils {
     }
 
     /**
-     * Method to create an entry in Lexicon
-     * @param dF
-     * @param cF
-     * @param docLen
-     * @param tfLen
-     * @param offsetDocs
-     * @param offsetTfs
+     * Method to create an entry in Lexicon in byte format
+     * @param dF document frequency
+     * @param cF collection frequency
+     * @param docLen document lenght
+     * @param tfLen tf lenght
+     * @param offsetDocs  offset of docids
+     * @param offsetTfs offset of tfs
      * @param idf
-     * @param tup
-     * @param tuptfidf
+     * @param tup term upper bound for bm25
+     * @param tuptfidf term upper bound tfidf
      * @param offsetSkip
      * @param skipLen
-     * @return
+     * @return lexicon entry in byte[]
      */
     public static byte[] createLexiconEntry(int dF, long cF, int docLen, int tfLen, long offsetDocs, long offsetTfs, double idf, double tup, double tuptfidf, long offsetSkip, int skipLen){
         //take the document frequency
@@ -99,6 +99,13 @@ public class Utils {
         return lexiconBytes;
     }
 
+    /**
+     * create skip info in byte[] ready to be written in the skipInfo.txt file
+     * @param docId
+     * @param docBytes
+     * @param tfBytes
+     * @return skip info in byte[]
+     */
     public static byte[] createSkipInfoBlock(int docId, int docBytes, int tfBytes){
         byte[] endDocidBytes = ByteBuffer.allocate(4).putInt(docId).array();
         //System.out.println("End docid bytes: " + docid + " " + endDocidBytes.length);
@@ -111,6 +118,13 @@ public class Utils {
         return endDocidBytes;
     }
 
+    /**
+     * get lexicon entry given the file channel and the offset
+     * @param channel input file channel
+     * @param offset of the lexicon entry
+     * @return the structure lexicon entry for the selected term
+     * @throws IOException
+     */
     public static LexiconEntry getLexiconEntry(FileChannel channel, long offset) throws IOException {
         int entrySize = ConfigurationParameters.LEXICON_ENTRY_SIZE;
         int keySize = ConfigurationParameters.LEXICON_KEY_SIZE;
@@ -134,6 +148,13 @@ public class Utils {
         return new LexiconEntry(word, lexiconStats);
     }
 
+    /**
+     * creation of the parameters document containing :
+     * avgLenBytes , totLenBytes , numDocsBytes
+     * @param totalLength
+     * @param numDocs
+     * @throws IOException
+     */
     public static void createDocumentStatistics(double totalLength, double numDocs) throws IOException {
         double averageDocLen = totalLength/numDocs;
         RandomAccessFile outFile = new RandomAccessFile(new File("docs/parameters.txt"), "rw");
@@ -157,10 +178,10 @@ public class Utils {
 
 
     /**
-     *
-     * @param channel
-     * @param key
-     * @return
+     * used to retrieve the lexicon-stats of the term from the lexicon
+     * @param channel file channel of the lexicon
+     * @param key term of interest
+     * @return lexicon stats (info of the term in the lexicon)
      * @throws IOException
      */
     public static LexiconStats getPointer(FileChannel channel, String key) throws IOException {
@@ -194,63 +215,7 @@ public class Utils {
         return l;
     }
 
-    /**
-     *
-     * @param channel
-     * @param key
-     * @return
-     * @throws IOException
-     */
-    public static int getDocLen(FileChannel channel, String key) throws IOException {
-        int docLen = 0;
-        int entrySize = ConfigurationParameters.DOC_INDEX_ENTRY_SIZE;
-        MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, channel.size());
-        int lowerBound = 0;
-        int upperBound = (int) channel.size()-entrySize;
-        while (lowerBound <= upperBound) {
-            int midpoint = (lowerBound + upperBound) / 2;
-            if(midpoint%entrySize!=0){
-                midpoint += midpoint%entrySize;
-            }
-            buffer.position(midpoint);
-            ByteBuffer ba = ByteBuffer.allocate(10);
-            buffer.get(ba.array(), 0, 10);
-            String value = Text.decode(ba.array());
-            value = value.replaceAll("\0", "");
-            if (value.equals(key)) {
-                ByteBuffer bf1 = ByteBuffer.allocate(4);
-                buffer.get(bf1.array(), 0, 4);
-                docLen = bf1.getInt();
-                break;
-            } else if (Integer.parseInt(key) - Integer.parseInt(value) < 0) {
-                upperBound = midpoint - entrySize;
-            } else {
-                lowerBound = midpoint + entrySize;
-            }
-        }
-        return docLen;
-    }
 
-    public static HashMap<Integer,Integer> getDocIndex(FileChannel channel) throws IOException {
-        HashMap<Integer,Integer> docIndex = new HashMap<>();
-        int entrySize = ConfigurationParameters.DOC_INDEX_ENTRY_SIZE;
-        int keySize = ConfigurationParameters.DOC_INDEX_KEY_SIZE;
-        MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, channel.size());
-        int lowerBound = 0;
-        while(lowerBound!=channel.size()) {
-            buffer.position(lowerBound);
-            ByteBuffer ba = ByteBuffer.allocate(keySize);
-            buffer.get(ba.array(), 0, keySize);
-            if (ba.hasArray()) {
-                ByteBuffer bf1 = ByteBuffer.allocate(entrySize - keySize);
-                buffer.get(bf1.array(), 0, entrySize - keySize);
-                int docid = bf1.getInt();
-                int doclen = bf1.getInt();
-                docIndex.put(docid,doclen);
-            }
-            lowerBound += entrySize;
-        }
-        return docIndex;
-    }
+
 
 }
