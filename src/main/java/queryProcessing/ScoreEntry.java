@@ -1,6 +1,8 @@
 package queryProcessing;
 
-
+/**
+ * entry used for the score and contain docId and the score
+ */
 public class ScoreEntry implements Comparable<ScoreEntry> {
 
     private int docID;
