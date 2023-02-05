@@ -75,7 +75,7 @@ public class QueryProcessor {
                 String id = inputs[0];
                 String query = inputs[1];
                 //long start = System.currentTimeMillis();
-                ScoreEntry entry = d.disjunctiveDaatEval(id, query, 1, true);
+                ScoreEntry entry = d.disjunctiveDaatEval(query, 1, true);
                 int docno = entry.getDocID()-1;
                 buffer.write(id+"\tQ0\t"+docno+"\t1\t"+entry.getScore()+"\tSTANDARD");
                 buffer.newLine();
@@ -120,7 +120,7 @@ public class QueryProcessor {
             }
             long end = System.currentTimeMillis() - start;
             long time = end/1000;
-            System.out.println("Result obtained in: " + time + " seconds");
+            System.out.println("Result obtained in: " + time + " seconds"); //2213.394 seconds
         }
 
 [[docid=7443188, score=9.99460140426369], [docid=8474001, score=9.069019164423922], [docid=4024545, score=9.059309251704772], [docid=4326254, score=8.996953836126837], [docid=4024550, score=8.954260676830543], [docid=7039968, score=8.93573677814313], [docid=2332849, score=8.922280263405527], [docid=7659697, score=8.905726515313644], [docid=7510642, score=8.865987516251808], [docid=1001113, score=8.782835741968295]]

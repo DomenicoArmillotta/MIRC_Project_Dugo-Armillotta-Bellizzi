@@ -244,13 +244,14 @@ public class Daat {
             did = next;
         }
         //Put the results in cache
-        cache.put(query, scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0));
+        if(scores.size()>0)
+            cache.put(query, scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0));
         return scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
     }
 
-    public ScoreEntry disjunctiveDaatEval(String id, String query, int k, boolean mode) throws IOException {
-        if(cache.get(id)!=null){
-            return cache.get(id);
+    public ScoreEntry disjunctiveDaatEval(String query, int k, boolean mode) throws IOException {
+        if(cache.get(query)!=null){
+            return cache.get(query);
         }
         List<String> proQuery = preprocessing.preprocessDocument(query);
         //duplicate filtering
@@ -373,9 +374,12 @@ public class Daat {
             did = next;
         }
         //Put the results in cache
-        ScoreEntry result = scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0);
-        cache.put(id, result);
-        return result;
+        if(scores.size()>0) {
+            ScoreEntry result = scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0);
+            cache.put(query, result);
+            return result;
+        }
+        return new ScoreEntry(maxDocID,0.0);
     }
 
     private int getMinDocid(String[] queryTerms) throws IOException {
