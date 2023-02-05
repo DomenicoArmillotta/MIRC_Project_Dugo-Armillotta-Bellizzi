@@ -6,8 +6,6 @@ import indexing.DocumentIndex;
 import invertedIndex.LexiconStats;
 import org.junit.platform.commons.util.LruCache;
 import preprocessing.Preprocessor;
-import utility.Cache;
-import utility.CacheTerms;
 import utility.Utils;
 
 import java.io.File;
