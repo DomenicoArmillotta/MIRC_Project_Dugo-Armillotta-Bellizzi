@@ -10,9 +10,17 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 
+/**
+ * Manage and manipulate Document index structure
+ * the structure is saved in docIndex.txt
+ */
 public class DocumentIndex {
     private HashMap<Integer, Integer> docIndex;
 
+    /**
+     * initialises the previously created document index ,  in memory
+     * @throws IOException
+     */
     public DocumentIndex() throws IOException {
         RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
         FileChannel docIndexChannel = docIndexFile.getChannel();
@@ -27,6 +35,13 @@ public class DocumentIndex {
         this.docIndex = docIndex;
     }
 
+    /**
+     * used to retrieve the document index data structure from the file and insert it into a hashmap
+     * the entry is in the form: doc_id-doc_len
+     * @param channel
+     * @return
+     * @throws IOException
+     */
     public static HashMap<Integer,Integer> getDocumentIndex(FileChannel channel) throws IOException {
         HashMap<Integer,Integer> docIndex = new HashMap<>();
         int entrySize = ConfigurationParameters.DOC_INDEX_ENTRY_SIZE;

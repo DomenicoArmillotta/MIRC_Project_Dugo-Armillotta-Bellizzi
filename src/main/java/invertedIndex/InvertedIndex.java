@@ -92,7 +92,6 @@ public class InvertedIndex {
         sortedTerms = lexicon.keySet().stream().sorted().collect(Collectors.toList());
     }
 
-    //TODO: pulire e modificare i commenti (ALLA FINE!!!!!!!!)
     /**
      * is used to write each block of SPIMI on disk
      * It does two things:
