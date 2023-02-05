@@ -7,8 +7,14 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * class to manage the opening of the collection file
+ */
 public class FileOpener {
 
+    /**
+     * used to convert collection from .tsv to .zip
+     */
     public static void compressFile() {
         try {
             File file = new File("docs/collection.tsv");
@@ -34,20 +40,18 @@ public class FileOpener {
             e.printStackTrace();
         }
     }
+
+    /**
+     * used to extract from zip the documents
+     * @param path of the .zip collection
+     * @return stream of data
+     * @throws IOException
+     */
     public static InputStream extractFromZip(String path) throws IOException {
         ZipFile zipFile = new ZipFile(path);
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
         ZipEntry entry = entries.nextElement();
         InputStream stream = zipFile.getInputStream(entry);
         return stream;
-        //BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-        /*String line;
-        int cont = 0;
-        while ((line = reader.readLine()) != null && cont < 100) {
-            System.out.println(line);
-            cont++;
-        }*/
-        //reader.close();
-        //stream.close();
     }
 }
