@@ -49,6 +49,24 @@ public class LexiconStats implements Serializable {
         this.skipLen = b.getInt(68);
     }
 
+    //copy constructor
+    public LexiconStats(LexiconStats lexiconStats){
+        this.dF = lexiconStats.getdF();
+        this.cf =lexiconStats.getCf();
+        this.docidsLen = lexiconStats.getDocidsLen();
+        this.tfLen = lexiconStats.getTfLen();
+        this.offsetDocid = lexiconStats.getOffsetDocid();
+        this.offsetTf = lexiconStats.getOffsetTf();
+        this.idf = lexiconStats.getIdf();
+        this.termUpperBound = lexiconStats.getTermUpperBound();
+        this.termUpperBoundTfIdf = lexiconStats.getTermUpperBoundTfIdf();
+        this.offsetSkip = lexiconStats.getOffsetSkip();
+        this.skipLen = lexiconStats.getSkipLen();
+        this.curdoc = 0;
+        this.curTf = 0;
+        this.index = 0;
+    }
+
     public int getdF() {
         return dF;
     }

@@ -24,7 +24,6 @@ public class Daat {
     private int maxDocID; //keep the upper bound for the docIds
     private HashMap<String, LexiconStats> lexicon; //map the terms of the query to the pointers of the lists
     private HashMap<Integer,Integer> docIndex; //to map in memory the document index
-    private LruCache<String,ScoreEntry> cache = new LruCache<>(5000); //to cache the query results
     private LruCache<String,LexiconStats> cacheTerms = new LruCache<>(5000); //to cache the terms and pointers
     private int[] numBlocks; // counts for each term how much of the blocks have been processed
     private int[] endDocids; //store the current end docIds of the current blocks for each term
@@ -71,7 +70,15 @@ public class Daat {
         tfsIt = new Iterator[queryLen];
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         for(String term: terms){
-            LexiconStats l = Utils.getPointer(lexChannel, term);
+            LexiconStats l;
+            if(cacheTerms.get(term)!=null){
+                l = cacheTerms.get(term);
+            }
+            else{
+                l = Utils.getPointer(lexChannel, term);
+                LexiconStats cachedLex = new LexiconStats(l);
+                cacheTerms.put(term,cachedLex);
+            }
             if(l.getdF()!=0){
                 lexicon.put(term, l);
             }
@@ -122,9 +129,6 @@ public class Daat {
                 did++;
             }
         }
-        //Put the results in cache
-        if(scores.size()>0)
-            cache.put(query, scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0));
         // Return the result list
         return scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
     }
@@ -138,7 +142,17 @@ public class Daat {
         lexicon = new HashMap<>();
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         for(String term: terms){
-            LexiconStats l = Utils.getPointer(lexChannel, term);
+            LexiconStats l;
+            if(cacheTerms.get(term)!=null){
+                l = cacheTerms.get(term);
+            }
+            else{
+                l = Utils.getPointer(lexChannel, term);
+                if(l.getdF()!=0) {
+                    LexiconStats cachedLex = new LexiconStats(l);
+                    cacheTerms.put(term, cachedLex);
+                }
+            }
             if(l.getdF()!=0){
                 lexicon.put(term, l);
             }
@@ -147,7 +161,6 @@ public class Daat {
             }
         }
         if(queryLen==0) return null;
-        System.out.println(lexicon.keySet());
         decompressedDocIds = new ArrayList[queryLen];
         decompressedTfs = new ArrayList[queryLen];
         numBlocks = new int[queryLen];
@@ -243,16 +256,10 @@ public class Daat {
             }
             did = next;
         }
-        //Put the results in cache
-        if(scores.size()>0)
-            cache.put(query, scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0));
         return scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
     }
 
     public ScoreEntry disjunctiveDaatEval(String query, int k, boolean mode) throws IOException {
-        if(cache.get(query)!=null){
-            return cache.get(query);
-        }
         List<String> proQuery = preprocessing.preprocessDocument(query);
         //duplicate filtering
         List<String> terms = new ArrayList<>(new HashSet<>(proQuery));
@@ -260,14 +267,17 @@ public class Daat {
         TreeSet<ScoreEntry> scores = new TreeSet<>(); //to store partial scores results
         lexicon = new HashMap<>();
         for(String term: terms){
-            LexiconStats l = Utils.getPointer(lexChannel, term);
-            /*if(cacheTerms.get(term)!=null){
+            LexiconStats l;
+            if(cacheTerms.get(term)!=null){
                 l = cacheTerms.get(term);
             }
             else{
                 l = Utils.getPointer(lexChannel, term);
-                cacheTerms.put(term,l);
-            }*/
+                if(l.getdF()!=0) {
+                    LexiconStats cachedLex = new LexiconStats(l);
+                    cacheTerms.put(term, cachedLex);
+                }
+            }
             if(l.getdF()!=0){
                 lexicon.put(term, l);
             }
@@ -373,10 +383,9 @@ public class Daat {
             }
             did = next;
         }
-        //Put the results in cache
+
         if(scores.size()>0) {
             ScoreEntry result = scores.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList()).get(0);
-            cache.put(query, result);
             return result;
         }
         return new ScoreEntry(maxDocID,0.0);

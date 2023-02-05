@@ -65,41 +65,6 @@ public class SPIMI {
         mergeBlocks(indexBlock);
     }
 
-    public void spimiInvertBlockUncompressed(String readPath, boolean mode) throws IOException {
-        File inputFile = new File(readPath);
-        LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
-        RandomAccessFile docIndexFile = new RandomAccessFile(new File("docs/docIndex.txt"), "rw");
-        docIndexChannel = docIndexFile.getChannel();
-        int indexBlock = 0;
-        //int cont = 0;
-        try {
-            //create chunk of data , splitting in n different block
-            while (it.hasNext()){
-                System.out.println("Block: " + indexBlock);
-                //instantiate a new Inverted Index and Lexicon per block
-                invertedIndex = new InvertedIndex(indexBlock);
-                while (it.hasNext()){
-                    String line = it.nextLine();
-                    spimiInvert(line,mode);
-                    if(Runtime.getRuntime().totalMemory()*0.80 >
-                            Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()){
-                        //--> its the ram of jvm
-                        break;
-                    }
-                }
-                invertedIndex.sortTerms();
-                invertedIndex.writePostings();
-                indexBlock++;
-                System.gc();
-            }
-        } finally {
-            LineIterator.closeQuietly(it);
-        }
-        //compute the average document length
-        Utils.createDocumentStatistics(totalLength, numDocs);
-        mergeBlocks(indexBlock);
-    }
-
     public void spimiInvert(String doc, boolean mode) throws IOException {
         String[] parts = doc.split("\t");
         String docno = parts[0];
