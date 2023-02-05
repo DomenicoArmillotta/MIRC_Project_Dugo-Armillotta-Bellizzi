@@ -1,5 +1,8 @@
 package queryProcessing;
 
+/**
+ * used in the query processing to build the priority queue
+ */
 public class TermUB implements Comparable<TermUB>{
 
     private String term;
@@ -26,6 +29,7 @@ public class TermUB implements Comparable<TermUB>{
     public void setTerm(String term) {
         this.term = term;
     }
+
 
     @Override
     public int compareTo(TermUB o) {
